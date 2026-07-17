@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: booking-postgres
+    environment:
+      POSTGRES_DB: booking
+      POSTGRES_USER: booking
+      POSTGRES_PASSWORD: booking_dev_pw
+    ports:
+      # 5433 në host (5432 shpesh është i zënë nga një PostgreSQL tjetër lokal);
+      # brenda rrjetit të compose API-ja e sheh normalisht në postgres:5432.
+      - "5433:5432"
+    volumes:
+      - booking_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U booking -d booking" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    container_name: booking-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development   # aktivizon Swagger UI
+      ConnectionStrings__BookingDb: "Host=postgres;Port=5432;Database=booking;Username=booking;Password=booking_dev_pw"
+      Jwt__Secret: "DOCKER-DEV-sekret-vetem-per-zhvillim-lokal-1234567890abcdef"
+      Auth__RequireConfirmedEmail: "false"
+      Database__ApplyMigrationsOnStartup: "true"
+      Seed__Enabled: "true"
+      Seed__SuperAdminPassword: "Dev123!SuperAdmin"
+      Seed__DefaultUserPassword: "Dev123!Booking"
+
+volumes:
+  booking_pgdata:
