@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { ChevronLeft, Clock, MapPin } from 'lucide-react'
 import { api, ApiError } from '../lib/api'
 import type { AvailableSlot, DoctorDetails } from '../lib/types'
 import { useAuth } from '../context/AuthContext'
@@ -83,7 +84,7 @@ export default function DoctorDetailPage() {
         startDateTime: selectedSlot,
         patientNote: note || undefined,
       })
-      notify('Termini u rezervua me sukses! 🎉', 'ok')
+      notify('Termini u rezervua me sukses!', 'ok')
       navigate('/terminet')
     } catch (e) {
       notify(e instanceof ApiError ? e.message : 'Rezervimi dështoi.', 'error')
@@ -102,7 +103,9 @@ export default function DoctorDetailPage() {
     <div className="page">
       <div className="detail-hero detail-hero--doctor">
         <div className="container">
-          <Link to="/kerko" className="backlink">← Kthehu te kërkimi</Link>
+          <Link to="/kerko" className="backlink link-icon">
+            <ChevronLeft size={16} strokeWidth={1.5} /> Kthehu te kërkimi
+          </Link>
           <div className="detail-hero__row">
             <div className="detail-hero__avatar" aria-hidden>
               {initials(doctor.firstName, doctor.lastName)}
@@ -110,9 +113,14 @@ export default function DoctorDetailPage() {
             <div>
               <h1>Dr. {doctor.firstName} {doctor.lastName}</h1>
               <div className="detail-hero__meta">
-                {doctor.specialties.map((s) => (
-                  <span key={s} className="chip chip--light">{specialtyIcon(s)} {specialtyLabel(s)}</span>
-                ))}
+                {doctor.specialties.map((s) => {
+                  const Icon = specialtyIcon(s)
+                  return (
+                    <span key={s} className="chip chip--light">
+                      <Icon size={14} strokeWidth={1.5} /> {specialtyLabel(s)}
+                    </span>
+                  )
+                })}
               </div>
               {doctor.yearsOfExperience > 0 && (
                 <p className="detail-hero__desc">{doctor.yearsOfExperience} vjet përvojë</p>
@@ -138,7 +146,9 @@ export default function DoctorDetailPage() {
                 <div key={b.branchId} className="branch-card">
                   <strong>{b.clinicName}</strong>
                   <span>{b.branchName}</span>
-                  <span>📍 {b.address}, {b.city}</span>
+                  <span>
+                    <MapPin size={14} strokeWidth={1.5} /> {b.address}, {b.city}
+                  </span>
                 </div>
               ))}
             </div>
@@ -147,16 +157,19 @@ export default function DoctorDetailPage() {
           <section className="block">
             <h2 className="block__title">Shërbimet</h2>
             <div className="service-list">
-              {doctor.services.map((s) => (
-                <div key={s.medicalServiceId} className="service-row">
-                  <span className="service-row__icon">{specialtyIcon(s.specialtyName)}</span>
-                  <div className="service-row__info">
-                    <strong>{s.name}</strong>
-                    <span>{s.durationMinutes} min</span>
+              {doctor.services.map((s) => {
+                const Icon = specialtyIcon(s.specialtyName)
+                return (
+                  <div key={s.medicalServiceId} className="service-row">
+                    <span className="service-row__icon"><Icon size={20} strokeWidth={1.5} /></span>
+                    <div className="service-row__info">
+                      <strong>{s.name}</strong>
+                      <span><Clock size={12} strokeWidth={1.5} /> {s.durationMinutes} min</span>
+                    </div>
+                    <span className="service-row__price">{formatMoney(s.price, s.currency)}</span>
                   </div>
-                  <span className="service-row__price">{formatMoney(s.price, s.currency)}</span>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </section>
         </div>

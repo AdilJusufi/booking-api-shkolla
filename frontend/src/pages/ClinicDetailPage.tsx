@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { ChevronLeft, Clock, Globe, Mail, MapPin, Phone, Stethoscope } from 'lucide-react'
 import { api } from '../lib/api'
 import type { ClinicDetails, Doctor } from '../lib/types'
 import DoctorCard from '../components/DoctorCard'
@@ -38,16 +39,30 @@ export default function ClinicDetailPage() {
     <div className="page">
       <div className="detail-hero">
         <div className="container">
-          <Link to="/kerko" className="backlink">← Kthehu te kërkimi</Link>
+          <Link to="/kerko" className="backlink link-icon">
+            <ChevronLeft size={16} strokeWidth={1.5} /> Kthehu te kërkimi
+          </Link>
           <div className="detail-hero__row">
             <div className="detail-hero__logo" aria-hidden>{clinic.name.charAt(0)}</div>
             <div>
               <h1>{clinic.name}</h1>
               {clinic.description && <p className="detail-hero__desc">{clinic.description}</p>}
               <div className="detail-hero__meta">
-                {clinic.phoneNumber && <span className="chip chip--light">☎ {clinic.phoneNumber}</span>}
-                {clinic.email && <span className="chip chip--light">✉ {clinic.email}</span>}
-                {clinic.website && <span className="chip chip--light">🌐 {clinic.website}</span>}
+                {clinic.phoneNumber && (
+                  <span className="chip chip--light">
+                    <Phone size={14} strokeWidth={1.5} /> {clinic.phoneNumber}
+                  </span>
+                )}
+                {clinic.email && (
+                  <span className="chip chip--light">
+                    <Mail size={14} strokeWidth={1.5} /> {clinic.email}
+                  </span>
+                )}
+                {clinic.website && (
+                  <span className="chip chip--light">
+                    <Globe size={14} strokeWidth={1.5} /> {clinic.website}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -62,8 +77,14 @@ export default function ClinicDetailPage() {
               {clinic.branches.map((b) => (
                 <div key={b.id} className="branch-card">
                   <strong>{b.name}</strong>
-                  <span>📍 {b.address}, {b.city}</span>
-                  {b.phoneNumber && <span>☎ {b.phoneNumber}</span>}
+                  <span>
+                    <MapPin size={14} strokeWidth={1.5} /> {b.address}, {b.city}
+                  </span>
+                  {b.phoneNumber && (
+                    <span>
+                      <Phone size={14} strokeWidth={1.5} /> {b.phoneNumber}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
@@ -74,16 +95,19 @@ export default function ClinicDetailPage() {
           <section className="block">
             <h2 className="block__title">Shërbimet & çmimet</h2>
             <div className="service-list">
-              {clinic.services.map((s) => (
-                <div key={s.id} className="service-row">
-                  <span className="service-row__icon">{specialtyIcon(s.specialtyName)}</span>
-                  <div className="service-row__info">
-                    <strong>{s.name}</strong>
-                    <span>{specialtyLabel(s.specialtyName)} · {s.durationMinutes} min</span>
+              {clinic.services.map((s) => {
+                const Icon = specialtyIcon(s.specialtyName)
+                return (
+                  <div key={s.id} className="service-row">
+                    <span className="service-row__icon"><Icon size={20} strokeWidth={1.5} /></span>
+                    <div className="service-row__info">
+                      <strong>{s.name}</strong>
+                      <span>{specialtyLabel(s.specialtyName)} · <Clock size={12} strokeWidth={1.5} /> {s.durationMinutes} min</span>
+                    </div>
+                    <span className="service-row__price">{formatMoney(s.price, s.currency)}</span>
                   </div>
-                  <span className="service-row__price">{formatMoney(s.price, s.currency)}</span>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </section>
         )}
@@ -97,7 +121,7 @@ export default function ClinicDetailPage() {
               ))}
             </div>
           ) : (
-            <EmptyState icon="🩺" title="Nuk ka mjekë të listuar" />
+            <EmptyState icon={Stethoscope} title="Nuk ka mjekë të listuar" />
           )}
         </section>
       </div>
