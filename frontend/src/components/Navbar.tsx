@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { Moon, Sun } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 
 export default function Navbar() {
   const { isAuthenticated, user, logout } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
 
@@ -44,6 +47,14 @@ export default function Navbar() {
               <Link to="/regjistrohu" className="btn btn--primary">Regjistrohu</Link>
             </>
           )}
+          <button
+            className="theme-toggle"
+            type="button"
+            aria-label={theme === 'dark' ? 'Kalo në temën e çelët' : 'Kalo në temën e errët'}
+            onClick={(e) => { e.stopPropagation(); toggleTheme() }}
+          >
+            {theme === 'dark' ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}
+          </button>
         </nav>
       </div>
     </header>

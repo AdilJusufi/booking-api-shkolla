@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { ArrowRight } from 'lucide-react'
 import type { Doctor } from '../lib/types'
 import { initials, specialtyIcon, specialtyLabel } from './ui'
 
@@ -11,11 +12,14 @@ export default function DoctorCard({ doctor }: { doctor: Doctor }) {
       <div className="doctor-card__body">
         <h3 className="doctor-card__name">Dr. {doctor.firstName} {doctor.lastName}</h3>
         <div className="doctor-card__specs">
-          {doctor.specialties.map((s) => (
-            <span key={s} className="chip">
-              {specialtyIcon(s)} {specialtyLabel(s)}
-            </span>
-          ))}
+          {doctor.specialties.map((s) => {
+            const Icon = specialtyIcon(s)
+            return (
+              <span key={s} className="chip">
+                <Icon size={14} strokeWidth={1.5} /> {specialtyLabel(s)}
+              </span>
+            )
+          })}
         </div>
         <p className="doctor-card__exp">
           {doctor.yearsOfExperience > 0
@@ -23,7 +27,9 @@ export default function DoctorCard({ doctor }: { doctor: Doctor }) {
             : 'Mjek i licencuar'}
         </p>
       </div>
-      <span className="doctor-card__cta">Rezervo →</span>
+      <span className="doctor-card__cta">
+        Rezervo <ArrowRight size={16} strokeWidth={1.5} />
+      </span>
     </Link>
   )
 }
