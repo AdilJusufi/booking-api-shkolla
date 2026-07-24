@@ -1,16 +1,23 @@
 import type {
   Appointment,
+  AppointmentStatus,
   AuthResponse,
   AvailableSlot,
   Clinic,
   ClinicDetails,
   CreateAppointmentRequest,
+  CreateWorkingScheduleRequest,
+  Dependent,
   Doctor,
+  DoctorAppointment,
   DoctorDetails,
+  DoctorWorkingSchedule,
   MedicalService,
   PagedResult,
+  PatientProfile,
   RegisterRequest,
   Specialty,
+  UpdatePatientProfileRequest,
 } from './types'
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5080'
@@ -177,8 +184,56 @@ export const api = {
       },
     }),
 
+  getMyAppointment: (id: string) => request<Appointment>(`/api/appointments/my/${id}`, { auth: true }),
+
   cancelAppointment: (id: string, reason?: string) =>
     request<void>(`/api/appointments/${id}/cancel`, { method: 'POST', body: { reason }, auth: true }),
+
+  rescheduleAppointment: (id: string, newStartDateTime: string) =>
+    request<Appointment>(`/api/appointments/${id}/reschedule`, {
+      method: 'POST',
+      body: { newStartDateTime },
+      auth: true,
+    }),
+
+  // --- Profili i pacientit ---
+  getMyProfile: () => request<PatientProfile>('/api/patients/me', { auth: true }),
+
+  updateMyProfile: (payload: UpdatePatientProfileRequest) =>
+    request<PatientProfile>('/api/patients/me', { method: 'PUT', body: payload, auth: true }),
+
+  getDependents: () => request<Dependent[]>('/api/patients/me/dependents', { auth: true }),
+
+  // --- Kalendari i mjekut ---
+  getDoctorAppointments: (params: { page?: number; pageSize?: number; dateFrom?: string; dateTo?: string; status?: AppointmentStatus } = {}) =>
+    request<PagedResult<DoctorAppointment>>('/api/doctor/appointments', {
+      auth: true,
+      query: {
+        Page: params.page ?? 1,
+        PageSize: params.pageSize ?? 50,
+        From: params.dateFrom,
+        To: params.dateTo,
+        Status: params.status,
+      },
+    }),
+
+  confirmDoctorAppointment: (id: string) =>
+    request<DoctorAppointment>(`/api/doctor/appointments/${id}/confirm`, { method: 'POST', auth: true }),
+
+  completeDoctorAppointment: (id: string) =>
+    request<DoctorAppointment>(`/api/doctor/appointments/${id}/complete`, { method: 'POST', auth: true }),
+
+  markDoctorAppointmentNoShow: (id: string) =>
+    request<DoctorAppointment>(`/api/doctor/appointments/${id}/no-show`, { method: 'POST', auth: true }),
+
+  // --- Orari i punës i mjekut ---
+  getWorkingSchedules: () => request<DoctorWorkingSchedule[]>('/api/doctor/working-schedules', { auth: true }),
+
+  createWorkingSchedule: (payload: CreateWorkingScheduleRequest) =>
+    request<DoctorWorkingSchedule>('/api/doctor/working-schedules', { method: 'POST', body: payload, auth: true }),
+
+  deleteWorkingSchedule: (id: string) =>
+    request<void>(`/api/doctor/working-schedules/${id}`, { method: 'DELETE', auth: true }),
 }
 
 

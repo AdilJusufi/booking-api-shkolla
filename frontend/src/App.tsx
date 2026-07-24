@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import PatientLayout from './components/PatientLayout'
+import DoctorLayout from './components/DoctorLayout'
 import ProtectedRoute from './components/ProtectedRoute'
 import HomePage from './pages/HomePage'
 import SearchPage from './pages/SearchPage'
@@ -9,6 +10,10 @@ import DoctorDetailPage from './pages/DoctorDetailPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import MyAppointmentsPage from './pages/MyAppointmentsPage'
+import AppointmentDetailPage from './pages/AppointmentDetailPage'
+import MyProfilePage from './pages/MyProfilePage'
+import DoctorCalendarPage from './pages/DoctorCalendarPage'
+import WorkingSchedulePage from './pages/WorkingSchedulePage'
 import ConfirmEmailPage from './pages/ConfirmEmailPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
@@ -29,6 +34,18 @@ export default function App() {
         }
       >
         <Route path="/terminet" element={<MyAppointmentsPage />} />
+        <Route path="/terminet/:id" element={<AppointmentDetailPage />} />
+        <Route path="/llogaria" element={<MyProfilePage />} />
+      </Route>
+      <Route
+        element={
+          <ProtectedRoute role="Doctor">
+            <DoctorLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/mjeku-panel/kalendari" element={<DoctorCalendarPage />} />
+        <Route path="/mjeku-panel/orari" element={<WorkingSchedulePage />} />
       </Route>
       <Route element={<Layout />}>
         <Route path="/" element={<HomePage />} />

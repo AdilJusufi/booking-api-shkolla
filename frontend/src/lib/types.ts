@@ -52,6 +52,40 @@ export interface Specialty {
   description?: string
 }
 
+export interface PatientProfile {
+  userId: string
+  firstName: string
+  lastName: string
+  email: string
+  phoneNumber?: string
+  dateOfBirth: string // yyyy-MM-dd
+  gender: Gender
+  personalNumber?: string
+  address?: string
+  city?: string
+}
+
+export interface UpdatePatientProfileRequest {
+  firstName: string
+  lastName: string
+  phoneNumber: string
+  dateOfBirth: string
+  gender: Gender
+  personalNumber?: string
+  address?: string
+  city?: string
+}
+
+export interface Dependent {
+  id: string
+  firstName: string
+  lastName: string
+  dateOfBirth: string
+  gender: Gender
+  relationship: number
+  isActive: boolean
+}
+
 export interface Clinic {
   id: string
   name: string
@@ -173,4 +207,46 @@ export interface Appointment {
   cancellationReason?: string
   cancelledAt?: string
   createdAt: string
+}
+
+export interface DoctorAppointment {
+  id: string
+  clinicBranchId: string
+  branchName: string
+  medicalServiceId: string
+  serviceName: string
+  patientName: string
+  patientPhoneNumber?: string
+  dependentId?: string
+  dependentName?: string
+  startDateTime: string
+  endDateTime: string
+  status: AppointmentStatus
+  patientNote?: string
+  internalNote?: string
+  cancellationReason?: string
+}
+
+export interface DoctorWorkingSchedule {
+  id: string
+  doctorId: string
+  clinicBranchId: string
+  branchName: string
+  dayOfWeek: number // 0=Sunday … 6=Saturday
+  startTime: string // "HH:mm"
+  endTime: string // "HH:mm"
+  slotDurationMinutes: number
+  isActive: boolean
+  validFrom?: string // yyyy-MM-dd
+  validUntil?: string // yyyy-MM-dd
+}
+
+export interface CreateWorkingScheduleRequest {
+  clinicBranchId: string
+  dayOfWeek: number
+  startTime: string
+  endTime: string
+  slotDurationMinutes: number
+  validFrom?: string
+  validUntil?: string
 }
