@@ -3,9 +3,11 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowRight, CheckCircle, ChevronLeft, Eye, EyeOff, Lock, Moon, RotateCcw, Sun } from 'lucide-react'
 import { useTheme } from '../context/ThemeContext'
 import { api, ApiError } from '../lib/api'
-import { ErrorBox } from '../components/ui'
+import { ErrorBox, Pending } from '../components/ui'
 
-const STRENGTH_COLORS = ['#ef4444', '#f59e0b', '#2563eb', '#10b981']
+// Danger -> warn -> accent -> ok, drawn from the design tokens rather than
+// an off-palette traffic-light ramp.
+const STRENGTH_COLORS = ['#a83226', '#8a6212', '#0f6e62', '#14795a']
 const STRENGTH_LABELS = ['Dobët', 'Mesatar', 'Mirë', 'Shumë mirë']
 
 function strengthScore(password: string): number {
@@ -214,7 +216,7 @@ export default function ResetPasswordPage() {
                 <button className="btn btn--primary btn--block" disabled={loading || !canSubmit}>
                   {loading ? (
                     <>
-                      <span className="spinner spinner--sm" /> Duke rivendosur…
+                      <Pending /> Duke rivendosur…
                     </>
                   ) : (
                     <>

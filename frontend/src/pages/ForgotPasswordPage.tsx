@@ -4,7 +4,7 @@ import { ArrowRight, CheckCircle, ChevronLeft, Mail, Moon, Sun } from 'lucide-re
 import { useTheme } from '../context/ThemeContext'
 import { useToast } from '../context/ToastContext'
 import { api, ApiError } from '../lib/api'
-import { ErrorBox } from '../components/ui'
+import { ErrorBox, Pending } from '../components/ui'
 
 const RESEND_SECONDS = 60
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -165,7 +165,7 @@ export default function ForgotPasswordPage() {
                 <button className="btn btn--primary btn--block" disabled={loading || cooldown > 0}>
                   {loading ? (
                     <>
-                      <span className="spinner spinner--sm" /> Duke dërguar…
+                      <Pending /> Duke dërguar…
                     </>
                   ) : cooldown > 0 ? (
                     `Ridërgoni (${cooldown}s)`

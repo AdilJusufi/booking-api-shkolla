@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Calendar, CalendarX, ChevronLeft, ChevronRight, Clock, MapPin } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ArrowUp, Calendar, CalendarX, ChevronLeft, ChevronRight, Clock, MapPin } from 'lucide-react'
 import { api } from '../lib/api'
 import type { AvailableSlot, DoctorBranch, DoctorDetails, DoctorService } from '../lib/types'
 import { useAuth } from '../context/AuthContext'
-import { ErrorBox, Spinner, initials, specialtyIcon, specialtyLabel } from '../components/ui'
+import { ErrorBox, SkeletonDetail, initials, specialtyIcon, specialtyLabel } from '../components/ui'
 import { formatMoney, formatTime, toDateInput } from '../lib/format'
 
 const DAYS_SQ = ['E Diel', 'E Hënë', 'E Martë', 'E Mërkurë', 'E Enjte', 'E Premte', 'E Shtunë']
@@ -127,13 +127,13 @@ export default function DoctorDetailPage() {
     navigate('/rezervo/konfirmo')
   }
 
-  if (loading) return <div className="container page"><Spinner label="Duke ngarkuar profilin…" /></div>
+  if (loading) return <div className="container page"><SkeletonDetail label="Duke ngarkuar profilin" /></div>
   if (error) return <div className="container page"><ErrorBox message={error} /></div>
   if (!doctor) return null
 
   return (
     <div className="page">
-      <div className="detail-hero detail-hero--doctor">
+      <div className="detail-hero">
         <div className="container">
           <Link to="/kerko" className="backlink link-icon">
             <ChevronLeft size={16} strokeWidth={1.5} /> Kthehu te kërkimi
@@ -240,7 +240,7 @@ export default function DoctorDetailPage() {
             {currentStep === 2 && (
               <div className="booking-step">
                 <button type="button" className="booking-back" onClick={() => { setCurrentStep(1); setSelectedBranch(null) }}>
-                  ← Ndrysho shërbimin
+                  <ArrowLeft size={13} strokeWidth={1.5} /> Ndrysho shërbimin
                 </button>
                 <p className="booking-step__label">Zgjidhni degën</p>
                 <div className="booking-cards">
@@ -268,7 +268,7 @@ export default function DoctorDetailPage() {
                   className="booking-back"
                   onClick={() => setCurrentStep(branchAutoSelected ? 1 : 2)}
                 >
-                  ← {branchAutoSelected ? 'Ndrysho shërbimin' : 'Ndrysho degën'}
+                  <ArrowLeft size={13} strokeWidth={1.5} /> {branchAutoSelected ? 'Ndrysho shërbimin' : 'Ndrysho degën'}
                 </button>
                 <p className="booking-step__label">Zgjidhni datën</p>
                 <WeekStrip
@@ -283,7 +283,7 @@ export default function DoctorDetailPage() {
             {currentStep === 4 && (
               <div className="booking-step">
                 <button type="button" className="booking-back" onClick={() => { setCurrentStep(3); setSelectedSlot('') }}>
-                  ← Ndrysho datën
+                  <ArrowLeft size={13} strokeWidth={1.5} /> Ndrysho datën
                 </button>
                 <p className="booking-selected-date">
                   <Calendar size={13} strokeWidth={1.5} color="var(--primary)" /> {formatDateLabel(selectedDate)}
@@ -300,7 +300,7 @@ export default function DoctorDetailPage() {
                     <CalendarX size={28} strokeWidth={1.5} color="var(--line)" style={{ margin: '0 auto 8px' }} />
                     <p>Nuk ka vende të lira për këtë datë.</p>
                     <button type="button" className="booking-empty-link" onClick={() => { setCurrentStep(3); setSelectedSlot('') }}>
-                      Provoni datë tjetër ↑
+                      Provoni datë tjetër <ArrowUp size={12} strokeWidth={1.5} />
                     </button>
                   </div>
                 ) : (
@@ -335,7 +335,8 @@ export default function DoctorDetailPage() {
                   disabled={currentStep !== 4 || !selectedSlot}
                   onClick={handleConfirm}
                 >
-                  {currentStep === 4 && selectedSlot ? 'Konfirmo rezervimin →' : 'Vazhdo →'}
+                  {currentStep === 4 && selectedSlot ? 'Konfirmo rezervimin' : 'Vazhdo'}
+                  <ArrowRight size={16} strokeWidth={1.5} />
                 </button>
               </>
             )}
@@ -343,7 +344,7 @@ export default function DoctorDetailPage() {
             {!isAuthenticated && (
               <p className="booking__hint booking-widget__login">
                 Duhet të jeni të kyçur për të rezervuar.{' '}
-                <Link to={`/hyr?redirect=/mjeku/${id}`} className="booking-widget__login-link">Kyçuni →</Link>
+                <Link to={`/hyr?redirect=/mjeku/${id}`} className="booking-widget__login-link">Kyçuni <ArrowRight size={13} strokeWidth={1.5} /></Link>
               </p>
             )}
           </div>

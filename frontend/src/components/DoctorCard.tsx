@@ -5,7 +5,7 @@ import { initials, specialtyIcon, specialtyLabel } from './ui'
 
 export default function DoctorCard({ doctor }: { doctor: Doctor }) {
   return (
-    <Link to={`/mjeku/${doctor.id}`} className="card doctor-card">
+    <Link to={`/mjeku/${doctor.id}`} className="card doctor-card" data-reveal>
       <div className="doctor-card__avatar" aria-hidden>
         {initials(doctor.firstName, doctor.lastName)}
       </div>

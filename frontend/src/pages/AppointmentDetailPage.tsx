@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
   CalendarDays,
   CalendarX,
   Check,
@@ -17,7 +19,7 @@ import { AppointmentStatus } from '../lib/types'
 import type { Appointment, AvailableSlot, DoctorDetails } from '../lib/types'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
-import { Badge, initials, specialtyLabel } from '../components/ui'
+import { Badge, Pending, initials, specialtyLabel } from '../components/ui'
 import { toDateInput } from '../lib/format'
 
 const DAYS_SQ = ['E Diel', 'E Hënë', 'E Martë', 'E Mërkurë', 'E Enjte', 'E Premte', 'E Shtunë']
@@ -39,7 +41,7 @@ function formatDateSq(iso: string): string {
 function formatTimeSq(iso: string): string {
   const d = parseLocal(iso)
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-}
+} 
 
 function formatDayMonthTime(iso: string): string {
   const d = parseLocal(iso)
@@ -366,7 +368,7 @@ export default function AppointmentDetailPage() {
                 <p>Takimi u përfundua me sukses.</p>
               </div>
               <Link to={`/mjeku/${appointment.doctorId}`} className="btn btn--primary btn--block" style={{ marginTop: 12 }}>
-                Rezervoni termin tjetër →
+                Rezervoni termin tjetër <ArrowRight size={14} strokeWidth={1.5} />
               </Link>
             </>
           ) : appointment.status === AppointmentStatus.CancelledByPatient || appointment.status === AppointmentStatus.CancelledByClinic ? (
@@ -376,7 +378,7 @@ export default function AppointmentDetailPage() {
                 <p>Termini u anulua.</p>
               </div>
               <Link to="/kerko" className="btn btn--ghost btn--block" style={{ marginTop: 12 }}>
-                Gjeni termin tjetër →
+                Gjeni termin tjetër <ArrowRight size={14} strokeWidth={1.5} />
               </Link>
             </>
           ) : within12h ? (
@@ -506,7 +508,7 @@ function RescheduleUi({
       <div className="apptdetail-reschedule__header">
         <h3>Zgjidhni datë të re</h3>
         <button type="button" className="apptdetail-reschedule__cancel" onClick={onCancel}>
-          ← Anulo
+          <ArrowLeft size={14} strokeWidth={1.5} /> Anulo
         </button>
       </div>
 
@@ -584,7 +586,7 @@ function RescheduleUi({
       >
         {rescheduling ? (
           <>
-            <span className="spinner spinner--sm" /> Duke rischeduluar…
+            <Pending /> Duke rischeduluar…
           </>
         ) : (
           <>

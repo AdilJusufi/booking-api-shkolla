@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import PatientLayout from './components/PatientLayout'
 import DoctorLayout from './components/DoctorLayout'
+import AdminLayout from './components/AdminLayout'
 import ProtectedRoute from './components/ProtectedRoute'
 import HomePage from './pages/HomePage'
 import SearchPage from './pages/SearchPage'
@@ -14,6 +15,9 @@ import AppointmentDetailPage from './pages/AppointmentDetailPage'
 import MyProfilePage from './pages/MyProfilePage'
 import DoctorCalendarPage from './pages/DoctorCalendarPage'
 import WorkingSchedulePage from './pages/WorkingSchedulePage'
+import MyClinicsPage from './pages/MyClinicsPage'
+import ClinicDetailLayout from './components/ClinicDetailLayout'
+import ClinicSettingsPage from './pages/ClinicSettingsPage'
 import ConfirmEmailPage from './pages/ConfirmEmailPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
@@ -46,6 +50,18 @@ export default function App() {
       >
         <Route path="/mjeku-panel/kalendari" element={<DoctorCalendarPage />} />
         <Route path="/mjeku-panel/orari" element={<WorkingSchedulePage />} />
+      </Route>
+      <Route
+        element={
+          <ProtectedRoute role="ClinicAdmin">
+            <AdminLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/admin-panel/klinikat" element={<MyClinicsPage />} />
+        <Route path="/admin-panel/klinikat/:id" element={<ClinicDetailLayout />}>
+          <Route index element={<ClinicSettingsPage />} />
+        </Route>
       </Route>
       <Route element={<Layout />}>
         <Route path="/" element={<HomePage />} />

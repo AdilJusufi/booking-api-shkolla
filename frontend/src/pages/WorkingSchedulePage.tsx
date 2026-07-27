@@ -3,7 +3,7 @@ import { Calendar, Clock, Info, Plus, Trash2 } from 'lucide-react'
 import { api, ApiError } from '../lib/api'
 import type { CreateWorkingScheduleRequest, DoctorWorkingSchedule } from '../lib/types'
 import { useToast } from '../context/ToastContext'
-import { EmptyState, ErrorBox, Modal, Spinner } from '../components/ui'
+import { EmptyState, ErrorBox, Modal, SkeletonRows } from '../components/ui'
 
 const DAYS_SQ = ['E Diel', 'E Hënë', 'E Martë', 'E Mërkurë', 'E Enjte', 'E Premte', 'E Shtunë']
 const MONTHS_ABBR_SQ = ['Jan', 'Shk', 'Mar', 'Pri', 'Maj', 'Qer', 'Kor', 'Gus', 'Sht', 'Tet', 'Nën', 'Dhj']
@@ -194,7 +194,7 @@ export default function WorkingSchedulePage() {
       </div>
 
       {loading ? (
-        <Spinner label="Duke ngarkuar oraret…" />
+        <SkeletonRows count={4} label="Duke ngarkuar oraret" />
       ) : error ? (
         <ErrorBox message={error} />
       ) : schedules.length === 0 ? (

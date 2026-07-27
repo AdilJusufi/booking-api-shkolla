@@ -250,3 +250,41 @@ export interface CreateWorkingScheduleRequest {
   validFrom?: string
   validUntil?: string
 }
+
+/** Pasqyron AdminClinicDto — GET /api/admin/clinics nuk kthen adresë/qytet/numra, vetëm bazat. */
+export interface AdminClinic {
+  id: string
+  name: string
+  description?: string
+  phoneNumber?: string
+  email?: string
+  website?: string
+  isApproved: boolean
+  isActive: boolean
+  createdAt: string
+}
+
+export interface ClinicReport {
+  from: string
+  to: string
+  totalAppointments: number
+  byStatus: Record<string, number>
+  byDoctor: { doctorId: string; doctorName: string; appointmentCount: number }[]
+}
+
+/**
+ * Bashkim i AdminClinicDto (isApproved/isActive) me të dhënat publike të klinikës
+ * (qyteti vjen nga degët) — nuk ka një endpoint të vetëm që i kthen të gjitha.
+ */
+export interface AdminClinicDetail extends AdminClinic {
+  city: string
+}
+
+/** Pasqyron UpdateClinicRequest — vetëm këto fusha janë të ndryshueshme. */
+export interface UpdateClinicRequest {
+  name: string
+  description?: string
+  phoneNumber?: string
+  email?: string
+  website?: string
+}

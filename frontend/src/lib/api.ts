@@ -1,10 +1,13 @@
 import type {
+  AdminClinic,
+  AdminClinicDetail,
   Appointment,
   AppointmentStatus,
   AuthResponse,
   AvailableSlot,
   Clinic,
   ClinicDetails,
+  ClinicReport,
   CreateAppointmentRequest,
   CreateWorkingScheduleRequest,
   Dependent,
@@ -17,6 +20,7 @@ import type {
   PatientProfile,
   RegisterRequest,
   Specialty,
+  UpdateClinicRequest,
   UpdatePatientProfileRequest,
 } from './types'
 
@@ -234,6 +238,35 @@ export const api = {
 
   deleteWorkingSchedule: (id: string) =>
     request<void>(`/api/doctor/working-schedules/${id}`, { method: 'DELETE', auth: true }),
+
+  // --- Klinikat e Administratorit të Klinikës ---
+  getAdminClinics: () => request<AdminClinic[]>('/api/admin/clinics', { auth: true }),
+
+  getClinicReport: (clinicId: string, dateFrom: string, dateTo: string) =>
+    request<ClinicReport>(`/api/admin/clinics/${clinicId}/report`, {
+      auth: true,
+      query: { from: dateFrom, to: dateTo },
+    }),
+
+  /**
+   * Nuk ekziston GET /api/admin/clinics/{id} — marrim listën administrative
+   * (për isApproved/isActive) dhe qytetin nga degët publike.
+   */
+  getAdminClinicDetail: async (id: string): Promise<AdminClinicDetail> => {
+    const [clinics, details] = await Promise.all([
+      request<AdminClinic[]>('/api/admin/clinics', { auth: true }),
+      request<ClinicDetails>(`/api/clinics/${id}`).catch(() => null),
+    ])
+    const clinic = clinics.find((c) => c.id === id)
+    if (!clinic) throw new ApiError('Klinika nuk u gjet ose nuk keni qasje.', 404)
+    return { ...clinic, city: details?.branches[0]?.city ?? '' }
+  },
+
+  updateClinic: (id: string, payload: UpdateClinicRequest) =>
+    request<AdminClinic>(`/api/admin/clinics/${id}`, { method: 'PUT', body: payload, auth: true }),
+
+  deactivateClinic: (id: string) =>
+    request<AdminClinic>(`/api/admin/clinics/${id}/deactivate`, { method: 'POST', auth: true }),
 }
 
 

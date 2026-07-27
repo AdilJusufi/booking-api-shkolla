@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
+  ArrowRight,
   Calendar,
   CalendarCheck,
   CheckCircle,
@@ -249,7 +250,7 @@ export default function MyProfilePage() {
         </div>
 
         <button type="button" className="btn btn--ghost btn--sm profile-hero__edit" onClick={startEditing}>
-          Ndrysho →
+          Ndrysho <ArrowRight size={14} strokeWidth={1.5} />
         </button>
       </div>
 

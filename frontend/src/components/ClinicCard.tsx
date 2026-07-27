@@ -4,7 +4,7 @@ import type { Clinic } from '../lib/types'
 
 export default function ClinicCard({ clinic }: { clinic: Clinic }) {
   return (
-    <Link to={`/klinika/${clinic.id}`} className="card clinic-card">
+    <Link to={`/klinika/${clinic.id}`} className="card clinic-card" data-reveal>
       <div className="clinic-card__banner" aria-hidden>
         <span>{clinic.name.charAt(0)}</span>
       </div>

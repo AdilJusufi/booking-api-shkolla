@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ComponentType,
+  type CSSProperties,
+  type ReactNode,
+} from 'react'
 import {
   AlertCircle,
   Baby,
@@ -17,12 +24,62 @@ import {
   type LucideProps,
 } from 'lucide-react'
 
-export function Spinner({ label }: { label?: string }) {
+/** A shimmering block sized to the thing it stands in for. */
+export function Skeleton({ className = '', style }: { className?: string; style?: CSSProperties }) {
+  return <div className={`sk ${className}`} style={style} aria-hidden />
+}
+
+/**
+ * Loading placeholders mirror the layout they replace rather than covering it
+ * with a spinner, so the page does not reflow once the data lands.
+ */
+export function SkeletonRows({ count = 4, label = 'Duke ngarkuar' }: { count?: number; label?: string }) {
   return (
-    <div className="loading">
-      <div className="spinner" aria-hidden />
-      {label && <p>{label}</p>}
+    <div className="sk-rows" role="status" aria-label={label}>
+      {Array.from({ length: count }, (_, i) => (
+        <Skeleton key={i} className="sk-row" />
+      ))}
     </div>
+  )
+}
+
+/** Matches the detail-page shape: hero row, then a content / panel split. */
+export function SkeletonDetail({ label = 'Duke ngarkuar' }: { label?: string }) {
+  return (
+    <div className="sk-detail" role="status" aria-label={label}>
+      <div className="sk-detail__hero">
+        <Skeleton className="sk-detail__avatar" />
+        <div className="sk-stack" style={{ flex: 1 }}>
+          <Skeleton className="sk-line sk-line--lg" style={{ maxWidth: '18rem' }} />
+          <Skeleton className="sk-line" style={{ maxWidth: '26rem' }} />
+        </div>
+      </div>
+      <div className="sk-detail__body">
+        <div className="sk-stack">
+          <Skeleton className="sk-line sk-line--lg" style={{ maxWidth: '12rem' }} />
+          <Skeleton className="sk-line" />
+          <Skeleton className="sk-line" />
+          <Skeleton className="sk-line" style={{ maxWidth: '70%' }} />
+          <Skeleton className="sk-row" style={{ marginTop: 12 }} />
+          <Skeleton className="sk-row" />
+        </div>
+        <Skeleton className="sk-detail__panel" />
+      </div>
+    </div>
+  )
+}
+
+/** Inline "working on it" for buttons — a pulse loop, not a rotating ring. */
+export function Pending({ children }: { children?: ReactNode }) {
+  return (
+    <>
+      <span className="pending" aria-hidden>
+        <i />
+        <i />
+        <i />
+      </span>
+      {children}
+    </>
   )
 }
 
@@ -30,18 +87,21 @@ export function EmptyState({
   icon: Icon = Search,
   title,
   hint,
+  action,
 }: {
   icon?: ComponentType<LucideProps>
   title: string
   hint?: string
+  action?: ReactNode
 }) {
   return (
     <div className="empty">
       <div className="empty__icon" aria-hidden>
-        <Icon size={32} strokeWidth={1.5} />
+        <Icon size={26} strokeWidth={1.5} />
       </div>
       <h3>{title}</h3>
       {hint && <p>{hint}</p>}
+      {action && <div className="empty__action">{action}</div>}
     </div>
   )
 }
