@@ -108,11 +108,32 @@ export interface ClinicBranch {
   phoneNumber?: string
 }
 
+/** Pasqyron CreateBranchRequest — POST /api/admin/clinics/{id}/branches. */
+export interface CreateBranchRequest {
+  name: string
+  address: string
+  city: string
+  municipality?: string
+  phoneNumber?: string
+  latitude?: number
+  longitude?: number
+}
+
 export interface MedicalService {
   id: string
   clinicId: string
   specialtyId: string
   specialtyName: string
+  name: string
+  description?: string
+  durationMinutes: number
+  price: number
+  currency: string
+}
+
+/** Pasqyron CreateMedicalServiceRequest — POST /api/admin/clinics/{id}/services. */
+export interface CreateMedicalServiceRequest {
+  specialtyId: string
   name: string
   description?: string
   durationMinutes: number
@@ -137,6 +158,38 @@ export interface Doctor {
   lastName: string
   yearsOfExperience: number
   specialties: string[]
+}
+
+/**
+ * Pasqyron AdminDoctorDto — përgjigja e POST /api/admin/clinics/{id}/doctors.
+ * Kjo ËSHTË E VETMJA thirrje që kthen userId/licenseNumber/isVerified/isActive —
+ * nuk ekziston asnjë GET administrativ që i kthen këto fusha për doktorë
+ * ekzistues, prandaj UI-ja e listës (ClinicDoctorsPage) nuk mund t'i shfaqë.
+ */
+export interface AdminDoctor {
+  id: string
+  userId: string
+  firstName: string
+  lastName: string
+  email: string
+  licenseNumber: string
+  isVerified: boolean
+  isActive: boolean
+}
+
+/** Pasqyron CreateDoctorRequest — POST /api/admin/clinics/{id}/doctors. */
+export interface CreateDoctorRequest {
+  firstName: string
+  lastName: string
+  email: string
+  phoneNumber: string
+  initialPassword: string
+  licenseNumber: string
+  biography?: string
+  yearsOfExperience: number
+  specialtyIds: string[]
+  branchIds: string[]
+  serviceIds?: string[]
 }
 
 export interface DoctorBranch {
@@ -249,6 +302,23 @@ export interface CreateWorkingScheduleRequest {
   slotDurationMinutes: number
   validFrom?: string
   validUntil?: string
+}
+
+/** Pasqyron CreateUnavailabilityRequest — POST /api/admin/doctors/{id}/unavailability. */
+export interface CreateUnavailabilityRequest {
+  clinicBranchId?: string
+  startDateTime: string
+  endDateTime: string
+  reason?: string
+}
+
+export interface UnavailabilityDto {
+  id: string
+  doctorId: string
+  clinicBranchId?: string
+  startDateTime: string
+  endDateTime: string
+  reason?: string
 }
 
 /** Pasqyron AdminClinicDto — GET /api/admin/clinics nuk kthen adresë/qytet/numra, vetëm bazat. */

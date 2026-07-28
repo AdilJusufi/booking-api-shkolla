@@ -123,10 +123,12 @@ export function Modal({
   title,
   onClose,
   children,
+  size = 'md',
 }: {
   title: string
   onClose: () => void
   children: ReactNode
+  size?: 'md' | 'lg'
 }) {
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
@@ -138,7 +140,7 @@ export function Modal({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div className={`modal ${size === 'lg' ? 'modal--lg' : ''}`} onClick={(e) => e.stopPropagation()}>
         <div className="modal__header">
           <h3>{title}</h3>
           <button type="button" className="modal__close" onClick={onClose} aria-label="Mbyll">

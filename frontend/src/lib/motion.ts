@@ -9,6 +9,12 @@ export function prefersReducedMotion(): boolean {
 /**
  * Adds `is-in` to every `[data-reveal]` inside the returned ref once it scrolls
  * into view. Staggering is done in CSS via `--reveal-i` (set per element here).
+ *
+ * Targets are (re)collected via a MutationObserver rather than once on mount —
+ * list pages attach this ref before their data has loaded, so the cards that
+ * matter don't exist in the DOM yet on the first (and, without this, only)
+ * scan. Without watching for new nodes, those elements never get observed,
+ * never get `.is-in`, and sit permanently at `opacity: 0` per the CSS rule.
  */
 export function useReveal<T extends HTMLElement = HTMLDivElement>() {
   const ref = useRef<T | null>(null)
@@ -17,39 +23,51 @@ export function useReveal<T extends HTMLElement = HTMLDivElement>() {
     const root = ref.current
     if (!root) return
 
-    const targets = Array.from(root.querySelectorAll<HTMLElement>('[data-reveal]'))
-    if (targets.length === 0) return
+    const reduced = prefersReducedMotion()
+    const seen = new WeakSet<HTMLElement>()
 
-    if (prefersReducedMotion()) {
-      targets.forEach((el) => el.classList.add('is-in'))
-      return
+    const io = reduced
+      ? null
+      : new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (!entry.isIntersecting) return
+              const el = entry.target as HTMLElement
+              el.classList.add('is-in')
+              io!.unobserve(el)
+            })
+          },
+          { threshold: 0.15, rootMargin: '0px 0px -8% 0px' },
+        )
+
+    function collect() {
+      const targets = Array.from(root!.querySelectorAll<HTMLElement>('[data-reveal]'))
+      targets.forEach((el) => {
+        if (seen.has(el)) return
+        seen.add(el)
+
+        // Stagger index is scoped per parent so sibling cards cascade.
+        if (!el.style.getPropertyValue('--reveal-i')) {
+          const siblings = el.parentElement
+            ? Array.from(el.parentElement.children).filter((c) => c.hasAttribute('data-reveal'))
+            : []
+          const i = Math.max(0, siblings.indexOf(el))
+          el.style.setProperty('--reveal-i', String(Math.min(i, 8)))
+        }
+
+        if (reduced) el.classList.add('is-in')
+        else io!.observe(el)
+      })
     }
 
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return
-          const el = entry.target as HTMLElement
-          el.classList.add('is-in')
-          io.unobserve(el)
-        })
-      },
-      { threshold: 0.15, rootMargin: '0px 0px -8% 0px' },
-    )
+    collect()
+    const mo = new MutationObserver(collect)
+    mo.observe(root, { childList: true, subtree: true })
 
-    targets.forEach((el) => {
-      // Stagger index is scoped per parent so sibling cards cascade.
-      if (!el.style.getPropertyValue('--reveal-i')) {
-        const siblings = el.parentElement
-          ? Array.from(el.parentElement.children).filter((c) => c.hasAttribute('data-reveal'))
-          : []
-        const i = Math.max(0, siblings.indexOf(el))
-        el.style.setProperty('--reveal-i', String(Math.min(i, 8)))
-      }
-      io.observe(el)
-    })
-
-    return () => io.disconnect()
+    return () => {
+      mo.disconnect()
+      io?.disconnect()
+    }
   }, [])
 
   return ref

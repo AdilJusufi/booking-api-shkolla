@@ -18,6 +18,9 @@ import WorkingSchedulePage from './pages/WorkingSchedulePage'
 import MyClinicsPage from './pages/MyClinicsPage'
 import ClinicDetailLayout from './components/ClinicDetailLayout'
 import ClinicSettingsPage from './pages/ClinicSettingsPage'
+import BranchesPage from './pages/BranchesPage'
+import ServicesPage from './pages/ServicesPage'
+import ClinicDoctorsPage from './pages/ClinicDoctorsPage'
 import ConfirmEmailPage from './pages/ConfirmEmailPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
@@ -61,6 +64,9 @@ export default function App() {
         <Route path="/admin-panel/klinikat" element={<MyClinicsPage />} />
         <Route path="/admin-panel/klinikat/:id" element={<ClinicDetailLayout />}>
           <Route index element={<ClinicSettingsPage />} />
+          <Route path="deget" element={<BranchesPage />} />
+          <Route path="sherbimet" element={<ServicesPage />} />
+          <Route path="mjeket" element={<ClinicDoctorsPage />} />
         </Route>
       </Route>
       <Route element={<Layout />}>

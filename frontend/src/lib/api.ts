@@ -1,14 +1,20 @@
 import type {
   AdminClinic,
   AdminClinicDetail,
+  AdminDoctor,
   Appointment,
   AppointmentStatus,
   AuthResponse,
   AvailableSlot,
   Clinic,
+  ClinicBranch,
   ClinicDetails,
   ClinicReport,
   CreateAppointmentRequest,
+  CreateBranchRequest,
+  CreateDoctorRequest,
+  CreateMedicalServiceRequest,
+  CreateUnavailabilityRequest,
   CreateWorkingScheduleRequest,
   Dependent,
   Doctor,
@@ -20,6 +26,7 @@ import type {
   PatientProfile,
   RegisterRequest,
   Specialty,
+  UnavailabilityDto,
   UpdateClinicRequest,
   UpdatePatientProfileRequest,
 } from './types'
@@ -267,6 +274,45 @@ export const api = {
 
   deactivateClinic: (id: string) =>
     request<AdminClinic>(`/api/admin/clinics/${id}/deactivate`, { method: 'POST', auth: true }),
+
+  /** Nuk ekziston listë administrative e degëve — përdorim endpoint-in publik. */
+  getClinicBranches: (clinicId: string) =>
+    request<ClinicBranch[]>(`/api/clinics/${clinicId}/branches`),
+
+  createClinicBranch: (clinicId: string, payload: CreateBranchRequest) =>
+    request<ClinicBranch>(`/api/admin/clinics/${clinicId}/branches`, {
+      method: 'POST',
+      body: payload,
+      auth: true,
+    }),
+
+  createClinicService: (clinicId: string, payload: CreateMedicalServiceRequest) =>
+    request<MedicalService>(`/api/admin/clinics/${clinicId}/services`, {
+      method: 'POST',
+      body: payload,
+      auth: true,
+    }),
+
+  createClinicDoctor: (clinicId: string, payload: CreateDoctorRequest) =>
+    request<AdminDoctor>(`/api/admin/clinics/${clinicId}/doctors`, {
+      method: 'POST',
+      body: payload,
+      auth: true,
+    }),
+
+  createDoctorScheduleAsAdmin: (doctorId: string, payload: CreateWorkingScheduleRequest) =>
+    request<DoctorWorkingSchedule>(`/api/admin/doctors/${doctorId}/working-schedules`, {
+      method: 'POST',
+      body: payload,
+      auth: true,
+    }),
+
+  createDoctorUnavailabilityAsAdmin: (doctorId: string, payload: CreateUnavailabilityRequest) =>
+    request<UnavailabilityDto>(`/api/admin/doctors/${doctorId}/unavailability`, {
+      method: 'POST',
+      body: payload,
+      auth: true,
+    }),
 }
 
 
