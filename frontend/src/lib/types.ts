@@ -1,6 +1,7 @@
 // Tipat që pasqyrojnë DTO-t e backend-it (Booking.Application.Features.*)
 
 export type Gender = 1 | 2 | 3 // Male, Female, Other
+export type DependentRelationship = 1 | 2 | 3 | 4 // Child, Spouse, Parent, Other
 
 export enum AppointmentStatus {
   Pending = 1,
@@ -52,6 +53,46 @@ export interface Specialty {
   description?: string
 }
 
+/** Pasqyron CreateSpecialtyRequest — POST /api/admin/specialties. */
+export interface CreateSpecialtyRequest {
+  name: string
+  description?: string
+}
+
+/**
+ * Pasqyron UpdateSpecialtyRequest — PUT /api/admin/specialties/{id}. IsActive
+ * këtu është vetëm një input; SpecialtyDto (përgjigja, dhe GET /api/specialties
+ * publik) nuk e kthen fare këtë fushë, kështu që UI nuk mund të tregojë
+ * statusin aktual — mund vetëm ta ndryshojë.
+ */
+export interface UpdateSpecialtyRequest {
+  name: string
+  description?: string
+  isActive: boolean
+}
+
+/** Pasqyron AuditLogDto — GET /api/admin/audit-logs. Nuk ka UserEmail, vetëm UserId. */
+export interface AuditLog {
+  id: string
+  userId?: string
+  action: string
+  entityName: string
+  entityId?: string
+  oldValues?: string
+  newValues?: string
+  ipAddress?: string
+  createdAt: string
+}
+
+export interface AuditLogQuery {
+  entityName?: string
+  userId?: string
+  from?: string
+  to?: string
+  page?: number
+  pageSize?: number
+}
+
 export interface PatientProfile {
   userId: string
   firstName: string
@@ -82,8 +123,17 @@ export interface Dependent {
   lastName: string
   dateOfBirth: string
   gender: Gender
-  relationship: number
+  relationship: DependentRelationship
   isActive: boolean
+}
+
+/** Pasqyron CreateDependentRequest / UpdateDependentRequest — të njëjtat fusha për të dy. */
+export interface CreateDependentRequest {
+  firstName: string
+  lastName: string
+  dateOfBirth: string
+  gender: Gender
+  relationship: DependentRelationship
 }
 
 export interface Clinic {
@@ -357,4 +407,18 @@ export interface UpdateClinicRequest {
   phoneNumber?: string
   email?: string
   website?: string
+}
+
+/** Pasqyron CreateClinicRequest — POST /api/admin/clinics (vetëm SuperAdmin). */
+export interface CreateClinicRequest {
+  name: string
+  description?: string
+  phoneNumber?: string
+  email?: string
+  website?: string
+}
+
+/** Pasqyron AssignClinicAdminRequest — POST /api/admin/clinics/{id}/admins. */
+export interface AssignClinicAdminRequest {
+  email: string
 }

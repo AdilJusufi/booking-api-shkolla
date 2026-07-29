@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { ApiError } from '../lib/api'
 import type { Gender } from '../lib/types'
 import { ErrorBox } from '../components/ui'
+import { ROLE_HOME } from '../components/ProtectedRoute'
 
 const KOSOVO_CITIES = [
   'Prishtinë', 'Prizren', 'Pejë', 'Gjakovë', 'Gjilan',
@@ -36,7 +37,7 @@ export default function RegisterPage() {
     setError('')
     setLoading(true)
     try {
-      await register({
+      const authUser = await register({
         firstName: form.firstName,
         lastName: form.lastName,
         email: form.email,
@@ -46,7 +47,11 @@ export default function RegisterPage() {
         gender: form.gender,
         city: form.city || undefined,
       })
-      navigate('/terminet', { replace: true })
+      // Public registration only ever produces a Patient account today, but
+      // route by role rather than hardcode /terminet so this stays correct
+      // if that ever changes.
+      const ownRole = authUser.roles.find((r) => ROLE_HOME[r])
+      navigate((ownRole && ROLE_HOME[ownRole]) ?? '/terminet', { replace: true })
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Regjistrimi dështoi.')
     } finally {

@@ -11,12 +11,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Info,
   MapPin,
+  Phone,
   XCircle,
 } from 'lucide-react'
 import { api, ApiError } from '../lib/api'
 import { AppointmentStatus } from '../lib/types'
-import type { Appointment, AvailableSlot, DoctorDetails } from '../lib/types'
+import type { Appointment, AvailableSlot, ClinicDetails, DoctorDetails } from '../lib/types'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { Badge, Pending, initials, specialtyLabel } from '../components/ui'
@@ -61,6 +63,19 @@ const TIMELINE_LABELS: Partial<Record<AppointmentStatus, { text: string; color: 
   [AppointmentStatus.Rescheduled]: { text: 'Riplanifikuar', color: 'var(--warn)' },
 }
 
+/** One line per status for the sidebar status card. */
+const STATUS_DESCRIPTIONS: Partial<Record<AppointmentStatus, string>> = {
+  [AppointmentStatus.Pending]: 'Termini juaj është duke pritur konfirmimin nga klinika.',
+  [AppointmentStatus.Confirmed]: 'Termini juaj është konfirmuar. Ju lutem mbërrini 10 minuta para kohës.',
+  [AppointmentStatus.CheckedIn]: 'Jeni shënuar si të mbërritur në klinikë.',
+  [AppointmentStatus.InProgress]: 'Takimi juaj është duke u zhvilluar.',
+  [AppointmentStatus.Completed]: 'Ky termin është përfunduar.',
+  [AppointmentStatus.CancelledByPatient]: 'Ky termin është anuluar nga ju.',
+  [AppointmentStatus.CancelledByClinic]: 'Ky termin është anuluar nga klinika.',
+  [AppointmentStatus.NoShow]: 'Ju nuk keni mbërritur në këtë termin.',
+  [AppointmentStatus.Rescheduled]: 'Ky termin është ricaktuar.',
+}
+
 function statusBadge(status: AppointmentStatus) {
   switch (status) {
     case AppointmentStatus.Pending:
@@ -70,7 +85,7 @@ function statusBadge(status: AppointmentStatus) {
     case AppointmentStatus.CheckedIn:
       return <Badge tone="ok">MBËRRITUR</Badge>
     case AppointmentStatus.InProgress:
-      return <span className="badge" style={{ background: '#ede9fe', color: '#7c3aed' }}>NË PROGRES</span>
+      return <Badge tone="primary">NË PROGRES</Badge>
     case AppointmentStatus.Completed:
       return <Badge tone="ok">PËRFUNDUAR</Badge>
     case AppointmentStatus.CancelledByPatient:
@@ -112,6 +127,7 @@ export default function AppointmentDetailPage() {
 
   const [appointment, setAppointment] = useState<Appointment | null>(null)
   const [doctor, setDoctor] = useState<DoctorDetails | null>(null)
+  const [clinic, setClinic] = useState<ClinicDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
@@ -140,9 +156,18 @@ export default function AppointmentDetailPage() {
       .then((a) => {
         if (!active) return
         setAppointment(a)
-        return api.getDoctor(a.doctorId).then((d) => {
-          if (active) setDoctor(d)
-        })
+        return Promise.all([
+          api.getDoctor(a.doctorId).then((d) => {
+            if (active) setDoctor(d)
+          }),
+          // Best-effort — the phone-number tel: link is a nicety, not core detail.
+          api
+            .getClinic(a.clinicId)
+            .then((c) => {
+              if (active) setClinic(c)
+            })
+            .catch(() => undefined),
+        ])
       })
       .catch((e) => {
         if (!active) return
@@ -263,22 +288,7 @@ export default function AppointmentDetailPage() {
               <span className="apptdetail-ref">REF: #{appointment.id.slice(0, 7).toUpperCase()}</span>
             </div>
 
-            <div className="apptdetail-doctor">
-              <div className="apptdetail-avatar">{doctorInitials}</div>
-              <div>
-                <h2 className="apptdetail-doctor__name">Dr. {doctor?.firstName ?? appointment.doctorName} {doctor?.lastName ?? ''}</h2>
-                <div className="apptdetail-doctor__meta">
-                  {service && <span className="apptdetail-spec-chip">{specialtyLabel(service.specialtyName)}</span>}
-                  <span className="apptdetail-sep">—</span>
-                  <span className="apptdetail-muted">{appointment.clinicName}</span>
-                  <span className="apptdetail-sep">—</span>
-                  <span className="apptdetail-muted">{appointment.branchName}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="apptdetail-divider" />
-
+            <p className="apptdetail-section-label">Koha &amp; Vendi</p>
             <div className="apptdetail-grid">
               <div className="apptdetail-item">
                 <span className="apptdetail-label">Data</span>
@@ -292,12 +302,8 @@ export default function AppointmentDetailPage() {
                 </span>
               </div>
               <div className="apptdetail-item">
-                <span className="apptdetail-label">Shërbimi</span>
-                <span className="apptdetail-value">{appointment.serviceName}</span>
-              </div>
-              <div className="apptdetail-item">
-                <span className="apptdetail-label">Çmimi</span>
-                <span className="apptdetail-value">{service ? `${service.price} ${service.currency === 'EUR' ? '€' : service.currency}` : '—'}</span>
+                <span className="apptdetail-label">Klinika</span>
+                <span className="apptdetail-value">{appointment.clinicName} — {appointment.branchName}</span>
               </div>
               <div className="apptdetail-item">
                 <span className="apptdetail-label">Dega</span>
@@ -306,11 +312,50 @@ export default function AppointmentDetailPage() {
                   {appointment.branchAddress}{branch?.city ? `, ${branch.city}` : ''}
                 </span>
               </div>
+            </div>
+
+            <div className="apptdetail-divider" />
+
+            <p className="apptdetail-section-label">Mjeku &amp; Shërbimi</p>
+            <div className="apptdetail-doctor">
+              <div className="apptdetail-avatar">{doctorInitials}</div>
+              <div>
+                <h2 className="apptdetail-doctor__name">Dr. {doctor?.firstName ?? appointment.doctorName} {doctor?.lastName ?? ''}</h2>
+                <div className="apptdetail-doctor__meta">
+                  {service && <span className="apptdetail-spec-chip">{specialtyLabel(service.specialtyName)}</span>}
+                </div>
+              </div>
+            </div>
+            <div className="apptdetail-grid" style={{ marginTop: 14 }}>
+              <div className="apptdetail-item">
+                <span className="apptdetail-label">Shërbimi</span>
+                <span className="apptdetail-value">{appointment.serviceName}</span>
+              </div>
+              <div className="apptdetail-item">
+                <span className="apptdetail-label">Kohëzgjatja</span>
+                <span className="apptdetail-value">{durationMinutes} minuta</span>
+              </div>
+              <div className="apptdetail-item">
+                <span className="apptdetail-label">Çmimi</span>
+                <span className="apptdetail-value">{service ? `${service.price.toFixed(2)} ${service.currency}` : '—'}</span>
+              </div>
+            </div>
+
+            <div className="apptdetail-divider" />
+
+            <p className="apptdetail-section-label">Pacienti</p>
+            <div className="apptdetail-grid">
               <div className="apptdetail-item">
                 <span className="apptdetail-label">Rezervuar për</span>
                 <span className="apptdetail-value">
-                  {appointment.dependentName ? appointment.dependentName : `Unë (${user?.email ?? ''})`}
+                  {appointment.dependentName
+                    ? appointment.dependentName
+                    : `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || user?.email}
                 </span>
+              </div>
+              <div className="apptdetail-item">
+                <span className="apptdetail-label">Tipi</span>
+                <span className="apptdetail-value">{appointment.dependentName ? 'Anëtar Familjeje' : 'Pacient Individual'}</span>
               </div>
             </div>
 
@@ -346,6 +391,15 @@ export default function AppointmentDetailPage() {
         </div>
 
         <div className="card apptdetail-action">
+          {!showReschedule && (
+            <div className="apptdetail-status-card">
+              {statusBadge(appointment.status)}
+              <p className="apptdetail-status-desc">
+                {STATUS_DESCRIPTIONS[appointment.status] ?? 'Statusi i këtij termini nuk njihet.'}
+              </p>
+            </div>
+          )}
+
           {showReschedule ? (
             <RescheduleUi
               weekStart={weekStart}
@@ -437,9 +491,23 @@ export default function AppointmentDetailPage() {
           ) : null}
 
           {!showReschedule && (
-            <Link to="/terminet" className="apptdetail-backlink">
-              <ChevronLeft size={14} strokeWidth={1.5} style={{ display: 'inline' }} /> Kthehu te terminet
-            </Link>
+            <>
+              <div className="apptdetail-infobox">
+                <Info size={15} strokeWidth={1.5} color="var(--primary)" />
+                <div>
+                  <span>Nëse keni pyetje rreth terminit tuaj, kontaktoni klinikën direkt.</span>
+                  {clinic?.phoneNumber && (
+                    <a href={`tel:${clinic.phoneNumber}`} className="apptdetail-infobox__phone">
+                      <Phone size={13} strokeWidth={1.5} /> {clinic.phoneNumber}
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              <Link to="/terminet" className="apptdetail-backlink">
+                <ChevronLeft size={14} strokeWidth={1.5} style={{ display: 'inline' }} /> Kthehu te terminet
+              </Link>
+            </>
           )}
         </div>
       </div>
@@ -486,6 +554,10 @@ function RescheduleUi({
 }) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
+  // Earliest selectable day is tomorrow — rescheduling onto the current day
+  // isn't a meaningful choice for a patient picking a new date.
+  const minDate = new Date(today)
+  minDate.setDate(minDate.getDate() + 1)
   const maxDate = new Date(today)
   maxDate.setDate(maxDate.getDate() + 30)
 
@@ -525,7 +597,7 @@ function RescheduleUi({
       <div className="apptdetail-weekstrip">
         {days.map((d) => {
           const dateStr = toDateInput(d)
-          const isPast = d < today
+          const isPast = d < minDate
           const isFuture = d > maxDate
           const isToday = dateStr === toDateInput(today)
           const isSelected = dateStr === selectedDate

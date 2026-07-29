@@ -3,6 +3,7 @@ import Layout from './components/Layout'
 import PatientLayout from './components/PatientLayout'
 import DoctorLayout from './components/DoctorLayout'
 import AdminLayout from './components/AdminLayout'
+import SuperAdminLayout from './components/SuperAdminLayout'
 import ProtectedRoute from './components/ProtectedRoute'
 import HomePage from './pages/HomePage'
 import SearchPage from './pages/SearchPage'
@@ -13,14 +14,24 @@ import RegisterPage from './pages/RegisterPage'
 import MyAppointmentsPage from './pages/MyAppointmentsPage'
 import AppointmentDetailPage from './pages/AppointmentDetailPage'
 import MyProfilePage from './pages/MyProfilePage'
+import DependentsPage from './pages/DependentsPage'
+import ChangePasswordPage from './pages/ChangePasswordPage'
 import DoctorCalendarPage from './pages/DoctorCalendarPage'
+import DoctorAppointmentDetailPage from './pages/DoctorAppointmentDetailPage'
 import WorkingSchedulePage from './pages/WorkingSchedulePage'
+import UnavailabilityPage from './pages/UnavailabilityPage'
 import MyClinicsPage from './pages/MyClinicsPage'
+import AdminAppointmentsPage from './pages/AdminAppointmentsPage'
 import ClinicDetailLayout from './components/ClinicDetailLayout'
 import ClinicSettingsPage from './pages/ClinicSettingsPage'
 import BranchesPage from './pages/BranchesPage'
 import ServicesPage from './pages/ServicesPage'
 import ClinicDoctorsPage from './pages/ClinicDoctorsPage'
+import ClinicReportPage from './pages/ClinicReportPage'
+import SuperAdminClinicsPage from './pages/SuperAdminClinicsPage'
+import SpecialtiesPage from './pages/SpecialtiesPage'
+import UsersPage from './pages/UsersPage'
+import AuditLogsPage from './pages/AuditLogsPage'
 import ConfirmEmailPage from './pages/ConfirmEmailPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
@@ -43,6 +54,8 @@ export default function App() {
         <Route path="/terminet" element={<MyAppointmentsPage />} />
         <Route path="/terminet/:id" element={<AppointmentDetailPage />} />
         <Route path="/llogaria" element={<MyProfilePage />} />
+        <Route path="/llogaria/anetaret" element={<DependentsPage />} />
+        <Route path="/llogaria/fjalekalimi" element={<ChangePasswordPage />} />
       </Route>
       <Route
         element={
@@ -52,7 +65,9 @@ export default function App() {
         }
       >
         <Route path="/mjeku-panel/kalendari" element={<DoctorCalendarPage />} />
+        <Route path="/mjeku-panel/terminet/:id" element={<DoctorAppointmentDetailPage />} />
         <Route path="/mjeku-panel/orari" element={<WorkingSchedulePage />} />
+        <Route path="/mjeku-panel/mungesat" element={<UnavailabilityPage />} />
       </Route>
       <Route
         element={
@@ -62,12 +77,26 @@ export default function App() {
         }
       >
         <Route path="/admin-panel/klinikat" element={<MyClinicsPage />} />
+        <Route path="/admin-panel/terminet" element={<AdminAppointmentsPage />} />
         <Route path="/admin-panel/klinikat/:id" element={<ClinicDetailLayout />}>
           <Route index element={<ClinicSettingsPage />} />
           <Route path="deget" element={<BranchesPage />} />
           <Route path="sherbimet" element={<ServicesPage />} />
           <Route path="mjeket" element={<ClinicDoctorsPage />} />
+          <Route path="raporti" element={<ClinicReportPage />} />
         </Route>
+      </Route>
+      <Route
+        element={
+          <ProtectedRoute role="SuperAdmin">
+            <SuperAdminLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/super-admin/klinikat" element={<SuperAdminClinicsPage />} />
+        <Route path="/super-admin/specializimet" element={<SpecialtiesPage />} />
+        <Route path="/super-admin/perdoruesit" element={<UsersPage />} />
+        <Route path="/super-admin/regjistrat" element={<AuditLogsPage />} />
       </Route>
       <Route element={<Layout />}>
         <Route path="/" element={<HomePage />} />

@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useId,
   useRef,
   useState,
   type ComponentType,
@@ -202,6 +203,156 @@ export function Dropdown({
             >
               <span>{o.label}</span>
               {o.value === value && <Check size={14} strokeWidth={1.5} />}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export interface CustomSelectOption {
+  value: string
+  label: string
+}
+
+/**
+ * Label-above-value styled dropdown for search bars and filter rows — a
+ * "no visible border of its own" trigger that inherits the surrounding
+ * container's background, unlike `Dropdown`'s own bordered pill trigger.
+ *
+ * Open state is controlled by the parent (`open` / `onOpenChange`) so a row
+ * of several of these can enforce "only one open at a time" just by storing
+ * which field id is open, rather than each instance tracking its own state
+ * and coordinating via refs.
+ */
+export function CustomSelect({
+  label,
+  options,
+  value,
+  onChange,
+  open,
+  onOpenChange,
+  loading = false,
+  placeholder,
+}: {
+  label: string
+  options: CustomSelectOption[]
+  value: string
+  onChange: (value: string) => void
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  loading?: boolean
+  placeholder?: string
+}) {
+  const rootRef = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const listboxId = useId()
+  const selected = options.find((o) => o.value === value)
+  const [activeIndex, setActiveIndex] = useState(() => Math.max(0, options.findIndex((o) => o.value === value)))
+
+  useEffect(() => {
+    if (!open) return
+    setActiveIndex(Math.max(0, options.findIndex((o) => o.value === value)))
+  }, [open, options, value])
+
+  useEffect(() => {
+    if (!open) return
+    function handleClickOutside(e: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) onOpenChange(false)
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    panelRef.current?.focus()
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    const el = panelRef.current?.querySelector<HTMLElement>(`[data-index="${activeIndex}"]`)
+    el?.scrollIntoView({ block: 'nearest' })
+  }, [open, activeIndex])
+
+  function commit(index: number) {
+    const opt = options[index]
+    if (!opt) return
+    onChange(opt.value)
+    onOpenChange(false)
+  }
+
+  function handleTriggerKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault()
+      onOpenChange(true)
+    }
+  }
+
+  function handlePanelKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      onOpenChange(false)
+      rootRef.current?.querySelector('button')?.focus()
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setActiveIndex((i) => Math.min(options.length - 1, i + 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setActiveIndex((i) => Math.max(0, i - 1))
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      commit(activeIndex)
+    } else if (e.key === 'Tab') {
+      onOpenChange(false)
+    }
+  }
+
+  return (
+    <div className="cselect" ref={rootRef}>
+      <label className="cselect__label" id={`${listboxId}-label`}>{label}</label>
+      <button
+        type="button"
+        className="cselect__trigger"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-labelledby={`${listboxId}-label ${listboxId}-value`}
+        onClick={() => onOpenChange(!open)}
+        onKeyDown={handleTriggerKeyDown}
+      >
+        {loading ? (
+          <Pending />
+        ) : (
+          <span className="cselect__value" id={`${listboxId}-value`}>
+            {selected?.label ?? placeholder ?? ''}
+          </span>
+        )}
+        <ChevronDown size={15} strokeWidth={1.75} className={`cselect__chevron ${open ? 'is-open' : ''}`} />
+      </button>
+
+      {open && (
+        <div
+          className="cselect__panel"
+          ref={panelRef}
+          role="listbox"
+          aria-labelledby={`${listboxId}-label`}
+          tabIndex={-1}
+          onKeyDown={handlePanelKeyDown}
+        >
+          {options.map((o, i) => (
+            <div
+              key={o.value}
+              data-index={i}
+              role="option"
+              aria-selected={o.value === value}
+              className={`cselect__option ${o.value === value ? 'is-selected' : ''} ${i === activeIndex ? 'is-active' : ''}`}
+              onMouseEnter={() => setActiveIndex(i)}
+              onClick={() => commit(i)}
+            >
+              <span>{o.label}</span>
+              {o.value === value && <Check size={14} strokeWidth={1.75} />}
             </div>
           ))}
         </div>

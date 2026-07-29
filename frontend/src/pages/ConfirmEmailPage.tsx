@@ -12,12 +12,13 @@ export default function ConfirmEmailPage() {
 
   useEffect(() => {
     const token = searchParams.get('token')
-    if (!token) {
+    const email = searchParams.get('email')
+    if (!token || !email) {
       setState('error')
       return
     }
     api
-      .confirmEmail(token)
+      .confirmEmail(token, email)
       .then(() => setState('success'))
       .catch(() => setState('error'))
   }, [searchParams])

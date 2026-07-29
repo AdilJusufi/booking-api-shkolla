@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useOutletContext, useParams } from 'react-router-dom'
-import { ArrowLeft, Building2, Globe, MapPin, Phone, Plus, Settings, Stethoscope, User } from 'lucide-react'
+import { ArrowLeft, BarChart3, Building2, Globe, MapPin, Phone, Plus, Settings, Stethoscope, User } from 'lucide-react'
 import { api, ApiError } from '../lib/api'
 import type { AdminClinicDetail } from '../lib/types'
 import { useToast } from '../context/ToastContext'
@@ -60,6 +60,7 @@ export default function ClinicDetailLayout() {
     { to: `/admin-panel/klinikat/${clinic.id}/deget`, end: false, icon: Building2, label: 'Degët' },
     { to: `/admin-panel/klinikat/${clinic.id}/sherbimet`, end: false, icon: Stethoscope, label: 'Shërbimet' },
     { to: `/admin-panel/klinikat/${clinic.id}/mjeket`, end: false, icon: User, label: 'Mjekët' },
+    { to: `/admin-panel/klinikat/${clinic.id}/raporti`, end: false, icon: BarChart3, label: 'Raporti' },
   ]
 
   return (

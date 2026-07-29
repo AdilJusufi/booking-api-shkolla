@@ -17,6 +17,8 @@ export default function PatientLayout() {
   const userInitials = user ? initials(user.firstName, user.lastName) : ''
   const isDetail = useMatch('/terminet/:id')
   const isProfile = useMatch('/llogaria')
+  const isDependents = useMatch('/llogaria/anetaret')
+  const isChangePassword = useMatch('/llogaria/fjalekalimi')
 
   return (
     <div className="patient-shell">
@@ -31,6 +33,10 @@ export default function PatientLayout() {
           <span>›</span>
           {isProfile ? (
             <span>Profili im</span>
+          ) : isDependents ? (
+            <span>Anëtarët e Familjes</span>
+          ) : isChangePassword ? (
+            <span>Siguria</span>
           ) : isDetail ? (
             <>
               <Link to="/terminet">Terminet</Link>

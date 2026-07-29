@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   ArrowRight,
@@ -11,6 +11,7 @@ import {
   Check,
   ChevronRight,
   Clock,
+  Eye,
   HandHeart,
   Heart,
   Lock,
@@ -20,7 +21,6 @@ import {
   Scan,
   Search,
   ShieldCheck,
-  SmilePlus,
   Star,
   Stethoscope,
   Venus,
@@ -29,7 +29,8 @@ import {
 import type { ComponentType } from 'react'
 import { api } from '../lib/api'
 import type { Clinic, Doctor, Specialty } from '../lib/types'
-import { initials, specialtyIcon, specialtyLabel } from '../components/ui'
+import { CustomSelect, initials, specialtyIcon, specialtyLabel } from '../components/ui'
+import type { CustomSelectOption } from '../components/ui'
 import {
   useCountUp,
   useReveal,
@@ -43,6 +44,11 @@ const KOSOVO_CITIES = [
   'Mitrovicë', 'Ferizaj', 'Vushtrri', 'Podujevë', 'Suharekë',
 ]
 
+const CITY_OPTIONS: CustomSelectOption[] = [
+  { value: '', label: 'Të gjitha qytetet' },
+  ...KOSOVO_CITIES.map((c) => ({ value: c, label: c })),
+]
+
 /* ---------- Hardcoded demo fallbacks (marketing page must never look empty) ---------- */
 
 type DemoSpec = { key: string; icon: ComponentType<LucideProps>; label: string }
@@ -53,7 +59,7 @@ const DEMO_SPECS: DemoSpec[] = [
   { key: 'Ortopedi', icon: Bone, label: 'Ortopedi' },
   { key: 'Dermatologji', icon: Scan, label: 'Dermatologji' },
   { key: 'Gjinekologji', icon: Venus, label: 'Gjinekologji' },
-  { key: 'Stomatologji', icon: SmilePlus, label: 'Stomatologji' },
+  { key: 'Oftalmologji', icon: Eye, label: 'Oftalmologji' },
   { key: 'Psikiatri', icon: MessageCircleHeart, label: 'Psikiatri' },
 ]
 
@@ -76,33 +82,33 @@ const DEMO_CLINICS: DemoClinic[] = [
 const STEPS = [
   {
     icon: Search,
-    title: 'Kërko',
-    text: 'Zgjidh qytetin dhe specialitetin që të nevojitet. Rezultatet filtrohen në çast, pa forma të gjata.',
+    title: 'Kërkoni',
+    text: 'Kërkoni sipas specializimit, emrit të mjekut ose klinikës. Filtroni sipas qytetit dhe disponueshmërisë.',
   },
   {
     icon: CalendarDays,
-    title: 'Zgjidh orarin',
-    text: 'Shiko oraret e lira në kohë reale, drejt nga kalendari i klinikës. Asnjë orar i vjetruar.',
+    title: 'Zgjidhni',
+    text: 'Shikoni oraret e lira në kohë reale dhe zgjidhni kohën që ju përshtatet më mirë.',
   },
   {
     icon: BadgeCheck,
-    title: 'Konfirmo',
-    text: 'Merr konfirmimin menjëherë dhe një kujtesë para termini. Anulo ose ndrysho kur të duash.',
+    title: 'Konfirmoni',
+    text: 'Rezervimi juaj konfirmohet menjëherë. Klinika njoftohet automatikisht — pa thirrje telefonike.',
   },
 ]
 
 const STATS = [
-  { to: 12400, suffix: '+', label: 'Termine të rezervuara' },
-  { to: 340, suffix: '+', label: 'Mjekë të verifikuar' },
-  { to: 62, suffix: '', label: 'Klinika partnere' },
-  { to: 38, suffix: 's', label: 'Koha mesatare e rezervimit' },
+  { to: 120, suffix: '+', label: 'Mjekë të verifikuar' },
+  { to: 18, suffix: '', label: 'Klinika partnere' },
+  { to: 4200, suffix: '+', label: 'Termine të rezervuara' },
+  { to: 7, suffix: '', label: 'Qytete në Kosovë' },
 ]
 
 const FEATURES = [
+  { icon: BadgeCheck, big: 'Verifikuar', label: 'Mjekë të licencuar e kontrolluar' },
   { icon: Clock, big: '24/7', label: 'Rezervim online, edhe natën' },
-  { icon: ShieldCheck, big: 'GDPR', label: 'Të dhëna të enkriptuara' },
-  { icon: HandHeart, big: 'Falas', label: 'Gjithmonë për pacientët' },
-  { icon: MapPin, big: '7 rajone', label: 'Mbulim në gjithë Kosovën' },
+  { icon: HandHeart, big: 'Lehtë', label: 'Anuloni ose ricaktoni me një klik' },
+  { icon: MapPin, big: '7 qytete', label: 'Mbulim në gjithë Kosovën' },
 ]
 
 const MARQUEE_PARTNERS = [
@@ -242,7 +248,7 @@ function BookingPanel() {
           ))}
         </span>
         <strong>4.9</strong>
-        <span className="lp-panel__reviews">nga 2.184 pacientë</span>
+        <span className="lp-panel__reviews">nga 640 pacientë</span>
       </footer>
     </aside>
   )
@@ -255,6 +261,8 @@ export default function HomePage() {
   const [clinics, setClinics] = useState<Clinic[]>([])
   const [city, setCity] = useState('')
   const [specialtyId, setSpecialtyId] = useState('')
+  const [specialtiesLoading, setSpecialtiesLoading] = useState(true)
+  const [openField, setOpenField] = useState<'city' | 'specialty' | null>(null)
 
   const pageRef = useReveal<HTMLDivElement>()
   const specGridRef = useSpotlight<HTMLDivElement>()
@@ -262,7 +270,7 @@ export default function HomePage() {
   const progress = useScrollProgress()
 
   useEffect(() => {
-    api.getSpecialties().then((s) => setSpecialties(s ?? [])).catch(() => setSpecialties([]))
+    api.getSpecialties().then((s) => setSpecialties(s ?? [])).catch(() => setSpecialties([])).finally(() => setSpecialtiesLoading(false))
     api.searchDoctors({ page: 1 }).then((r) => setDoctors(r.items ?? [])).catch(() => setDoctors([]))
     api.searchClinics({ page: 1 }).then((r) => setClinics(r.items ?? [])).catch(() => setClinics([]))
   }, [])
@@ -279,6 +287,14 @@ export default function HomePage() {
   const hasClinics = clinics.length > 0
   const hasSpecs = specialties.length > 0
 
+  const specialtyOptions = useMemo<CustomSelectOption[]>(
+    () => [
+      { value: '', label: 'Të gjitha specialitetet' },
+      ...specialties.map((s) => ({ value: s.id, label: specialtyLabel(s.name) })),
+    ],
+    [specialties],
+  )
+
   const shownDoctors = hasDoctors ? doctors.slice(0, 6) : []
   const shownClinics = hasClinics ? clinics.slice(0, 3) : []
   const shownSpecs = hasSpecs ? specialties.slice(0, 8) : []
@@ -294,18 +310,18 @@ export default function HomePage() {
         <div className="container lp-hero__inner">
           <div className="lp-hero__content">
             <span className="lp-eyebrow" data-reveal>
-              <i className="lp-dot" aria-hidden /> 62 klinika · 340 mjekë · Kosovë
+              <i className="lp-dot" aria-hidden /> 18 klinika · 120+ mjekë · Kosovë
             </span>
 
             <h1 className="lp-hero__title">
-              <SplitWords text="Rezervo terminin" />
+              <SplitWords text="Gjeni mjekun" />
               <InlineImage {...INLINE_IMAGES[0]} index={2} />
-              <SplitWords text="te mjeku" from={3} />
+              <SplitWords text="e duhur." from={3} />
               <span className="lp-word lp-word--accent" style={{ ['--w' as string]: 5 }}>
-                online
+                Rezervoni
               </span>
               <InlineImage {...INLINE_IMAGES[1]} index={6} />
-              <SplitWords text="pa telefonata." from={7} />
+              <SplitWords text="në sekonda." from={7} />
             </h1>
 
             <div className="lp-hero__strip" aria-hidden>
@@ -320,29 +336,32 @@ export default function HomePage() {
             </div>
 
             <p className="lp-hero__lead" data-reveal>
-              Gjej klinikën më të afërt, shiko oraret reale të mjekut dhe konfirmo terminin
-              për pak sekonda — falas dhe në shqip.
+              Termini.ks ju lidh me mjekë dhe klinika të verifikuara në Kosovë —
+              pa pritje, pa telefonata.
             </p>
 
             <form className="lp-search" onSubmit={handleSearch} data-reveal>
               <div className="lp-search__field">
-                <label htmlFor="city">Qyteti</label>
-                <select id="city" value={city} onChange={(e) => setCity(e.target.value)}>
-                  <option value="">Të gjitha qytetet</option>
-                  {KOSOVO_CITIES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
+                <CustomSelect
+                  label="Qyteti"
+                  options={CITY_OPTIONS}
+                  value={city}
+                  onChange={setCity}
+                  open={openField === 'city'}
+                  onOpenChange={(isOpen) => setOpenField(isOpen ? 'city' : null)}
+                />
               </div>
               <span className="lp-search__divider" aria-hidden />
               <div className="lp-search__field">
-                <label htmlFor="spec">Specialiteti</label>
-                <select id="spec" value={specialtyId} onChange={(e) => setSpecialtyId(e.target.value)}>
-                  <option value="">Të gjitha specialitetet</option>
-                  {specialties.map((s) => (
-                    <option key={s.id} value={s.id}>{specialtyLabel(s.name)}</option>
-                  ))}
-                </select>
+                <CustomSelect
+                  label="Specialiteti"
+                  options={specialtyOptions}
+                  value={specialtyId}
+                  onChange={setSpecialtyId}
+                  open={openField === 'specialty'}
+                  onOpenChange={(isOpen) => setOpenField(isOpen ? 'specialty' : null)}
+                  loading={specialtiesLoading}
+                />
               </div>
               <button type="submit" className="lp-btn lp-btn--accent lp-search__submit">
                 <Search size={16} strokeWidth={2.25} /> Kërko
@@ -351,7 +370,7 @@ export default function HomePage() {
 
             <ul className="lp-hero__trust" data-reveal>
               <li><Check size={15} strokeWidth={2.5} /> Pa pagesë për pacientët</li>
-              <li><Check size={15} strokeWidth={2.5} /> Konfirmim i menjëhershëm</li>
+              <li><Check size={15} strokeWidth={2.5} /> Mjekë të verifikuar</li>
               <li><Lock size={15} strokeWidth={2.5} /> Të dhëna të enkriptuara</li>
             </ul>
           </div>
@@ -384,8 +403,8 @@ export default function HomePage() {
         <div className="lp-head lp-head--row">
           <div data-reveal>
             <span className="lp-kicker">Specialitetet</span>
-            <h2>Kujdes i specializuar, i verifikuar një nga një</h2>
-            <p>Zgjidh fushën dhe shiko menjëherë cilët mjekë kanë orare të lira këtë javë.</p>
+            <h2>Specializimet më të kërkuara</h2>
+            <p>Nga kardiologjia te pediatria — gjeni ekspertin që ju nevojitet.</p>
           </div>
           <Link to="/kerko" className="lp-link" data-reveal>
             Shih të gjitha <ChevronRight size={16} strokeWidth={2.25} />
@@ -429,10 +448,10 @@ export default function HomePage() {
           <div className="lp-how__aside">
             <div className="lp-how__sticky">
               <span className="lp-kicker" data-reveal>Procesi</span>
-              <h2 data-reveal>Tre hapa deri te termini yt</h2>
+              <h2 data-reveal>Si funksionon Termini.ks?</h2>
               <p data-reveal>
-                Pa telefonata, pa pritje në sportel, pa letra. Mesatarja e pacientëve
-                tanë është <b className="lp-num">38 sekonda</b> nga kërkimi te konfirmimi.
+                Tre hapa të thjeshtë deri te mjeku juaj — pa telefonata, pa pritje
+                në sportel, pa letra.
               </p>
               <Link to="/kerko" className="lp-btn lp-btn--accent lp-how__cta" data-reveal>
                 Fillo tani <ArrowRight size={16} strokeWidth={2.25} />
@@ -462,8 +481,8 @@ export default function HomePage() {
         <div className="container lp-head lp-head--row">
           <div data-reveal>
             <span className="lp-kicker">Mjekët</span>
-            <h2>Profesionistë me licencë të kontrolluar</h2>
-            <p>Orare reale nga kalendari i klinikës, konfirmim i menjëhershëm.</p>
+            <h2>Mjekë të Verifikuar</h2>
+            <p>Të gjithë mjekët janë të licensuar dhe të verifikuar para se të shtohen në platformë.</p>
           </div>
           <Link to="/kerko?tab=mjeket" className="lp-link" data-reveal>
             Të gjithë mjekët <ChevronRight size={16} strokeWidth={2.25} />
@@ -537,8 +556,8 @@ export default function HomePage() {
         <div className="lp-head lp-head--row">
           <div data-reveal>
             <span className="lp-kicker">Klinikat</span>
-            <h2>Klinika të besuara në gjithë Kosovën</h2>
-            <p>Nga qendrat spitalore te praktikat familjare të lagjes.</p>
+            <h2>Klinika partnere në gjithë Kosovën</h2>
+            <p>Nga qendrat spitalore te praktikat familjare të lagjes — të gjitha të verifikuara.</p>
           </div>
           <Link to="/kerko?tab=klinika" className="lp-link" data-reveal>
             Shih të gjitha <ChevronRight size={16} strokeWidth={2.25} />
@@ -633,13 +652,13 @@ export default function HomePage() {
           <div className="lp-cta__rules" aria-hidden />
           <div className="lp-cta__content">
             <span className="lp-kicker lp-kicker--invert">Falas për pacientët</span>
-            <h2>Gati për terminin tënd?</h2>
+            <h2>Gati të rezervoni terminin tuaj?</h2>
             <p>
-              Krijo llogari falas dhe menaxho të gjitha terminet në një vend — për ty
-              dhe familjen tënde.
+              Bashkohuni me mijëra pacientë që tashmë i besojnë Termini.ks
+              për shëndetin e tyre.
             </p>
             <Link to="/kerko" className="lp-btn lp-btn--accent lp-btn--lg">
-              Gjej mjek tani <ArrowRight size={17} strokeWidth={2.25} />
+              Filloni Tani <ArrowRight size={17} strokeWidth={2.25} />
             </Link>
             <span className="lp-cta__fine">
               Pa kartë krediti · Anulim i lirë · Mbështetje në shqip

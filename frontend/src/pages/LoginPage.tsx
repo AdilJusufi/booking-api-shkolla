@@ -5,13 +5,14 @@ import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { ApiError } from '../lib/api'
 import { ErrorBox } from '../components/ui'
+import { ROLE_HOME } from '../components/ProtectedRoute'
 
 export default function LoginPage() {
   const { login } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
-  const from = (location.state as { from?: string })?.from ?? '/terminet'
+  const from = (location.state as { from?: string })?.from
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -24,8 +25,13 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
     try {
-      await login(email, password)
-      navigate(from, { replace: true })
+      const authUser = await login(email, password)
+      // Honor an explicit redirect (e.g. bounced here from a protected page)
+      // over the role default, but only if it's not the generic patient home
+      // some other role would otherwise be wrongly sent to.
+      const ownRole = authUser.roles.find((r) => ROLE_HOME[r])
+      const destination = from ?? (ownRole && ROLE_HOME[ownRole]) ?? '/'
+      navigate(destination, { replace: true })
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Hyrja dështoi.')
     } finally {

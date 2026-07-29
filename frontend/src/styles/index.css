@@ -302,6 +302,53 @@ input, select, textarea { font-family: inherit; font-size: 1rem; }
 .dropdown__option.is-selected { background: var(--primary-050); color: var(--primary); font-weight: 600; }
 .dropdown__option svg { color: var(--primary); flex-shrink: 0; }
 
+/* ============ Custom select (label-above-value, borderless trigger) ============ */
+.cselect { position: relative; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+.cselect__label {
+  font-size: .69rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 4px;
+}
+.cselect__trigger {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  border: none; background: transparent; padding: 0; margin: 0;
+  font-family: var(--font-display); font-size: .95rem; font-weight: 500;
+  color: var(--ink); cursor: pointer; text-align: left;
+}
+.cselect__trigger:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; border-radius: 4px; }
+.cselect__value { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cselect__chevron { color: var(--muted); flex-shrink: 0; transition: transform var(--dur) var(--ease-spring); }
+.cselect__chevron.is-open { transform: rotate(180deg); color: var(--primary); }
+.cselect__panel {
+  position: absolute; top: calc(100% + 10px); left: 0; min-width: 100%; width: max-content; max-width: 280px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  box-shadow: var(--shadow); z-index: 50; overflow: hidden auto; max-height: 320px;
+  animation: modal-rise .24s var(--ease-spring);
+}
+.cselect__option {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 12px 16px; font-size: 13px; color: var(--ink); cursor: pointer;
+  transition: background var(--dur) var(--ease-spring), color var(--dur) var(--ease-spring);
+}
+.cselect__option:hover, .cselect__option.is-active { background: var(--primary-050); color: var(--primary-700); }
+.cselect__option.is-selected { background: var(--primary); color: #fff; }
+.cselect__option.is-selected svg { color: #fff; }
+
+/* Hero search bar context — same component, landing-page tokens. */
+.lp-search__field .cselect__label { color: var(--lp-muted); }
+.lp-search__field .cselect__trigger { font-family: var(--lp-display); color: var(--lp-text); }
+.lp-search__field .cselect__trigger:focus-visible { outline-color: var(--lp-accent); }
+.lp-search__field .cselect__chevron.is-open { color: var(--lp-accent); }
+.lp-search__field .cselect__panel {
+  background: var(--lp-surface); border-color: var(--lp-line); border-radius: var(--lp-r);
+  box-shadow: var(--lp-sh-lg); top: calc(100% + 14px);
+}
+.lp-search__field .cselect__option { color: var(--lp-text); }
+.lp-search__field .cselect__option:hover,
+.lp-search__field .cselect__option.is-active {
+  background: color-mix(in srgb, var(--lp-accent) 10%, transparent); color: var(--lp-accent);
+}
+.lp-search__field .cselect__option.is-selected { background: var(--lp-accent); color: #fff; }
+
 /* ============ Search bar (search page) ============ */
 .searchbar {
   display: flex; gap: 10px; align-items: flex-end;
@@ -1017,6 +1064,10 @@ input, select, textarea { font-family: inherit; font-size: 1rem; }
 .apptdetail-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .apptdetail-ref { font-size: 11px; color: var(--muted); font-family: var(--font-mono); }
 
+.apptdetail-section-label {
+  font-size: .69rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--muted); margin-bottom: 12px;
+}
 .apptdetail-doctor { display: flex; gap: 14px; align-items: center; margin-bottom: 20px; }
 .apptdetail-avatar {
   width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
@@ -1078,6 +1129,18 @@ input, select, textarea { font-family: inherit; font-size: 1rem; }
 @media (max-width: 768px) {
   .apptdetail-action { position: static; }
 }
+
+.apptdetail-status-card { text-align: center; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--line); }
+.apptdetail-status-desc { font-size: 13px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+
+.apptdetail-infobox {
+  display: flex; gap: 10px; align-items: flex-start;
+  border-left: 3px solid var(--primary); background: var(--primary-050);
+  border-radius: 0 var(--radius) var(--radius) 0; padding: 12px 14px; margin-top: 16px;
+  font-size: 13px; color: var(--primary-700); line-height: 1.5;
+}
+.apptdetail-infobox svg { flex-shrink: 0; margin-top: 1px; }
+.apptdetail-infobox__phone { display: flex; align-items: center; gap: 5px; margin-top: 6px; font-weight: 700; color: var(--primary); }
 
 .apptdetail-countdown {
   display: flex; align-items: center; justify-content: center; gap: 6px;
@@ -1513,7 +1576,9 @@ input, select, textarea { font-family: inherit; font-size: 1rem; }
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
   box-shadow: var(--shadow-sm); padding: 16px 18px; margin-bottom: 10px;
   display: flex; align-items: center; gap: 18px;
+  transition: opacity var(--dur-slow) var(--ease-spring), transform var(--dur-slow) var(--ease-spring);
 }
+.schedule-card.is-removing { opacity: 0; transform: translateY(-6px) scale(.98); pointer-events: none; }
 .schedule-card__time {
   flex-shrink: 0; width: 76px; text-align: center; background: var(--primary-050);
   border-radius: var(--radius-sm); padding: 10px 6px; display: flex; flex-direction: column; gap: 2px;
@@ -1833,6 +1898,28 @@ input, select, textarea { font-family: inherit; font-size: 1rem; }
 }
 .doctor-form__section-title:first-child { margin-top: 0; }
 
+/* ============ Super Admin — data tables ============ */
+.sa-table-card { padding: 0; overflow: hidden; }
+.sa-table { width: 100%; border-collapse: collapse; }
+.sa-table th {
+  text-align: left; padding: 12px 20px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--muted); border-bottom: 1px solid var(--line);
+}
+.sa-table td { padding: 14px 20px; border-bottom: 1px solid var(--line); vertical-align: top; font-size: 13px; color: var(--body); }
+.sa-table tr:last-child td { border-bottom: none; }
+.sa-table__primary { font-weight: 700; color: var(--ink); }
+.sa-table__secondary { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.sa-table__menu { position: relative; display: inline-flex; }
+.sa-table__menu-panel { top: calc(100% + 6px); right: 0; left: auto; min-width: 180px; }
+.sa-table__menu-panel .dropdown__option { display: block; width: 100%; text-align: left; background: none; border: none; cursor: pointer; }
+.sa-table__mono { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.sa-table__expand-row td { background: var(--surface-sunk); padding: 16px 20px; }
+.sa-table__json { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.sa-table__json pre {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 12px; font-family: var(--font-mono); font-size: 11px; overflow-x: auto; white-space: pre-wrap; word-break: break-word;
+}
+
 .multiselect-pills { display: flex; flex-wrap: wrap; gap: 8px; }
 .multiselect-pill {
   border: 1px solid var(--line); background: var(--surface); color: var(--body);
@@ -1843,6 +1930,33 @@ input, select, textarea { font-family: inherit; font-size: 1rem; }
 .multiselect-pill.is-selected { background: var(--primary); color: #fff; border-color: var(--primary); }
 
 .schedule-info-banner--warn { border-left-color: var(--warn); background: var(--warn-bg); color: var(--body); }
+
+/* ============ Dependents (patient) ============ */
+.deps-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+.deps-header__sub { font-size: 14px; color: var(--muted); margin-top: 6px; max-width: 60ch; }
+
+.deps-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+@media (max-width: 900px) { .deps-grid { grid-template-columns: 1fr; } }
+
+.deps-card {
+  padding: 20px; gap: 14px; display: flex; flex-direction: column;
+  transition: opacity var(--dur-slow) var(--ease-spring), transform var(--dur-slow) var(--ease-spring);
+}
+.deps-card.is-removing { opacity: 0; transform: translateY(-6px) scale(.98); pointer-events: none; }
+.deps-card__top { display: flex; align-items: flex-start; gap: 14px; }
+.deps-card__avatar {
+  width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0;
+  background: var(--primary-050); color: var(--primary);
+  display: grid; place-items: center;
+  font-family: var(--font-display); font-weight: 700; font-size: 15px; letter-spacing: -.03em;
+}
+.deps-card__identity { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.deps-card__name { font-size: 15px; font-weight: 700; color: var(--ink); }
+.deps-card__actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.deps-card__meta { display: flex; gap: 20px; flex-wrap: wrap; }
+.deps-card__meta span { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.deps-card__bottom { padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+.deps-card__inactive-note { color: var(--danger); }
 .schedule-info-banner--warn code {
   background: rgba(0,0,0,.12); padding: 1px 5px; border-radius: 4px; font-family: var(--font-mono); font-size: 12px;
 }
@@ -2593,6 +2707,7 @@ input, select, textarea { font-family: inherit; font-size: 1rem; }
   .booking-steps__dot.is-active, .doctor-timeline__now-dot,
   .apptdetail-timeline__event:first-child .apptdetail-timeline__dot { animation: none !important; }
   .btn:hover, .card:hover, .toast, .modal, .modal-overlay { transform: none; animation: none; }
+  .cselect__panel, .cselect__chevron { animation: none; transition: none; }
   .btn:active, .slot:active, .booking-slot:active, .apptdetail-slot:active,
   .apptdetail-btn-primary:active, .apptdetail-btn-danger-outline:active,
   .doctor-btn-complete:active, .doctor-btn-danger:active { transform: none; }
