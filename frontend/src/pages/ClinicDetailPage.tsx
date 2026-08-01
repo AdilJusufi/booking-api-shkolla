@@ -4,7 +4,7 @@ import { ChevronLeft, Clock, Globe, Mail, MapPin, Phone, Stethoscope } from 'luc
 import { api } from '../lib/api'
 import type { ClinicDetails, Doctor } from '../lib/types'
 import DoctorCard from '../components/DoctorCard'
-import { EmptyState, ErrorBox, Spinner, specialtyIcon, specialtyLabel } from '../components/ui'
+import { EmptyState, ErrorBox, SkeletonDetail, specialtyIcon, specialtyLabel } from '../components/ui'
 import { formatMoney } from '../lib/format'
 
 export default function ClinicDetailPage() {
@@ -31,7 +31,7 @@ export default function ClinicDetailPage() {
     }
   }, [id])
 
-  if (loading) return <div className="container page"><Spinner label="Duke ngarkuar klinikën…" /></div>
+  if (loading) return <div className="container page"><SkeletonDetail label="Duke ngarkuar klinikën" /></div>
   if (error) return <div className="container page"><ErrorBox message={error} /></div>
   if (!clinic) return null
 

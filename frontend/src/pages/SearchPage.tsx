@@ -17,6 +17,7 @@ import type { Clinic, Doctor, Specialty } from '../lib/types'
 import ClinicCard from '../components/ClinicCard'
 import DoctorCard from '../components/DoctorCard'
 import { Dropdown, EmptyState, specialtyLabel } from '../components/ui'
+import { useReveal } from '../lib/motion'
 
 const KOSOVO_CITIES = [
   'Prishtinë', 'Prizren', 'Pejë', 'Gjakovë', 'Gjilan', 'Ferizaj', 'Mitrovicë', 'Vushtrri',
@@ -61,6 +62,7 @@ function SkeletonCards({ count }: { count: number }) {
 }
 
 export default function SearchPage() {
+  const revealRef = useReveal()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const tab = (searchParams.get('tab') as Tab) === 'mjeket' ? 'mjeket' : 'klinika'
@@ -265,7 +267,7 @@ export default function SearchPage() {
           </button>
         </div>
 
-        <div className="search-layout">
+        <div className="search-layout" ref={revealRef} data-reveal-root>
           <div>
             <button
               type="button"

@@ -309,7 +309,7 @@ export default function MyAppointmentsPage() {
               const showCancel = canCancel(a)
               const showNote = isWithin12Hours(a) && !canCancel(a)
               return (
-                <div className="appt-row" key={a.id}>
+                <div className="appt-row" key={a.id} data-reveal>
                   <div className="appt-row__date">
                     <div className="appt-row__day">{d.getDate()}</div>
                     <div className="appt-row__month">{MONTHS_ALB[d.getMonth()]}</div>

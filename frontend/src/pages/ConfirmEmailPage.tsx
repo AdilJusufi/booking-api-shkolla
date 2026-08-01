@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AlertCircle, ArrowRight, CheckCircle } from 'lucide-react'
 import { api } from '../lib/api'
+import { Pending } from '../components/ui'
 
 type ConfirmState = 'loading' | 'success' | 'error'
 
@@ -11,12 +12,13 @@ export default function ConfirmEmailPage() {
 
   useEffect(() => {
     const token = searchParams.get('token')
-    if (!token) {
+    const email = searchParams.get('email')
+    if (!token || !email) {
       setState('error')
       return
     }
     api
-      .confirmEmail(token)
+      .confirmEmail(token, email)
       .then(() => setState('success'))
       .catch(() => setState('error'))
   }, [searchParams])
@@ -30,9 +32,9 @@ export default function ConfirmEmailPage() {
         </span>
 
         {state === 'loading' && (
-          <div className="loading">
-            <div className="spinner" />
-            <p>Duke konfirmuar emailin tuaj...</p>
+          <div className="confirm-email-page__pending">
+            <Pending />
+            <p>Duke konfirmuar emailin tuaj…</p>
           </div>
         )}
 
