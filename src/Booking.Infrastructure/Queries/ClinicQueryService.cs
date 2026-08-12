@@ -226,7 +226,7 @@ public class ClinicQueryService : IClinicQueryService
         return await _dbContext.Specialties
             .Where(s => s.IsActive)
             .OrderBy(s => s.Name)
-            .Select(s => new SpecialtyDto { Id = s.Id, Name = s.Name, Description = s.Description })
+            .Select(s => new SpecialtyDto { Id = s.Id, Name = s.Name, Description = s.Description, IsActive = s.IsActive })
             .ToListAsync(cancellationToken);
     }
 

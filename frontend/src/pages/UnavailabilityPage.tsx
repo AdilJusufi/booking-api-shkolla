@@ -3,7 +3,7 @@ import { Calendar, Info, Plus, Trash2 } from 'lucide-react'
 import { api, ApiError } from '../lib/api'
 import type { CreateUnavailabilityRequest, UnavailabilityDto } from '../lib/types'
 import { useToast } from '../context/ToastContext'
-import { EmptyState, ErrorBox, Modal, SkeletonRows } from '../components/ui'
+import { CustomSelect, EmptyState, ErrorBox, Modal, SkeletonRows } from '../components/ui'
 import { toDateInput } from '../lib/format'
 
 const DAYS_SQ = ['E Diel', 'E Hënë', 'E Martë', 'E Mërkurë', 'E Enjte', 'E Premte', 'E Shtunë']
@@ -277,6 +277,7 @@ function UnavailabilityFormModal({
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
+  const [branchSelectOpen, setBranchSelectOpen] = useState(false)
 
   function update<K extends keyof typeof form>(key: K, value: typeof form[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -317,24 +318,23 @@ function UnavailabilityFormModal({
       {formError && <ErrorBox message={formError} />}
 
       <div className="field">
-        <label>Dega</label>
-        <select value={form.clinicBranchId} onChange={(e) => update('clinicBranchId', e.target.value)}>
-          <option value="">Të gjitha degët</option>
-          {branchOptions.map((b) => (
-            <option key={b.id} value={b.id}>{b.name}</option>
-          ))}
-        </select>
+        <CustomSelect
+          label="Dega"
+          options={[{ value: '', label: 'Të gjitha degët' }, ...branchOptions.map((b) => ({ value: b.id, label: b.name }))]}
+          value={form.clinicBranchId}
+          onChange={(v) => update('clinicBranchId', v)}
+          open={branchSelectOpen}
+          onOpenChange={setBranchSelectOpen}
+        />
       </div>
 
-      <div className="form-row">
-        <div className="field">
-          <label>Data &amp; Ora e Fillimit</label>
-          <input type="datetime-local" value={form.startDateTime} onChange={(e) => update('startDateTime', e.target.value)} />
-        </div>
-        <div className="field">
-          <label>Data &amp; Ora e Mbarimit</label>
-          <input type="datetime-local" value={form.endDateTime} onChange={(e) => update('endDateTime', e.target.value)} />
-        </div>
+      <div className="field">
+        <label>Data &amp; Ora e Fillimit</label>
+        <input type="datetime-local" value={form.startDateTime} onChange={(e) => update('startDateTime', e.target.value)} />
+      </div>
+      <div className="field">
+        <label>Data &amp; Ora e Mbarimit</label>
+        <input type="datetime-local" value={form.endDateTime} onChange={(e) => update('endDateTime', e.target.value)} />
       </div>
 
       <div className="field">

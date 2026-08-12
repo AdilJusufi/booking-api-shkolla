@@ -1,4 +1,3 @@
-using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Booking.Api.Filters;
 using Booking.Api.Middleware;
@@ -25,15 +24,15 @@ try
         loggerConfiguration.ReadFrom.Configuration(context.Configuration));
 
     builder.Services.AddApplication();
-    builder.Services.AddInfrastructure(builder.Configuration);
+    builder.Services.AddInfrastructure(builder.Configuration, builder.Environment.IsDevelopment());
 
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
+    // Enum-et dalin si numra (jo si string) — frontend-i i pret kështu
+    // (p.sh. AppointmentStatus, DayOfWeek) dhe krahason vlera numerike.
     builder.Services
-        .AddControllers(options => options.Filters.Add<FluentValidationFilter>())
-        .AddJsonOptions(options =>
-            options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+        .AddControllers(options => options.Filters.Add<FluentValidationFilter>());
 
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>
@@ -97,9 +96,30 @@ try
     });
 
     var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+
+    // Një listë bosh nuk dështon në startup — thjesht bllokon çdo browser, dhe kjo
+    // duket si "API-ja s'punon" në frontend. Jashtë Development-it e bëjmë të dukshme.
+    if (allowedOrigins.Length == 0 && !builder.Environment.IsDevelopment())
+    {
+        Log.Warning(
+            "Cors:AllowedOrigins është bosh në mjedisin {Environment} — çdo kërkesë nga browser-i do të bllokohet. " +
+            "Vendos origjinat e frontend-it (p.sh. me Cors__AllowedOrigins__0).",
+            builder.Environment.EnvironmentName);
+    }
+
     builder.Services.AddCors(options =>
         options.AddPolicy("Frontend", policy =>
             policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod()));
+
+    var cloudinarySection = builder.Configuration.GetSection("Cloudinary");
+    if (string.IsNullOrWhiteSpace(cloudinarySection["CloudName"])
+        || string.IsNullOrWhiteSpace(cloudinarySection["ApiKey"])
+        || string.IsNullOrWhiteSpace(cloudinarySection["ApiSecret"]))
+    {
+        Log.Warning(
+            "Cloudinary:CloudName/ApiKey/ApiSecret mungojnë — ngarkimi i logos së klinikës do të dështojë " +
+            "derisa të konfigurohen (p.sh. me Cloudinary__ApiSecret).");
+    }
 
     builder.Services.AddHealthChecks()
         .AddNpgSql(

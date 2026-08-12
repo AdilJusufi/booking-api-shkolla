@@ -113,14 +113,14 @@ public static class DbSeeder
         // --- Specializimet ---
         var specialties = new List<Specialty>
         {
-            new() { Id = Ids.SpecialtyDentist, Name = "Dentist", Description = "Stomatologji" },
-            new() { Id = Ids.SpecialtyPediatrician, Name = "Pediatrician", Description = "Pediatri" },
-            new() { Name = "Ophthalmologist", Description = "Oftalmologji" },
-            new() { Name = "Dermatologist", Description = "Dermatologji" },
-            new() { Name = "Cardiologist", Description = "Kardiologji" },
-            new() { Name = "Gynecologist", Description = "Gjinekologji" },
-            new() { Name = "ENT", Description = "Otorinolaringologji (ORL)" },
-            new() { Name = "FamilyMedicine", Description = "Mjekësi familjare" }
+            new() { Id = Ids.SpecialtyDentist, Name = "Stomatologji", Description = "Kujdes për dhëmbët dhe gojën." },
+            new() { Id = Ids.SpecialtyPediatrician, Name = "Pediatri", Description = "Kujdes shëndetësor për fëmijët." },
+            new() { Name = "Oftalmologji", Description = "Diagnostikim dhe trajtim i syve dhe shikimit." },
+            new() { Name = "Dermatologji", Description = "Diagnostikim dhe trajtim i lëkurës." },
+            new() { Name = "Kardiologji", Description = "Diagnostikim dhe trajtim i zemrës dhe sistemit vaskular." },
+            new() { Name = "Gjinekologji", Description = "Kujdes shëndetësor për femrat." },
+            new() { Name = "Otorinolaringologji", Description = "Diagnostikim dhe trajtim i veshëve, hundës dhe fytit." },
+            new() { Name = "Mjekësi Familjare", Description = "Kujdes shëndetësor i përgjithshëm për të gjitha moshat." }
         };
         dbContext.Specialties.AddRange(specialties);
 

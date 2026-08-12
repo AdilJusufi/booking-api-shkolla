@@ -5,6 +5,7 @@ import { useTheme } from '../context/ThemeContext'
 import { useToast } from '../context/ToastContext'
 import { api, ApiError } from '../lib/api'
 import { ErrorBox, Pending } from '../components/ui'
+import Logo from '../components/Logo'
 
 const RESEND_SECONDS = 60
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -109,7 +110,7 @@ export default function ForgotPasswordPage() {
     <div className="split-auth">
       <div className="split-auth__brand">
         <span className="split-auth__brand-mark">
-          <span className="split-auth__brand-icon" aria-hidden>＋</span>
+          <span className="split-auth__brand-icon" aria-hidden><Logo size={20} tone="inverted" /></span>
           Termini.ks
         </span>
         <h1>Shëndetësia juaj, e rezervuar me lehtësi.</h1>
@@ -129,7 +130,7 @@ export default function ForgotPasswordPage() {
 
       <div className="split-auth__mobile-bar">
         <Link to="/" className="brand">
-          <span className="brand__mark" aria-hidden>＋</span>
+          <span className="brand__mark" aria-hidden><Logo size={22} tone="inverted" /></span>
           <span className="brand__name">Termini<span className="brand__tld">.ks</span></span>
         </Link>
       </div>

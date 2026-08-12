@@ -6,6 +6,7 @@ import { useTheme } from '../context/ThemeContext'
 import { ApiError } from '../lib/api'
 import { ErrorBox } from '../components/ui'
 import { ROLE_HOME } from '../components/ProtectedRoute'
+import Logo from '../components/Logo'
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -43,7 +44,7 @@ export default function LoginPage() {
     <div className="split-auth">
       <div className="split-auth__brand">
         <span className="split-auth__brand-mark">
-          <span className="split-auth__brand-icon" aria-hidden>＋</span>
+          <span className="split-auth__brand-icon" aria-hidden><Logo size={20} tone="inverted" /></span>
           Termini.ks
         </span>
         <h1>Shëndeti juaj, e rezervuar me lehtësi.</h1>
@@ -62,7 +63,7 @@ export default function LoginPage() {
 
       <div className="split-auth__mobile-bar">
         <Link to="/" className="brand">
-          <span className="brand__mark" aria-hidden>＋</span>
+          <span className="brand__mark" aria-hidden><Logo size={22} tone="inverted" /></span>
           <span className="brand__name">Termini<span className="brand__tld">.ks</span></span>
         </Link>
       </div>

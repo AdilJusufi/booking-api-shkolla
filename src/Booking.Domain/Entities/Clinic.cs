@@ -9,6 +9,7 @@ public class Clinic : AuditableEntity
     public string? PhoneNumber { get; set; }
     public string? Email { get; set; }
     public string? Website { get; set; }
+    public string? LogoUrl { get; set; }
 
     /// <summary>Klinika e re duhet aprovuar nga SuperAdmin para se të shfaqet publikisht.</summary>
     public bool IsApproved { get; set; }

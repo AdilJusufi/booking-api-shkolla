@@ -44,6 +44,12 @@ public class AdminClinicsController : ControllerBase
         Guid id, UpdateClinicRequest request, CancellationToken cancellationToken) =>
         Ok(await _clinicAdminService.UpdateClinicAsync(id, request, cancellationToken));
 
+    [HttpGet("{id:guid}/upload-signature")]
+    [ProducesResponseType(typeof(CloudinarySignatureDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<CloudinarySignatureDto>> GetUploadSignature(
+        Guid id, CancellationToken cancellationToken) =>
+        Ok(await _clinicAdminService.GenerateUploadSignatureAsync(id, cancellationToken));
+
     [HttpPost("{id:guid}/approve")]
     [Authorize(Policy = Policies.SuperAdminOnly)]
     [ProducesResponseType(typeof(AdminClinicDto), StatusCodes.Status200OK)]

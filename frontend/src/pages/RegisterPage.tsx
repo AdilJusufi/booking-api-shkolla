@@ -3,12 +3,24 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { ApiError } from '../lib/api'
 import type { Gender } from '../lib/types'
-import { ErrorBox } from '../components/ui'
+import { CustomSelect, ErrorBox } from '../components/ui'
+import type { CustomSelectOption } from '../components/ui'
 import { ROLE_HOME } from '../components/ProtectedRoute'
 
 const KOSOVO_CITIES = [
   'Prishtinë', 'Prizren', 'Pejë', 'Gjakovë', 'Gjilan',
   'Mitrovicë', 'Ferizaj', 'Vushtrri', 'Podujevë', 'Suharekë',
+]
+
+const CITY_OPTIONS: CustomSelectOption[] = [
+  { value: '', label: 'Zgjidh…' },
+  ...KOSOVO_CITIES.map((c) => ({ value: c, label: c })),
+]
+
+const GENDER_OPTIONS: CustomSelectOption[] = [
+  { value: '1', label: 'Mashkull' },
+  { value: '2', label: 'Femër' },
+  { value: '3', label: 'Tjetër' },
 ]
 
 export default function RegisterPage() {
@@ -27,6 +39,7 @@ export default function RegisterPage() {
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [openSelect, setOpenSelect] = useState<'city' | 'gender' | null>(null)
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }))
@@ -94,13 +107,14 @@ export default function RegisterPage() {
               />
             </div>
             <div className="field">
-              <label>Qyteti</label>
-              <select value={form.city} onChange={(e) => set('city', e.target.value)}>
-                <option value="">Zgjidh…</option>
-                {KOSOVO_CITIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+              <CustomSelect
+                label="Qyteti"
+                options={CITY_OPTIONS}
+                value={form.city}
+                onChange={(v) => set('city', v)}
+                open={openSelect === 'city'}
+                onOpenChange={(isOpen) => setOpenSelect(isOpen ? 'city' : null)}
+              />
             </div>
           </div>
 
@@ -116,12 +130,14 @@ export default function RegisterPage() {
               />
             </div>
             <div className="field">
-              <label>Gjinia</label>
-              <select value={form.gender} onChange={(e) => set('gender', Number(e.target.value) as Gender)}>
-                <option value={1}>Mashkull</option>
-                <option value={2}>Femër</option>
-                <option value={3}>Tjetër</option>
-              </select>
+              <CustomSelect
+                label="Gjinia"
+                options={GENDER_OPTIONS}
+                value={String(form.gender)}
+                onChange={(v) => set('gender', Number(v) as Gender)}
+                open={openSelect === 'gender'}
+                onOpenChange={(isOpen) => setOpenSelect(isOpen ? 'gender' : null)}
+              />
             </div>
           </div>
 

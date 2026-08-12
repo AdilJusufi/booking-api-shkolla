@@ -4,7 +4,8 @@ import { api, ApiError } from '../lib/api'
 import type { CreateMedicalServiceRequest, MedicalService, Specialty } from '../lib/types'
 import { useToast } from '../context/ToastContext'
 import { useClinicContext } from '../components/ClinicDetailLayout'
-import { EmptyState, ErrorBox, Modal, SkeletonRows } from '../components/ui'
+import { CustomSelect, EmptyState, ErrorBox, Modal, SkeletonRows } from '../components/ui'
+import type { CustomSelectOption } from '../components/ui'
 
 const EMPTY_FORM: CreateMedicalServiceRequest = {
   specialtyId: '',
@@ -28,6 +29,7 @@ export default function ServicesPage() {
 
   const [specialtyFilter, setSpecialtyFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [openFilter, setOpenFilter] = useState<'specialty' | 'status' | null>(null)
 
   const [modalOpen, setModalOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<MedicalService | null>(null)
@@ -45,6 +47,20 @@ export default function ServicesPage() {
   }, [clinic.id])
 
   useEffect(load, [load])
+
+  const specialtyOptions: CustomSelectOption[] = useMemo(
+    () => [
+      { value: 'all', label: 'Të gjitha specializimet' },
+      ...specialties.map((s) => ({ value: s.id, label: s.name })),
+    ],
+    [specialties],
+  )
+
+  const statusOptions: CustomSelectOption[] = [
+    { value: 'all', label: 'Të gjitha' },
+    { value: 'active', label: 'Aktive' },
+    { value: 'inactive', label: 'Joaktive' },
+  ]
 
   // The backend has no active/inactive state on services — every service
   // returned is implicitly active, so the status filter can only ever narrow
@@ -88,21 +104,24 @@ export default function ServicesPage() {
 
       <div className="filters">
         <div className="filters__field">
-          <label>Specializimi</label>
-          <select value={specialtyFilter} onChange={(e) => setSpecialtyFilter(e.target.value)}>
-            <option value="all">Të gjitha specializimet</option>
-            {specialties.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
+          <CustomSelect
+            label="Specializimi"
+            options={specialtyOptions}
+            value={specialtyFilter}
+            onChange={setSpecialtyFilter}
+            open={openFilter === 'specialty'}
+            onOpenChange={(isOpen) => setOpenFilter(isOpen ? 'specialty' : null)}
+          />
         </div>
         <div className="filters__field">
-          <label>Statusi</label>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}>
-            <option value="all">Të gjitha</option>
-            <option value="active">Aktive</option>
-            <option value="inactive">Joaktive</option>
-          </select>
+          <CustomSelect
+            label="Statusi"
+            options={statusOptions}
+            value={statusFilter}
+            onChange={(v) => setStatusFilter(v as StatusFilter)}
+            open={openFilter === 'status'}
+            onOpenChange={(isOpen) => setOpenFilter(isOpen ? 'status' : null)}
+          />
         </div>
       </div>
 
@@ -226,6 +245,12 @@ function ServiceFormModal({
   const [form, setForm] = useState<CreateMedicalServiceRequest>(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
+  const [specialtySelectOpen, setSpecialtySelectOpen] = useState(false)
+
+  const specialtyOptions: CustomSelectOption[] = [
+    { value: '', label: 'Zgjidhni specializimin', disabled: true },
+    ...specialties.map((s) => ({ value: s.id, label: s.name })),
+  ]
 
   function updateField<K extends keyof CreateMedicalServiceRequest>(key: K, value: CreateMedicalServiceRequest[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -284,13 +309,14 @@ function ServiceFormModal({
       </div>
 
       <div className="field">
-        <label>Specializimi</label>
-        <select value={form.specialtyId} onChange={(e) => updateField('specialtyId', e.target.value)}>
-          <option value="" disabled>Zgjidhni specializimin</option>
-          {specialties.map((s) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
-          ))}
-        </select>
+        <CustomSelect
+          label="Specializimi"
+          options={specialtyOptions}
+          value={form.specialtyId}
+          onChange={(v) => updateField('specialtyId', v)}
+          open={specialtySelectOpen}
+          onOpenChange={setSpecialtySelectOpen}
+        />
       </div>
 
       <div className="field">

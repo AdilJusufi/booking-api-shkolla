@@ -10,7 +10,6 @@ import {
   LayoutGrid,
   List,
   MoreVertical,
-  SlidersHorizontal,
   TrendingUp,
   UserX,
   X,
@@ -343,9 +342,6 @@ export default function DoctorCalendarPage() {
           ))}
         </div>
         <Dropdown options={DATE_OPTIONS} value={dateFilter} onChange={setDateFilter} icon={Calendar} />
-        <button type="button" className="doctor-filter-icon" title="Filtra shtesë">
-          <SlidersHorizontal size={18} strokeWidth={1.5} color="var(--muted)" />
-        </button>
       </div>
 
       {error ? (

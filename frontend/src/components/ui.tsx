@@ -107,11 +107,16 @@ export function EmptyState({
   )
 }
 
-export function ErrorBox({ message }: { message: ReactNode }) {
+export function ErrorBox({ message, onRetry }: { message: ReactNode; onRetry?: () => void }) {
   return (
     <div className="errorbox" role="alert">
       <AlertCircle size={16} strokeWidth={1.5} style={{ flexShrink: 0 }} />
-      {message}
+      <span className="errorbox__message">{message}</span>
+      {onRetry && (
+        <button type="button" className="errorbox__retry" onClick={onRetry}>
+          Provo përsëri
+        </button>
+      )}
     </div>
   )
 }
@@ -214,6 +219,8 @@ export function Dropdown({
 export interface CustomSelectOption {
   value: string
   label: string
+  /** Placeholder-style option (e.g. "Zgjidhni specializimin") — shown muted, not selectable via click/keyboard. */
+  disabled?: boolean
 }
 
 /**
@@ -235,6 +242,8 @@ export function CustomSelect({
   onOpenChange,
   loading = false,
   placeholder,
+  disabled = false,
+  hideLabel = false,
 }: {
   label: string
   options: CustomSelectOption[]
@@ -244,16 +253,27 @@ export function CustomSelect({
   onOpenChange: (open: boolean) => void
   loading?: boolean
   placeholder?: string
+  /** Disables the whole control (e.g. filters not wired to data yet). */
+  disabled?: boolean
+  /** Keeps the label for a11y (aria-labelledby) but hides it visually — for
+   * contexts (like ProfileField) that already render their own label above. */
+  hideLabel?: boolean
 }) {
   const rootRef = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const listboxId = useId()
   const selected = options.find((o) => o.value === value)
-  const [activeIndex, setActiveIndex] = useState(() => Math.max(0, options.findIndex((o) => o.value === value)))
+  const firstSelectableIndex = options.findIndex((o) => !o.disabled)
+  const [activeIndex, setActiveIndex] = useState(() => {
+    const current = options.findIndex((o) => o.value === value && !o.disabled)
+    return current >= 0 ? current : Math.max(0, firstSelectableIndex)
+  })
 
   useEffect(() => {
     if (!open) return
-    setActiveIndex(Math.max(0, options.findIndex((o) => o.value === value)))
+    const current = options.findIndex((o) => o.value === value && !o.disabled)
+    setActiveIndex(current >= 0 ? current : Math.max(0, firstSelectableIndex))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, options, value])
 
   useEffect(() => {
@@ -279,12 +299,25 @@ export function CustomSelect({
 
   function commit(index: number) {
     const opt = options[index]
-    if (!opt) return
+    if (!opt || opt.disabled) return
     onChange(opt.value)
     onOpenChange(false)
   }
 
+  function step(delta: number) {
+    setActiveIndex((i) => {
+      let next = i
+      for (let guard = 0; guard < options.length; guard++) {
+        next = Math.min(options.length - 1, Math.max(0, next + delta))
+        if (!options[next]?.disabled) return next
+        if (next === i) break
+      }
+      return i
+    })
+  }
+
   function handleTriggerKeyDown(e: React.KeyboardEvent) {
+    if (disabled) return
     if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
       e.preventDefault()
       onOpenChange(true)
@@ -298,10 +331,10 @@ export function CustomSelect({
       rootRef.current?.querySelector('button')?.focus()
     } else if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setActiveIndex((i) => Math.min(options.length - 1, i + 1))
+      step(1)
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
-      setActiveIndex((i) => Math.max(0, i - 1))
+      step(-1)
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
       commit(activeIndex)
@@ -311,28 +344,29 @@ export function CustomSelect({
   }
 
   return (
-    <div className="cselect" ref={rootRef}>
-      <label className="cselect__label" id={`${listboxId}-label`}>{label}</label>
+    <div className={`cselect ${disabled ? 'is-disabled' : ''}`} ref={rootRef}>
+      <label className={`cselect__label ${hideLabel ? 'cselect__label--hidden' : ''}`} id={`${listboxId}-label`}>{label}</label>
       <button
         type="button"
         className="cselect__trigger"
+        disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-labelledby={`${listboxId}-label ${listboxId}-value`}
-        onClick={() => onOpenChange(!open)}
+        onClick={() => !disabled && onOpenChange(!open)}
         onKeyDown={handleTriggerKeyDown}
       >
         {loading ? (
           <Pending />
         ) : (
-          <span className="cselect__value" id={`${listboxId}-value`}>
+          <span className={`cselect__value ${selected?.disabled ? 'cselect__value--placeholder' : ''}`} id={`${listboxId}-value`}>
             {selected?.label ?? placeholder ?? ''}
           </span>
         )}
         <ChevronDown size={15} strokeWidth={1.75} className={`cselect__chevron ${open ? 'is-open' : ''}`} />
       </button>
 
-      {open && (
+      {open && !disabled && (
         <div
           className="cselect__panel"
           ref={panelRef}
@@ -347,12 +381,13 @@ export function CustomSelect({
               data-index={i}
               role="option"
               aria-selected={o.value === value}
-              className={`cselect__option ${o.value === value ? 'is-selected' : ''} ${i === activeIndex ? 'is-active' : ''}`}
-              onMouseEnter={() => setActiveIndex(i)}
+              aria-disabled={o.disabled}
+              className={`cselect__option ${o.value === value ? 'is-selected' : ''} ${i === activeIndex ? 'is-active' : ''} ${o.disabled ? 'is-disabled' : ''}`}
+              onMouseEnter={() => !o.disabled && setActiveIndex(i)}
               onClick={() => commit(i)}
             >
               <span>{o.label}</span>
-              {o.value === value && <Check size={14} strokeWidth={1.75} />}
+              {o.value === value && !o.disabled && <Check size={14} strokeWidth={1.75} />}
             </div>
           ))}
         </div>
@@ -362,33 +397,24 @@ export function CustomSelect({
 }
 
 const SPECIALTY_ICONS: Record<string, ComponentType<LucideProps>> = {
-  Dentist: SmilePlus,
-  Pediatrician: Baby,
-  Ophthalmologist: Eye,
-  Dermatologist: Scan,
-  Cardiologist: Heart,
-  Gynecologist: Venus,
-  ENT: Ear,
-  FamilyMedicine: Stethoscope,
-}
-
-const SPECIALTY_LABELS: Record<string, string> = {
-  Dentist: 'Stomatologji',
-  Pediatrician: 'Pediatri',
-  Ophthalmologist: 'Oftalmologji',
-  Dermatologist: 'Dermatologji',
-  Cardiologist: 'Kardiologji',
-  Gynecologist: 'Gjinekologji',
-  ENT: 'ORL (Veshë-Fyt-Hundë)',
-  FamilyMedicine: 'Mjekësi familjare',
+  Stomatologji: SmilePlus,
+  Pediatri: Baby,
+  Oftalmologji: Eye,
+  Dermatologji: Scan,
+  Kardiologji: Heart,
+  Gjinekologji: Venus,
+  Otorinolaringologji: Ear,
+  'Mjekësi Familjare': Stethoscope,
 }
 
 export function specialtyIcon(name: string): ComponentType<LucideProps> {
   return SPECIALTY_ICONS[name] ?? Stethoscope
 }
 
+// Specialty names now come pre-translated from the backend (seed data is
+// Albanian); this stays as a passthrough so call sites don't need to change.
 export function specialtyLabel(name: string): string {
-  return SPECIALTY_LABELS[name] ?? name
+  return name
 }
 
 export function initials(first: string, last: string): string {

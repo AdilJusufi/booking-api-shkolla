@@ -379,6 +379,7 @@ export interface AdminClinic {
   phoneNumber?: string
   email?: string
   website?: string
+  logoUrl?: string
   isApproved: boolean
   isActive: boolean
   createdAt: string
@@ -407,6 +408,16 @@ export interface UpdateClinicRequest {
   phoneNumber?: string
   email?: string
   website?: string
+  logoUrl?: string
+}
+
+/** Pasqyron CloudinarySignatureDto — GET /api/admin/clinics/{id}/upload-signature. */
+export interface CloudinarySignature {
+  signature: string
+  timestamp: number
+  apiKey: string
+  cloudName: string
+  folder: string
 }
 
 /** Pasqyron CreateClinicRequest — POST /api/admin/clinics (vetëm SuperAdmin). */

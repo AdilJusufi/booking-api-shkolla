@@ -138,7 +138,12 @@ public class ScheduleService : IScheduleService
             .OrderBy(u => u.StartDateTime)
             .ToListAsync(cancellationToken);
 
-        return items.Select(ToDto).ToList();
+        // DoctorUnavailability s'ka navigation drejt ClinicBranch — emrat i marrim
+        // me një query të vetme dhe i denormalizojmë si te WorkingScheduleDto.
+        var branchNames = await GetBranchNamesAsync(
+            items.Select(u => u.ClinicBranchId).OfType<Guid>().Distinct().ToList(), cancellationToken);
+
+        return items.Select(u => ToDto(u, branchNames)).ToList();
     }
 
     public async Task<UnavailabilityDto> AddUnavailabilityAsync(
@@ -165,7 +170,10 @@ public class ScheduleService : IScheduleService
         _dbContext.DoctorUnavailabilities.Add(unavailability);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return ToDto(unavailability);
+        var branchNames = await GetBranchNamesAsync(
+            unavailability.ClinicBranchId is { } id ? [id] : [], cancellationToken);
+
+        return ToDto(unavailability, branchNames);
     }
 
     public async Task DeleteUnavailabilityAsync(Guid doctorId, Guid unavailabilityId, CancellationToken cancellationToken = default)
@@ -178,11 +186,29 @@ public class ScheduleService : IScheduleService
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    private UnavailabilityDto ToDto(DoctorUnavailability unavailability) => new()
+    private async Task<Dictionary<Guid, string>> GetBranchNamesAsync(
+        IReadOnlyCollection<Guid> branchIds, CancellationToken cancellationToken)
+    {
+        if (branchIds.Count == 0)
+        {
+            return [];
+        }
+
+        return await _dbContext.ClinicBranches
+            .Where(b => branchIds.Contains(b.Id))
+            .Select(b => new { b.Id, b.Name })
+            .ToDictionaryAsync(b => b.Id, b => b.Name, cancellationToken);
+    }
+
+    private UnavailabilityDto ToDto(
+        DoctorUnavailability unavailability, IReadOnlyDictionary<Guid, string> branchNames) => new()
     {
         Id = unavailability.Id,
         DoctorId = unavailability.DoctorId,
         ClinicBranchId = unavailability.ClinicBranchId,
+        BranchName = unavailability.ClinicBranchId is { } branchId && branchNames.TryGetValue(branchId, out var name)
+            ? name
+            : null,
         StartDateTime = _timeZoneService.ToLocal(unavailability.StartDateTime),
         EndDateTime = _timeZoneService.ToLocal(unavailability.EndDateTime),
         Reason = unavailability.Reason

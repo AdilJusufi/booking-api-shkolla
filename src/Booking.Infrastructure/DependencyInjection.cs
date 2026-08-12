@@ -29,7 +29,12 @@ namespace Booking.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    /// <param name="isDevelopment">
+    /// Aktivizon lehtësira vetëm-për-zhvillim (p.sh. DevEmailInbox, që i ruan
+    /// token-at e email-it në memorie). Duhet të mbetet false kudo tjetër.
+    /// </param>
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services, IConfiguration configuration, bool isDevelopment = false)
     {
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
         services.AddSingleton<ITimeZoneService, TimeZoneService>();
@@ -49,6 +54,19 @@ public static class DependencyInjection
         services.AddScoped<IEmailService, LoggingEmailService>();
         services.AddScoped<ISmsService, LoggingSmsService>();
 
+        if (isDevelopment)
+        {
+            // Dekoron IEmailService që token-at e konfirmimit/rivendosjes të jenë
+            // të lexueshëm nga GET /api/dev/emails pa gërmuar nëpër logje.
+            // Regjistrimi i fundit i IEmailService fiton — pa nevojë për Scrutor.
+            services.AddSingleton<DevEmailInbox>();
+            services.AddScoped<LoggingEmailService>();
+            services.AddScoped<IEmailService>(sp => new DevInboxEmailService(
+                sp.GetRequiredService<LoggingEmailService>(),
+                sp.GetRequiredService<DevEmailInbox>(),
+                sp.GetRequiredService<IDateTimeProvider>()));
+        }
+
         services.AddScoped<IClinicQueryService, ClinicQueryService>();
         services.AddScoped<IDoctorQueryService, DoctorQueryService>();
         services.AddScoped<IAvailabilityService, AvailabilityService>();
@@ -64,6 +82,7 @@ public static class DependencyInjection
         services.AddScoped<IAdminAppointmentService, AdminAppointmentService>();
 
         services.Configure<BookingSettings>(configuration.GetSection(BookingSettings.SectionName));
+        services.Configure<CloudinarySettings>(configuration.GetSection(CloudinarySettings.SectionName));
 
         return services;
     }

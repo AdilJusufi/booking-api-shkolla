@@ -3,7 +3,7 @@ import { Calendar, Clock, Info, Plus, Trash2 } from 'lucide-react'
 import { api, ApiError } from '../lib/api'
 import type { CreateWorkingScheduleRequest, DoctorWorkingSchedule } from '../lib/types'
 import { useToast } from '../context/ToastContext'
-import { EmptyState, ErrorBox, Modal, SkeletonRows } from '../components/ui'
+import { CustomSelect, EmptyState, ErrorBox, Modal, SkeletonRows } from '../components/ui'
 
 const DAYS_SQ = ['E Diel', 'E Hënë', 'E Martë', 'E Mërkurë', 'E Enjte', 'E Premte', 'E Shtunë']
 const MONTHS_ABBR_SQ = ['Jan', 'Shk', 'Mar', 'Pri', 'Maj', 'Qer', 'Kor', 'Gus', 'Sht', 'Tet', 'Nën', 'Dhj']
@@ -56,6 +56,7 @@ export default function WorkingSchedulePage() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [openField, setOpenField] = useState<'branch' | 'day' | null>(null)
 
   const [deleteTarget, setDeleteTarget] = useState<DoctorWorkingSchedule | null>(null)
   const [actingId, setActingId] = useState('')
@@ -262,29 +263,36 @@ export default function WorkingSchedulePage() {
       {showAddModal && (
         <Modal title="Shto orar të ri" onClose={() => setShowAddModal(false)}>
           {formError && <ErrorBox message={formError} />}
-          <div className="field">
-            <label>Dega</label>
-            {branchOptions.length === 0 ? (
+          {branchOptions.length === 0 ? (
+            <div className="field">
+              <label>Dega</label>
               <p className="field__note">
                 Nuk ka degë të disponueshme. Shtoni një orar për një degë me anë të stafit administrativ së pari,
                 ose kontaktoni administratorin e klinikës.
               </p>
-            ) : (
-              <select value={form.clinicBranchId} onChange={(e) => updateField('clinicBranchId', e.target.value)}>
-                {branchOptions.map((b) => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
-                ))}
-              </select>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="field">
+              <CustomSelect
+                label="Dega"
+                options={branchOptions.map((b) => ({ value: b.id, label: b.name }))}
+                value={form.clinicBranchId}
+                onChange={(v) => updateField('clinicBranchId', v)}
+                open={openField === 'branch'}
+                onOpenChange={(isOpen) => setOpenField(isOpen ? 'branch' : null)}
+              />
+            </div>
+          )}
 
           <div className="field">
-            <label>Dita e javës</label>
-            <select value={form.dayOfWeek} onChange={(e) => updateField('dayOfWeek', e.target.value)}>
-              {DAY_OPTIONS.map((d) => (
-                <option key={d.value} value={d.value}>{d.label}</option>
-              ))}
-            </select>
+            <CustomSelect
+              label="Dita e javës"
+              options={DAY_OPTIONS}
+              value={form.dayOfWeek}
+              onChange={(v) => updateField('dayOfWeek', v)}
+              open={openField === 'day'}
+              onOpenChange={(isOpen) => setOpenField(isOpen ? 'day' : null)}
+            />
           </div>
 
           <div className="form-row">

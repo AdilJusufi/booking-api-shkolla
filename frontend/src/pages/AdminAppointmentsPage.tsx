@@ -1,7 +1,11 @@
 import { useState } from 'react'
 import { AlertTriangle, Calendar, CalendarCheck, CalendarClock, CalendarX, Plus, Search } from 'lucide-react'
 import { useToast } from '../context/ToastContext'
-import { EmptyState } from '../components/ui'
+import { CustomSelect, EmptyState } from '../components/ui'
+import type { CustomSelectOption } from '../components/ui'
+
+const DOCTOR_OPTIONS: CustomSelectOption[] = [{ value: '', label: 'Të gjithë mjekët' }]
+const BRANCH_OPTIONS: CustomSelectOption[] = [{ value: '', label: 'Të gjitha degët' }]
 
 /**
  * `GET /api/admin/appointments` does not exist server-side — confirmed by
@@ -19,6 +23,7 @@ export default function AdminAppointmentsPage() {
   const { notify } = useToast()
   const [statusFilter, setStatusFilter] = useState('all')
   const [search, setSearch] = useState('')
+  const [openSelect, setOpenSelect] = useState<'doctor' | 'branch' | null>(null)
 
   return (
     <div className="admin-appts-page">
@@ -81,16 +86,26 @@ export default function AdminAppointmentsPage() {
 
       <div className="filters">
         <div className="filters__field">
-          <label>Mjeku</label>
-          <select disabled>
-            <option>Të gjithë mjekët</option>
-          </select>
+          <CustomSelect
+            label="Mjeku"
+            options={DOCTOR_OPTIONS}
+            value=""
+            onChange={() => {}}
+            open={openSelect === 'doctor'}
+            onOpenChange={(isOpen) => setOpenSelect(isOpen ? 'doctor' : null)}
+            disabled
+          />
         </div>
         <div className="filters__field">
-          <label>Dega</label>
-          <select disabled>
-            <option>Të gjitha degët</option>
-          </select>
+          <CustomSelect
+            label="Dega"
+            options={BRANCH_OPTIONS}
+            value=""
+            onChange={() => {}}
+            open={openSelect === 'branch'}
+            onOpenChange={(isOpen) => setOpenSelect(isOpen ? 'branch' : null)}
+            disabled
+          />
         </div>
         <div className="filters__field">
           <label>Prej</label>

@@ -1,3 +1,4 @@
+using Booking.Application.Common.Models;
 using Booking.Application.Common.Security;
 using Booking.Application.Features.Admin;
 using Booking.Application.Features.Appointments;
@@ -18,6 +19,12 @@ public class AdminAppointmentsController : ControllerBase
     {
         _adminAppointmentService = adminAppointmentService;
     }
+
+    [HttpGet]
+    [ProducesResponseType(typeof(PagedResult<AdminAppointmentListItemDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<AdminAppointmentListItemDto>>> Get(
+        [FromQuery] AdminAppointmentsQuery query, CancellationToken cancellationToken) =>
+        Ok(await _adminAppointmentService.GetAsync(query, cancellationToken));
 
     [HttpPost]
     [ProducesResponseType(typeof(DoctorAppointmentDto), StatusCodes.Status201Created)]

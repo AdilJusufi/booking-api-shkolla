@@ -37,6 +37,12 @@ public sealed record UnavailabilityDto
     /// <summary>Null = vlen për të gjitha degët.</summary>
     public Guid? ClinicBranchId { get; init; }
 
+    /// <summary>
+    /// Emri i degës, i denormalizuar si te WorkingScheduleDto. Null kur bllokimi
+    /// vlen për të gjitha degët (ClinicBranchId == null).
+    /// </summary>
+    public string? BranchName { get; init; }
+
     /// <summary>Ora lokale e Prishtinës.</summary>
     public required DateTime StartDateTime { get; init; }
 

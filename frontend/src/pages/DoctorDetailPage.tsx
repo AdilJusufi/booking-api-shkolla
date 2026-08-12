@@ -120,6 +120,7 @@ export default function DoctorDetailPage() {
         branchName: selectedBranch.branchName,
         date: selectedDate,
         time: formatTime(selectedSlot),
+        startDateTime: selectedSlot,
         price: selectedService.price,
         currency: selectedService.currency || 'EUR',
       }),

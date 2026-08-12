@@ -18,6 +18,12 @@ public interface IClinicAdminService
 
     Task<AdminClinicDto> UpdateClinicAsync(Guid clinicId, UpdateClinicRequest request, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Gjeneron një signature Cloudinary për signed upload direkt nga frontend-i te
+    /// Cloudinary — API secret-i nuk del kurrë nga backend-i.
+    /// </summary>
+    Task<CloudinarySignatureDto> GenerateUploadSignatureAsync(Guid clinicId, CancellationToken cancellationToken = default);
+
     Task<ClinicBranchDto> AddBranchAsync(Guid clinicId, CreateBranchRequest request, CancellationToken cancellationToken = default);
 
     Task<MedicalServiceDto> AddServiceAsync(Guid clinicId, CreateMedicalServiceRequest request, CancellationToken cancellationToken = default);
@@ -50,6 +56,8 @@ public interface ISuperAdminService
     /// <summary>Soft delete: e vendos IsActive=false, s'e fshin fizikisht (ruan FK-të drejt doktorëve/shërbimeve).</summary>
     Task DeleteSpecialtyAsync(Guid specialtyId, CancellationToken cancellationToken = default);
 
+    Task<PagedResult<AdminUserDto>> GetUsersAsync(AdminUsersQuery query, CancellationToken cancellationToken = default);
+
     /// <summary>Çaktivizimi revokon edhe të gjitha refresh token-at e userit.</summary>
     Task SetUserActiveAsync(Guid userId, bool isActive, CancellationToken cancellationToken = default);
 
@@ -59,6 +67,13 @@ public interface ISuperAdminService
 /// <summary>Menaxhimi i termineve nga ClinicAdmin — pa kufizimin e orëve të anulimit, por gjithmonë me audit log.</summary>
 public interface IAdminAppointmentService
 {
+    /// <summary>
+    /// Lista e termineve të klinikave që i menaxhon useri i kyçur (SuperAdmin i sheh të gjitha).
+    /// Rreshtat vijnë të denormalizuar — pa N+1 nga frontend-i.
+    /// </summary>
+    Task<PagedResult<AdminAppointmentListItemDto>> GetAsync(
+        AdminAppointmentsQuery query, CancellationToken cancellationToken = default);
+
     Task<DoctorAppointmentDto> CreateForPatientAsync(
         AdminCreateAppointmentRequest request, CancellationToken cancellationToken = default);
 

@@ -13,6 +13,7 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import MyAppointmentsPage from './pages/MyAppointmentsPage'
 import AppointmentDetailPage from './pages/AppointmentDetailPage'
+import ConfirmBookingPage from './pages/ConfirmBookingPage'
 import MyProfilePage from './pages/MyProfilePage'
 import DependentsPage from './pages/DependentsPage'
 import ChangePasswordPage from './pages/ChangePasswordPage'
@@ -53,6 +54,7 @@ export default function App() {
       >
         <Route path="/terminet" element={<MyAppointmentsPage />} />
         <Route path="/terminet/:id" element={<AppointmentDetailPage />} />
+        <Route path="/rezervo/konfirmo" element={<ConfirmBookingPage />} />
         <Route path="/llogaria" element={<MyProfilePage />} />
         <Route path="/llogaria/anetaret" element={<DependentsPage />} />
         <Route path="/llogaria/fjalekalimi" element={<ChangePasswordPage />} />

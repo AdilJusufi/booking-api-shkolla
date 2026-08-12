@@ -3,12 +3,13 @@ import { Calendar, Lock, Moon, Sun, User, Users } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { initials } from './ui'
+import Logo from './Logo'
 
 const NAV_ITEMS = [
-  { to: '/terminet', icon: Calendar, label: 'Terminet' },
-  { to: '/llogaria', icon: User, label: 'Profili' },
-  { to: '/llogaria/anetaret', icon: Users, label: 'Familja' },
-  { to: '/llogaria/fjalekalimi', icon: Lock, label: 'Siguria' },
+  { to: '/terminet', icon: Calendar, label: 'Terminet', end: false },
+  { to: '/llogaria', icon: User, label: 'Profili', end: true },
+  { to: '/llogaria/anetaret', icon: Users, label: 'Familja', end: false },
+  { to: '/llogaria/fjalekalimi', icon: Lock, label: 'Siguria', end: false },
 ]
 
 export default function PatientLayout() {
@@ -24,7 +25,7 @@ export default function PatientLayout() {
     <div className="patient-shell">
       <header className="patient-topbar">
         <Link to="/" className="brand">
-          <span className="brand__mark" aria-hidden>＋</span>
+          <span className="brand__mark" aria-hidden><Logo size={22} /></span>
           <span className="brand__name">Termini<span className="brand__tld">.ks</span></span>
         </Link>
 
@@ -67,6 +68,7 @@ export default function PatientLayout() {
             <NavLink
               key={item.to}
               to={item.to}
+              end={item.end}
               className={({ isActive }) => `patient-nav-item ${isActive ? 'is-active' : ''}`}
             >
               <item.icon className="patient-nav-item__icon" size={20} strokeWidth={1.5} aria-hidden />
@@ -97,6 +99,7 @@ export default function PatientLayout() {
           <NavLink
             key={item.to}
             to={item.to}
+            end={item.end}
             className={({ isActive }) => `patient-tabbar__item ${isActive ? 'is-active' : ''}`}
           >
             <item.icon size={20} strokeWidth={1.5} aria-hidden />

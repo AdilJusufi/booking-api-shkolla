@@ -3,7 +3,8 @@ import { Cake, Pencil, Plus, Trash2, User, Users } from 'lucide-react'
 import { api, ApiError } from '../lib/api'
 import type { CreateDependentRequest, Dependent, DependentRelationship, Gender } from '../lib/types'
 import { useToast } from '../context/ToastContext'
-import { EmptyState, ErrorBox, Modal, SkeletonRows, initials } from '../components/ui'
+import { CustomSelect, EmptyState, ErrorBox, Modal, SkeletonRows, initials } from '../components/ui'
+import type { CustomSelectOption } from '../components/ui'
 
 const MONTHS_SQ = ['Janar', 'Shkurt', 'Mars', 'Prill', 'Maj', 'Qershor', 'Korrik', 'Gusht', 'Shtator', 'Tetor', 'Nëntor', 'Dhjetor']
 
@@ -109,7 +110,7 @@ export default function DependentsPage() {
         </button>
       </div>
 
-      {error && <ErrorBox message={error} />}
+      {error && <ErrorBox message={error} onRetry={load} />}
 
       {loading ? (
         <SkeletonRows count={3} label="Duke ngarkuar anëtarët" />
@@ -255,6 +256,14 @@ function DependentFormModal({
   )
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
+  const [openSelect, setOpenSelect] = useState<'gender' | 'relationship' | null>(null)
+
+  const genderOptions: CustomSelectOption[] = (Object.entries(GENDER_LABELS) as [string, string][]).map(
+    ([value, label]) => ({ value, label }),
+  )
+  const relationshipOptions: CustomSelectOption[] = (Object.entries(RELATIONSHIP_LABELS) as [string, string][]).map(
+    ([value, label]) => ({ value, label }),
+  )
 
   function updateField<K extends keyof typeof form>(key: K, value: typeof form[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -317,22 +326,25 @@ function DependentFormModal({
       </div>
 
       <div className="field">
-        <label>Gjinia</label>
-        <select value={form.gender} onChange={(e) => updateField('gender', e.target.value)}>
-          <option value="1">Mashkull</option>
-          <option value="2">Femër</option>
-          <option value="3">Tjetër</option>
-        </select>
+        <CustomSelect
+          label="Gjinia"
+          options={genderOptions}
+          value={form.gender}
+          onChange={(v) => updateField('gender', v)}
+          open={openSelect === 'gender'}
+          onOpenChange={(isOpen) => setOpenSelect(isOpen ? 'gender' : null)}
+        />
       </div>
 
       <div className="field">
-        <label>Relacioni</label>
-        <select value={form.relationship} onChange={(e) => updateField('relationship', e.target.value)}>
-          <option value="1">Fëmijë</option>
-          <option value="2">Bashkëshort/e</option>
-          <option value="3">Prind</option>
-          <option value="4">Tjetër</option>
-        </select>
+        <CustomSelect
+          label="Relacioni"
+          options={relationshipOptions}
+          value={form.relationship}
+          onChange={(v) => updateField('relationship', v)}
+          open={openSelect === 'relationship'}
+          onOpenChange={(isOpen) => setOpenSelect(isOpen ? 'relationship' : null)}
+        />
       </div>
 
       <div className="clinic-settings__actions">

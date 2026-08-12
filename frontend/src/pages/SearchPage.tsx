@@ -85,6 +85,7 @@ export default function SearchPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [retryToken, setRetryToken] = useState(0)
 
   const resultsRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -93,17 +94,28 @@ export default function SearchPage() {
     api.getSpecialties().then(setSpecialties).catch(() => setSpecialties([]))
   }, [])
 
+  // Uses the updater-function form of setSearchParams — the debounced search
+  // effect below schedules a call up to 400ms out, and a plain `searchParams`
+  // closure captured at that point would be stale by the time it fires,
+  // clobbering any param change (e.g. a tab switch) made in the meantime.
   function updateParams(next: Record<string, string | number | undefined>) {
-    const params = new URLSearchParams(searchParams)
-    for (const [key, value] of Object.entries(next)) {
-      if (value === undefined || value === '') params.delete(key)
-      else params.set(key, String(value))
-    }
-    setSearchParams(params)
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev)
+      for (const [key, value] of Object.entries(next)) {
+        if (value === undefined || value === '') params.delete(key)
+        else params.set(key, String(value))
+      }
+      return params
+    })
   }
 
-  // Debounced text search → URL
+  // Debounced text search → URL. Guarded on `searchInput === urlQ` so it does
+  // nothing when there's no actual change to sync — without that guard this
+  // still fires 400ms after every mount (searchInput starts equal to urlQ),
+  // and calling updateParams with `page: 1` at that point can stomp on an
+  // unrelated param change (e.g. a tab switch) made in the interim.
   useEffect(() => {
+    if (searchInput === urlQ) return
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
       updateParams({ q: searchInput || undefined, page: 1 })
@@ -145,7 +157,7 @@ export default function SearchPage() {
     return () => {
       active = false
     }
-  }, [tab, urlCity, urlSpecialty, urlQ, page])
+  }, [tab, urlCity, urlSpecialty, urlQ, page, retryToken])
 
   function switchTab(next: Tab) {
     updateParams({ tab: next, page: 1 })
@@ -362,7 +374,16 @@ export default function SearchPage() {
             </div>
 
             {error ? (
-              <EmptyState icon={AlertCircle} title="Ndodhi një gabim" hint={error} />
+              <EmptyState
+                icon={AlertCircle}
+                title="Ndodhi një gabim"
+                hint={error}
+                action={
+                  <button type="button" className="btn btn--primary btn--sm" onClick={() => setRetryToken((n) => n + 1)}>
+                    Provo përsëri
+                  </button>
+                }
+              />
             ) : loading ? (
               <SkeletonCards count={6} />
             ) : tab === 'klinika' ? (

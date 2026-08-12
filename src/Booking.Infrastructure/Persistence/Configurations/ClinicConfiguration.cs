@@ -13,6 +13,7 @@ public class ClinicConfiguration : IEntityTypeConfiguration<Clinic>
         builder.Property(c => c.PhoneNumber).HasMaxLength(30);
         builder.Property(c => c.Email).HasMaxLength(256);
         builder.Property(c => c.Website).HasMaxLength(300);
+        builder.Property(c => c.LogoUrl).HasMaxLength(500);
 
         builder.HasIndex(c => c.Name);
 

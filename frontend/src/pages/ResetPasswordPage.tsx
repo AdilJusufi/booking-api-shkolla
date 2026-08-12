@@ -4,6 +4,7 @@ import { ArrowRight, CheckCircle, ChevronLeft, Eye, EyeOff, Lock, Moon, RotateCc
 import { useTheme } from '../context/ThemeContext'
 import { api, ApiError } from '../lib/api'
 import { ErrorBox, Pending } from '../components/ui'
+import Logo from '../components/Logo'
 
 // Danger -> warn -> accent -> ok, drawn from the design tokens rather than
 // an off-palette traffic-light ramp.
@@ -84,7 +85,7 @@ export default function ResetPasswordPage() {
     <div className="split-auth">
       <div className="split-auth__brand">
         <span className="brand">
-          <span className="brand__mark" aria-hidden>＋</span>
+          <span className="brand__mark" aria-hidden><Logo size={22} tone="inverted" /></span>
           <span className="brand__name">Termini<span className="brand__tld">.ks</span></span>
         </span>
         <h1>Shëndetësia juaj, e rezervuar me lehtësi.</h1>
@@ -104,7 +105,7 @@ export default function ResetPasswordPage() {
 
       <div className="split-auth__mobile-bar">
         <Link to="/" className="brand">
-          <span className="brand__mark" aria-hidden>＋</span>
+          <span className="brand__mark" aria-hidden><Logo size={22} tone="inverted" /></span>
           <span className="brand__name">Termini<span className="brand__tld">.ks</span></span>
         </Link>
       </div>

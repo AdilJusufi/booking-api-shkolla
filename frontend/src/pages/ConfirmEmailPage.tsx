@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { AlertCircle, ArrowRight, CheckCircle } from 'lucide-react'
 import { api } from '../lib/api'
 import { Pending } from '../components/ui'
+import Logo from '../components/Logo'
 
 type ConfirmState = 'loading' | 'success' | 'error'
 
@@ -27,7 +28,7 @@ export default function ConfirmEmailPage() {
     <div className="confirm-email-page">
       <div className="auth-card">
         <span className="brand">
-          <span className="brand__mark" aria-hidden>＋</span>
+          <span className="brand__mark" aria-hidden><Logo size={22} /></span>
           <span className="brand__name">Termini<span className="brand__tld">.ks</span></span>
         </span>
 

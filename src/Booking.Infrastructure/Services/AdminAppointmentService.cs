@@ -1,5 +1,6 @@
 using Booking.Application.Common.Exceptions;
 using Booking.Application.Common.Interfaces;
+using Booking.Application.Common.Models;
 using Booking.Application.Features.Admin;
 using Booking.Application.Features.Appointments;
 using Booking.Application.Features.Availability;
@@ -43,6 +44,130 @@ public class AdminAppointmentService : IAdminAppointmentService
         _dateTimeProvider = dateTimeProvider;
         _timeZoneService = timeZoneService;
         _logger = logger;
+    }
+
+    public async Task<PagedResult<AdminAppointmentListItemDto>> GetAsync(
+        AdminAppointmentsQuery query, CancellationToken cancellationToken = default)
+    {
+        // Tenant scoping: i njëjti model si GetMyClinicsAsync — SuperAdmin sheh gjithçka,
+        // ClinicAdmin vetëm klinikat ku është i caktuar. Klinikat e huaja thjesht
+        // nuk hyjnë në rezultat (listë e zbrazët), njësoj si diku tjetër në kod.
+        var rows =
+            from a in _dbContext.Appointments
+            join patientUser in _dbContext.Users on a.PatientProfile.UserId equals patientUser.Id
+            join doctorUser in _dbContext.Users on a.Doctor.UserId equals doctorUser.Id
+            where _tenantAccess.IsSuperAdmin
+                  || _dbContext.ClinicAdministrators.Any(admin =>
+                      admin.UserId == _tenantAccess.CurrentUserId && admin.ClinicId == a.ClinicId)
+            select new { Appointment = a, PatientUser = patientUser, DoctorUser = doctorUser };
+
+        if (query.ClinicId is { } clinicId)
+        {
+            rows = rows.Where(r => r.Appointment.ClinicId == clinicId);
+        }
+
+        if (query.DoctorId is { } doctorId)
+        {
+            rows = rows.Where(r => r.Appointment.DoctorId == doctorId);
+        }
+
+        if (query.ClinicBranchId is { } branchId)
+        {
+            rows = rows.Where(r => r.Appointment.ClinicBranchId == branchId);
+        }
+
+        if (query.Status is { } status)
+        {
+            rows = rows.Where(r => r.Appointment.Status == status);
+        }
+
+        if (query.From is { } from)
+        {
+            var fromUtc = _timeZoneService.ToUtc(from.ToDateTime(TimeOnly.MinValue));
+            rows = rows.Where(r => r.Appointment.StartDateTime >= fromUtc);
+        }
+
+        if (query.To is { } to)
+        {
+            var toUtc = _timeZoneService.ToUtc(to.AddDays(1).ToDateTime(TimeOnly.MinValue));
+            rows = rows.Where(r => r.Appointment.StartDateTime < toUtc);
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            var pattern = $"%{query.Search.Trim()}%";
+            rows = rows.Where(r =>
+                EF.Functions.ILike(r.PatientUser.FirstName + " " + r.PatientUser.LastName, pattern)
+                || (r.Appointment.Dependent != null
+                    && EF.Functions.ILike(
+                        r.Appointment.Dependent.FirstName + " " + r.Appointment.Dependent.LastName, pattern))
+                || EF.Functions.ILike(r.Appointment.Id.ToString(), pattern));
+        }
+
+        var totalItems = await rows.CountAsync(cancellationToken);
+
+        var page = await rows
+            .OrderByDescending(r => r.Appointment.StartDateTime)
+            .Skip((query.Page - 1) * query.PageSize)
+            .Take(query.PageSize)
+            .Select(r => new
+            {
+                r.Appointment.Id,
+                r.Appointment.ClinicId,
+                ClinicName = r.Appointment.Clinic.Name,
+                r.Appointment.ClinicBranchId,
+                BranchName = r.Appointment.ClinicBranch.Name,
+                r.Appointment.DoctorId,
+                DoctorFirstName = r.DoctorUser.FirstName,
+                DoctorLastName = r.DoctorUser.LastName,
+                DoctorSpecialty = r.Appointment.Doctor.DoctorSpecialties
+                    .Select(ds => ds.Specialty.Name)
+                    .FirstOrDefault(),
+                r.Appointment.MedicalServiceId,
+                ServiceName = r.Appointment.MedicalService.Name,
+                PatientFirstName = r.PatientUser.FirstName,
+                PatientLastName = r.PatientUser.LastName,
+                r.Appointment.DependentId,
+                DependentFirstName = r.Appointment.Dependent != null ? r.Appointment.Dependent.FirstName : null,
+                DependentLastName = r.Appointment.Dependent != null ? r.Appointment.Dependent.LastName : null,
+                r.Appointment.StartDateTime,
+                r.Appointment.EndDateTime,
+                r.Appointment.Status,
+                r.Appointment.Version
+            })
+            .ToListAsync(cancellationToken);
+
+        var items = page
+            .Select(r => new AdminAppointmentListItemDto
+            {
+                Id = r.Id,
+                ClinicId = r.ClinicId,
+                ClinicName = r.ClinicName,
+                ClinicBranchId = r.ClinicBranchId,
+                BranchName = r.BranchName,
+                DoctorId = r.DoctorId,
+                DoctorName = $"{r.DoctorFirstName} {r.DoctorLastName}",
+                DoctorSpecialty = r.DoctorSpecialty,
+                MedicalServiceId = r.MedicalServiceId,
+                ServiceName = r.ServiceName,
+                PatientName = $"{r.PatientFirstName} {r.PatientLastName}",
+                IsForDependent = r.DependentId is not null,
+                DependentId = r.DependentId,
+                DependentName = r.DependentId is null ? null : $"{r.DependentFirstName} {r.DependentLastName}",
+                StartDateTime = _timeZoneService.ToLocal(r.StartDateTime),
+                EndDateTime = _timeZoneService.ToLocal(r.EndDateTime),
+                Status = r.Status,
+                Version = r.Version
+            })
+            .ToList();
+
+        return new PagedResult<AdminAppointmentListItemDto>
+        {
+            Items = items,
+            Page = query.Page,
+            PageSize = query.PageSize,
+            TotalItems = totalItems
+        };
     }
 
     public async Task<DoctorAppointmentDto> CreateForPatientAsync(

@@ -43,6 +43,12 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
+    [HttpGet("users")]
+    [ProducesResponseType(typeof(PagedResult<AdminUserDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<AdminUserDto>>> GetUsers(
+        [FromQuery] AdminUsersQuery query, CancellationToken cancellationToken) =>
+        Ok(await _superAdminService.GetUsersAsync(query, cancellationToken));
+
     [HttpPost("users/{id:guid}/deactivate")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> DeactivateUser(Guid id, CancellationToken cancellationToken)

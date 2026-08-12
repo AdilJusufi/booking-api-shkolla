@@ -1,6 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertCircle, ArrowRight, Clock, MoreVertical, Pencil, Plus, Stethoscope } from 'lucide-react'
+import {
+  AlertCircle,
+  AlertTriangle,
+  ArrowRight,
+  Check,
+  Clock,
+  Copy,
+  Eye,
+  EyeOff,
+  MoreVertical,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Stethoscope,
+} from 'lucide-react'
 import { api, ApiError } from '../lib/api'
 import type {
   ClinicBranch,
@@ -13,7 +27,8 @@ import type {
 } from '../lib/types'
 import { useToast } from '../context/ToastContext'
 import { useClinicContext } from '../components/ClinicDetailLayout'
-import { EmptyState, ErrorBox, Modal, SkeletonRows, initials } from '../components/ui'
+import { CustomSelect, EmptyState, ErrorBox, Modal, SkeletonRows, initials } from '../components/ui'
+import type { CustomSelectOption } from '../components/ui'
 
 const DAYS_SQ = ['E Diel', 'E Hënë', 'E Martë', 'E Mërkurë', 'E Enjte', 'E Premte', 'E Shtunë']
 const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0]
@@ -34,6 +49,51 @@ const EMPTY_DOCTOR_FORM: CreateDoctorRequest = {
 
 type StatusFilter = 'all' | 'active' | 'inactive'
 
+/**
+ * Pasqyron saktësisht policy-n e backend-it (PasswordRuleExtensions.ValidPassword
+ * dhe Identity: gjatësi 8, shkronjë e madhe, e vogël, shifër — karakteri special
+ * NUK kërkohet). Pa këtë kontroll, "abcdefgh" kalon te klienti dhe refuzohet nga serveri.
+ */
+function passwordPolicyError(password: string): string | null {
+  if (password.length < 8) return 'Fjalëkalimi duhet të ketë të paktën 8 karaktere.'
+  if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
+    return 'Fjalëkalimi duhet të përmbajë shkronja të mëdha, të vogla dhe numra.'
+  }
+  return null
+}
+
+/**
+ * Gjeneron një fjalëkalim që e plotëson policy-n. Karakteret e ngatërrueshme
+ * (O/0, l/1/I) janë hequr qëllimisht — ky fjalëkalim i komunikohet mjekut me
+ * zë ose me kopjim, prandaj leximi i gabuar është problem real.
+ */
+function generatePassword(): string {
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
+  const lower = 'abcdefghijkmnpqrstuvwxyz'
+  const digits = '23456789'
+  const all = upper + lower + digits
+
+  const pick = (set: string) => set[Math.floor(Math.random() * set.length)]
+
+  // Një nga secili grup garanton përputhjen me policy-n; pjesa tjetër është e rastit.
+  const required = [pick(upper), pick(lower), pick(digits)]
+  const rest = Array.from({ length: 9 }, () => pick(all))
+
+  return [...required, ...rest]
+    .map((char) => ({ char, order: Math.random() }))
+    .sort((a, b) => a.order - b.order)
+    .map((x) => x.char)
+    .join('')
+}
+
+/** Kredencialet e shfaqura një herë të vetme pas krijimit të llogarisë. */
+interface CreatedDoctorCredentials {
+  firstName: string
+  lastName: string
+  email: string
+  password: string
+}
+
 export default function ClinicDoctorsPage() {
   const { clinic } = useClinicContext()
   const { notify } = useToast()
@@ -51,8 +111,10 @@ export default function ClinicDoctorsPage() {
   // The public doctor list carries no active/inactive flag (see load()) — the
   // filter is real UI, but "Joaktiv" can only ever match zero doctors today.
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [openFilter, setOpenFilter] = useState<'branch' | 'specialty' | 'status' | null>(null)
 
   const [addModalOpen, setAddModalOpen] = useState(false)
+  const [createdDoctor, setCreatedDoctor] = useState<CreatedDoctorCredentials | null>(null)
   const [scheduleTarget, setScheduleTarget] = useState<Doctor | null>(null)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
 
@@ -106,6 +168,23 @@ export default function ClinicDoctorsPage() {
     [doctors, details, branchFilter, specialtyFilter, statusFilter, specialties],
   )
 
+  const branchOptions: CustomSelectOption[] = useMemo(
+    () => [{ value: 'all', label: 'Të gjitha degët' }, ...branches.map((b) => ({ value: b.id, label: b.name }))],
+    [branches],
+  )
+  const specialtyOptions: CustomSelectOption[] = useMemo(
+    () => [
+      { value: 'all', label: 'Të gjitha specializimet' },
+      ...specialties.map((s) => ({ value: s.id, label: s.name })),
+    ],
+    [specialties],
+  )
+  const statusOptions: CustomSelectOption[] = [
+    { value: 'all', label: 'Të gjitha' },
+    { value: 'active', label: 'Aktiv' },
+    { value: 'inactive', label: 'Joaktiv' },
+  ]
+
   function handleAction(action: string, doctor: Doctor) {
     setOpenMenuId(null)
     if (action === 'schedule') {
@@ -135,30 +214,34 @@ export default function ClinicDoctorsPage() {
 
       <div className="filters">
         <div className="filters__field">
-          <label>Dega</label>
-          <select value={branchFilter} onChange={(e) => setBranchFilter(e.target.value)}>
-            <option value="all">Të gjitha degët</option>
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
-            ))}
-          </select>
+          <CustomSelect
+            label="Dega"
+            options={branchOptions}
+            value={branchFilter}
+            onChange={setBranchFilter}
+            open={openFilter === 'branch'}
+            onOpenChange={(isOpen) => setOpenFilter(isOpen ? 'branch' : null)}
+          />
         </div>
         <div className="filters__field">
-          <label>Specializimi</label>
-          <select value={specialtyFilter} onChange={(e) => setSpecialtyFilter(e.target.value)}>
-            <option value="all">Të gjitha specializimet</option>
-            {specialties.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
+          <CustomSelect
+            label="Specializimi"
+            options={specialtyOptions}
+            value={specialtyFilter}
+            onChange={setSpecialtyFilter}
+            open={openFilter === 'specialty'}
+            onOpenChange={(isOpen) => setOpenFilter(isOpen ? 'specialty' : null)}
+          />
         </div>
         <div className="filters__field">
-          <label>Statusi</label>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}>
-            <option value="all">Të gjitha</option>
-            <option value="active">Aktiv</option>
-            <option value="inactive">Joaktiv</option>
-          </select>
+          <CustomSelect
+            label="Statusi"
+            options={statusOptions}
+            value={statusFilter}
+            onChange={(v) => setStatusFilter(v as StatusFilter)}
+            open={openFilter === 'status'}
+            onOpenChange={(isOpen) => setOpenFilter(isOpen ? 'status' : null)}
+          />
         </div>
       </div>
 
@@ -201,8 +284,18 @@ export default function ClinicDoctorsPage() {
           specialties={specialties}
           services={services}
           onClose={() => setAddModalOpen(false)}
-          onSaved={() => {
+          onCreated={(credentials) => {
             setAddModalOpen(false)
+            setCreatedDoctor(credentials)
+          }}
+        />
+      )}
+
+      {createdDoctor && (
+        <DoctorCredentialsModal
+          credentials={createdDoctor}
+          onClose={() => {
+            setCreatedDoctor(null)
             load()
           }}
         />
@@ -257,7 +350,7 @@ function ClinicDoctorCard({
         <div className="doctor-admin-card__identity">
           <div className="doctor-admin-card__name-row">
             <h3 className="doctor-admin-card__name">Dr. {doctor.firstName} {doctor.lastName}</h3>
-            <span className="admin-card__status admin-card__status--approved">AKTIV</span>
+            <span className="admin-card__status admin-card__status--approved admin-card__status--inline">AKTIV</span>
           </div>
           <div className="doctor-admin-card__specialties">
             {doctor.specialties.map((s) => (
@@ -382,21 +475,21 @@ function AddDoctorModal({
   specialties,
   services,
   onClose,
-  onSaved,
+  onCreated,
 }: {
   clinicId: string
   branches: ClinicBranch[]
   specialties: Specialty[]
   services: MedicalService[]
   onClose: () => void
-  onSaved: () => void
+  onCreated: (credentials: CreatedDoctorCredentials) => void
 }) {
-  const { notify } = useToast()
   const [form, setForm] = useState<CreateDoctorRequest>(EMPTY_DOCTOR_FORM)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
   const [emailError, setEmailError] = useState('')
   const [licenseError, setLicenseError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
 
   function updateField<K extends keyof CreateDoctorRequest>(key: K, value: CreateDoctorRequest[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -423,9 +516,14 @@ function AddDoctorModal({
     if (form.firstName.trim().length < 2) return setFormError('Emri është i detyrueshëm.')
     if (form.lastName.trim().length < 2) return setFormError('Mbiemri është i detyrueshëm.')
     if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) return setFormError('Email-i nuk është i vlefshëm.')
+    // Backend-i e kërkon PhoneNumber si NotEmpty — nuk është opsional.
+    if (form.phoneNumber.trim().length === 0) return setFormError('Telefoni është i detyrueshëm.')
     if (form.licenseNumber.trim().length < 2) return setFormError('Numri i licencës është i detyrueshëm.')
     if (!form.yearsOfExperience || form.yearsOfExperience < 0) return setFormError('Vitet e përvojës janë të detyrueshme.')
-    if (form.initialPassword.trim().length < 8) return setFormError('Fjalëkalimi fillestar duhet të ketë të paktën 8 karaktere.')
+
+    const passwordError = passwordPolicyError(form.initialPassword)
+    if (passwordError) return setFormError(passwordError)
+
     if (form.specialtyIds.length === 0) return setFormError('Zgjidhni të paktën një specializim.')
     if (form.branchIds.length === 0) return setFormError('Zgjidhni të paktën një degë.')
 
@@ -444,8 +542,14 @@ function AddDoctorModal({
         branchIds: form.branchIds,
         serviceIds: form.serviceIds,
       })
-      notify('Mjeku u krijua me sukses.', 'ok')
-      onSaved()
+      // Asnjë njoftim nuk i dërgohet mjekut — kredencialet i dorëzohen nga
+      // admini përmes modalit që hapet tani.
+      onCreated({
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        email: form.email.trim(),
+        password: form.initialPassword,
+      })
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) {
         if (/licenc/i.test(e.message)) setLicenseError(e.message)
@@ -484,19 +588,43 @@ function AddDoctorModal({
           {emailError && <span className="field__error">{emailError}</span>}
         </div>
         <div className="field">
-          <label>Telefoni <span className="muted">(opsional)</span></label>
+          <label>Telefoni</label>
           <input type="tel" value={form.phoneNumber} onChange={(e) => updateField('phoneNumber', e.target.value)} />
         </div>
       </div>
       <div className="field">
         <label>Fjalëkalimi Fillestar</label>
-        <input
-          type="text"
-          value={form.initialPassword}
-          onChange={(e) => updateField('initialPassword', e.target.value)}
-          placeholder="Të paktën 8 karaktere"
-        />
-        <span className="field__note">Mjeku do ta ndryshojë këtë fjalëkalim pas kyçjes së parë.</span>
+        <div className="password-generate">
+          <input
+            type={showPassword ? 'text' : 'password'}
+            autoComplete="new-password"
+            value={form.initialPassword}
+            onChange={(e) => updateField('initialPassword', e.target.value)}
+            placeholder="Të paktën 8 karaktere"
+          />
+          <button
+            type="button"
+            className="field__toggle password-generate__toggle"
+            aria-label={showPassword ? 'Fshih fjalëkalimin' : 'Shfaq fjalëkalimin'}
+            onClick={() => setShowPassword((v) => !v)}
+          >
+            {showPassword ? <EyeOff size={16} strokeWidth={1.5} /> : <Eye size={16} strokeWidth={1.5} />}
+          </button>
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm"
+            onClick={() => {
+              updateField('initialPassword', generatePassword())
+              // I gjeneruari shfaqet menjëherë — admini duhet ta kopjojë.
+              setShowPassword(true)
+            }}
+          >
+            <RefreshCw size={14} strokeWidth={1.5} /> Gjenero
+          </button>
+        </div>
+        <span className="field__note">
+          Ky fjalëkalim duhet t'i komunikohet mjekut. Ai mund ta ndryshojë pas hyrjes së parë.
+        </span>
       </div>
 
       <p className="doctor-form__section-title">Të Dhënat Profesionale</p>
@@ -553,6 +681,79 @@ function AddDoctorModal({
   )
 }
 
+/** Kopjon një vlerë dhe e konfirmon vizualisht për pak sekonda. */
+function CopyButton({ value, label }: { value: string; label: string }) {
+  const [copied, setCopied] = useState(false)
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(value)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Clipboard bllokohet pa HTTPS/leje — vlera mbetet e dukshme për kopjim manual.
+      setCopied(false)
+    }
+  }
+
+  return (
+    <button type="button" className="admin-icon-btn" onClick={copy} aria-label={label}>
+      {copied ? <Check size={15} strokeWidth={1.75} /> : <Copy size={15} strokeWidth={1.5} />}
+    </button>
+  )
+}
+
+/**
+ * MODEL I PËRKOHSHËM. Backend-i nuk dërgon asnjë email kur krijohet një llogari
+ * mjeku — CreateDoctorRequest kërkon InitialPassword dhe kaq. Prandaj kredencialet
+ * i dorëzon admini me dorë, dhe ky modal ekziston që ai t'i kopjojë para se të
+ * zhduken.
+ *
+ * Kur të ndërtohet rrjedha e ftesës (invitation token → set-password → email),
+ * kjo hiqet: fusha e fjalëkalimit del nga forma, ky modal bëhet një toast i
+ * thjeshtë, dhe premtimi për email bëhet i vërtetë.
+ */
+function DoctorCredentialsModal({
+  credentials,
+  onClose,
+}: {
+  credentials: CreatedDoctorCredentials
+  onClose: () => void
+}) {
+  return (
+    <Modal title="Mjeku u krijua me sukses" onClose={onClose}>
+      <p className="profile-security__text">
+        Llogaria për <strong>Dr. {credentials.firstName} {credentials.lastName}</strong> është krijuar.
+        Komunikojani këto të dhëna mjekut — ai mund ta ndryshojë fjalëkalimin pas hyrjes së parë.
+      </p>
+
+      <div className="credentials-block">
+        <div className="credentials-block__row">
+          <span className="credentials-block__label">Email</span>
+          <span className="credentials-block__value">{credentials.email}</span>
+          <CopyButton value={credentials.email} label="Kopjo email-in" />
+        </div>
+        <div className="credentials-block__row">
+          <span className="credentials-block__label">Fjalëkalimi</span>
+          <span className="credentials-block__value">{credentials.password}</span>
+          <CopyButton value={credentials.password} label="Kopjo fjalëkalimin" />
+        </div>
+      </div>
+
+      <div className="credentials-warning">
+        <AlertTriangle size={15} strokeWidth={1.5} />
+        <span>Ky fjalëkalim nuk do të shfaqet përsëri. Sigurohuni ta ruani përpara se ta mbyllni.</span>
+      </div>
+
+      <div className="clinic-settings__actions" style={{ marginTop: 16 }}>
+        <button type="button" className="btn btn--primary btn--sm" onClick={onClose}>
+          E kuptova
+        </button>
+      </div>
+    </Modal>
+  )
+}
+
 const EMPTY_SCHEDULE_FORM = {
   clinicBranchId: '',
   dayOfWeek: '1',
@@ -576,8 +777,14 @@ function DoctorScheduleModal({
   const [form, setForm] = useState(EMPTY_SCHEDULE_FORM)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
+  const [openSelect, setOpenSelect] = useState<'branch' | 'day' | null>(null)
 
   const doctorBranches = detail?.branches ?? []
+  const branchOptions: CustomSelectOption[] = [
+    { value: '', label: 'Zgjidhni degën', disabled: true },
+    ...doctorBranches.map((b) => ({ value: b.branchId, label: b.branchName })),
+  ]
+  const dayOptions: CustomSelectOption[] = DAY_ORDER.map((d) => ({ value: String(d), label: DAYS_SQ[d] }))
 
   useEffect(() => {
     if (doctorBranches.length > 0 && !form.clinicBranchId) {
@@ -636,25 +843,28 @@ function DoctorScheduleModal({
       <p className="doctor-form__section-title">Shto Orar të Ri</p>
 
       <div className="field">
-        <label>Dega</label>
-        <select value={form.clinicBranchId} onChange={(e) => updateField('clinicBranchId', e.target.value)}>
-          <option value="" disabled>Zgjidhni degën</option>
-          {doctorBranches.map((b) => (
-            <option key={b.branchId} value={b.branchId}>{b.branchName}</option>
-          ))}
-        </select>
+        <CustomSelect
+          label="Dega"
+          options={branchOptions}
+          value={form.clinicBranchId}
+          onChange={(v) => updateField('clinicBranchId', v)}
+          open={openSelect === 'branch'}
+          onOpenChange={(isOpen) => setOpenSelect(isOpen ? 'branch' : null)}
+        />
         {doctorBranches.length === 0 && (
           <span className="field__note">Ky mjek nuk ka ende asnjë degë të caktuar.</span>
         )}
       </div>
 
       <div className="field">
-        <label>Dita</label>
-        <select value={form.dayOfWeek} onChange={(e) => updateField('dayOfWeek', e.target.value)}>
-          {DAY_ORDER.map((d) => (
-            <option key={d} value={String(d)}>{DAYS_SQ[d]}</option>
-          ))}
-        </select>
+        <CustomSelect
+          label="Dita"
+          options={dayOptions}
+          value={form.dayOfWeek}
+          onChange={(v) => updateField('dayOfWeek', v)}
+          open={openSelect === 'day'}
+          onOpenChange={(isOpen) => setOpenSelect(isOpen ? 'day' : null)}
+        />
       </div>
 
       <div className="form-row">

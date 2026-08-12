@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { Moon, Sun } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
+import Logo from './Logo'
 
 export default function Navbar() {
   const { isAuthenticated, user, logout } = useAuth()
@@ -20,7 +21,7 @@ export default function Navbar() {
     <header className="navbar">
       <div className="navbar__inner container">
         <Link to="/" className="brand" onClick={() => setOpen(false)}>
-          <span className="brand__mark" aria-hidden>＋</span>
+          <span className="brand__mark" aria-hidden><Logo size={22} /></span>
           <span className="brand__name">Termini<span className="brand__tld">.ks</span></span>
         </Link>
 

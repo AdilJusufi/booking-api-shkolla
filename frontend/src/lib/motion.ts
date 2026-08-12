@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 /** True when the user asked the OS to reduce motion. */
 export function prefersReducedMotion(): boolean {
@@ -12,15 +12,23 @@ export function prefersReducedMotion(): boolean {
  *
  * Targets are (re)collected via a MutationObserver rather than once on mount —
  * list pages attach this ref before their data has loaded, so the cards that
- * matter don't exist in the DOM yet on the first (and, without this, only)
- * scan. Without watching for new nodes, those elements never get observed,
- * never get `.is-in`, and sit permanently at `opacity: 0` per the CSS rule.
+ * matter don't exist in the DOM yet on the first scan. Without watching for
+ * new nodes, those elements never get observed, never get `.is-in`, and sit
+ * permanently at `opacity: 0` per the CSS rule.
+ *
+ * The ref itself must be a callback ref, not a plain object ref read in a
+ * `useEffect([])`: the root element is often conditionally rendered (e.g.
+ * only once loading finishes), so it doesn't exist yet at first mount — a
+ * one-shot effect would see `ref.current === null` and never run again. A
+ * callback ref re-fires whenever the DOM node it's attached to actually
+ * mounts, however many renders that takes.
  */
 export function useReveal<T extends HTMLElement = HTMLDivElement>() {
-  const ref = useRef<T | null>(null)
+  const cleanupRef = useRef<() => void>(() => {})
 
-  useEffect(() => {
-    const root = ref.current
+  const ref = useCallback((root: T | null) => {
+    cleanupRef.current()
+    cleanupRef.current = () => {}
     if (!root) return
 
     const reduced = prefersReducedMotion()
@@ -64,7 +72,7 @@ export function useReveal<T extends HTMLElement = HTMLDivElement>() {
     const mo = new MutationObserver(collect)
     mo.observe(root, { childList: true, subtree: true })
 
-    return () => {
+    cleanupRef.current = () => {
       mo.disconnect()
       io?.disconnect()
     }

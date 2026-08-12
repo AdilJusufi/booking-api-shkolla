@@ -13,6 +13,7 @@ import type {
   ClinicBranch,
   ClinicDetails,
   ClinicReport,
+  CloudinarySignature,
   CreateAppointmentRequest,
   CreateBranchRequest,
   CreateClinicRequest,
@@ -184,6 +185,12 @@ function safeParse(text: string): unknown {
   }
 }
 
+/** Backend paging validators reject PageSize outside [1,100] with a 400/422 —
+ * clamp here so no caller can reintroduce that by passing an out-of-range value. */
+function clampPageSize(size: number): number {
+  return Math.min(100, Math.max(1, size))
+}
+
 function extractError(data: unknown, status: number): string {
   if (data && typeof data === 'object') {
     const obj = data as Record<string, unknown>
@@ -270,7 +277,7 @@ export const api = {
       auth: true,
       query: {
         Page: params.page ?? 1,
-        PageSize: params.pageSize ?? 50,
+        PageSize: clampPageSize(params.pageSize ?? 50),
         From: params.dateFrom,
         To: params.dateTo,
       },
@@ -311,7 +318,7 @@ export const api = {
       auth: true,
       query: {
         Page: params.page ?? 1,
-        PageSize: params.pageSize ?? 50,
+        PageSize: clampPageSize(params.pageSize ?? 50),
         From: params.dateFrom,
         To: params.dateTo,
         Status: params.status,
@@ -380,6 +387,9 @@ export const api = {
 
   updateClinic: (id: string, payload: UpdateClinicRequest) =>
     request<AdminClinic>(`/api/admin/clinics/${id}`, { method: 'PUT', body: payload, auth: true }),
+
+  getClinicUploadSignature: (id: string) =>
+    request<CloudinarySignature>(`/api/admin/clinics/${id}/upload-signature`, { auth: true }),
 
   deactivateClinic: (id: string) =>
     request<AdminClinic>(`/api/admin/clinics/${id}/deactivate`, { method: 'POST', auth: true }),

@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useOutletContext, useParams } from 'react-router-dom'
-import { ArrowLeft, BarChart3, Building2, Globe, MapPin, Phone, Plus, Settings, Stethoscope, User } from 'lucide-react'
+import { ArrowLeft, BarChart3, Building2, Globe, MapPin, Phone, Settings, Stethoscope, User } from 'lucide-react'
 import { api, ApiError } from '../lib/api'
 import type { AdminClinicDetail } from '../lib/types'
-import { useToast } from '../context/ToastContext'
 import { useAdminBreadcrumb } from '../context/AdminBreadcrumbContext'
 import { ErrorBox, SkeletonDetail } from './ui'
 
@@ -19,7 +18,6 @@ export function useClinicContext(): ClinicOutletContext {
 
 export default function ClinicDetailLayout() {
   const { id } = useParams<{ id: string }>()
-  const { notify } = useToast()
   const { setTrail } = useAdminBreadcrumb()
 
   const [clinic, setClinic] = useState<AdminClinicDetail | null>(null)
@@ -86,13 +84,6 @@ export default function ClinicDetailLayout() {
 
         <div className="clinic-header__actions">
           <Link to={`/klinika/${clinic.id}`} className="btn btn--ghost btn--sm">Shiko Profilin</Link>
-          <button
-            type="button"
-            className="btn btn--primary btn--sm"
-            onClick={() => notify('Funksion në zhvillim.', 'info')}
-          >
-            <Plus size={15} strokeWidth={1.5} /> Termini i Ri
-          </button>
         </div>
       </div>
 

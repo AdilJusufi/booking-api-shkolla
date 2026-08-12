@@ -161,7 +161,7 @@ export default function MyAppointmentsPage() {
     setError('')
     const { dateFrom, dateTo } = dateRangeToParams(dateRange)
     api
-      .getMyAppointments({ page: 1, pageSize: 200, dateFrom, dateTo })
+      .getMyAppointments({ page: 1, pageSize: 100, dateFrom, dateTo })
       .then((r) => setAppointments(r.items))
       .catch((e) => setError(e instanceof ApiError ? e.message : 'Ndodhi një gabim.'))
       .finally(() => setLoading(false))
@@ -299,7 +299,16 @@ export default function MyAppointmentsPage() {
         {loading ? (
           <SkeletonRows />
         ) : error ? (
-          <EmptyState icon={AlertCircle} title="Ndodhi një gabim" hint={error} />
+          <EmptyState
+            icon={AlertCircle}
+            title="Ndodhi një gabim"
+            hint={error}
+            action={
+              <button type="button" className="btn btn--primary btn--sm" onClick={load}>
+                Provo përsëri
+              </button>
+            }
+          />
         ) : filtered.length === 0 ? (
           <EmptyState icon={Calendar} title="Nuk keni termine" hint="Rezervoni terminin tuaj të parë tani." />
         ) : (

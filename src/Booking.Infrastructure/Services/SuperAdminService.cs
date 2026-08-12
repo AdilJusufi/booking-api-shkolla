@@ -43,7 +43,7 @@ public class SuperAdminService : ISuperAdminService
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
 
-        return ToAdminDto(clinic);
+        return ToAdminDto(clinic, await ClinicAdministratorLookup.LoadForClinicAsync(_dbContext, clinicId, cancellationToken));
     }
 
     public async Task<AdminClinicDto> SetClinicActiveAsync(
@@ -59,7 +59,7 @@ public class SuperAdminService : ISuperAdminService
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
 
-        return ToAdminDto(clinic);
+        return ToAdminDto(clinic, await ClinicAdministratorLookup.LoadForClinicAsync(_dbContext, clinicId, cancellationToken));
     }
 
     public async Task AssignClinicAdminAsync(
@@ -104,7 +104,7 @@ public class SuperAdminService : ISuperAdminService
         _auditService.Record("SPECIALTY_CREATED", nameof(Specialty), specialty.Id.ToString(), null, new { specialty.Name });
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return new SpecialtyDto { Id = specialty.Id, Name = specialty.Name, Description = specialty.Description };
+        return new SpecialtyDto { Id = specialty.Id, Name = specialty.Name, Description = specialty.Description, IsActive = specialty.IsActive };
     }
 
     public async Task<SpecialtyDto> UpdateSpecialtyAsync(
@@ -123,7 +123,7 @@ public class SuperAdminService : ISuperAdminService
         specialty.IsActive = request.IsActive;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return new SpecialtyDto { Id = specialty.Id, Name = specialty.Name, Description = specialty.Description };
+        return new SpecialtyDto { Id = specialty.Id, Name = specialty.Name, Description = specialty.Description, IsActive = specialty.IsActive };
     }
 
     public async Task DeleteSpecialtyAsync(
@@ -207,6 +207,10 @@ public class SuperAdminService : ISuperAdminService
             {
                 Id = l.Id,
                 UserId = l.UserId,
+                // LEFT JOIN — veprimet e sistemit s'kanë user, dhe useri mund të jetë fshirë.
+                UserEmail = l.UserId == null
+                    ? null
+                    : _dbContext.Users.Where(u => u.Id == l.UserId).Select(u => u.Email).FirstOrDefault(),
                 Action = l.Action,
                 EntityName = l.EntityName,
                 EntityId = l.EntityId,
@@ -226,11 +230,81 @@ public class SuperAdminService : ISuperAdminService
         };
     }
 
+    public async Task<PagedResult<AdminUserDto>> GetUsersAsync(
+        AdminUsersQuery query, CancellationToken cancellationToken = default)
+    {
+        var users = _dbContext.Users.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(query.Role))
+        {
+            // Filtrimi bëhet në DB përmes tabelave të Identity — pa ngarkuar çdo user
+            // në memorie siç do të bënte UserManager.GetUsersInRoleAsync.
+            var roleName = query.Role.Trim();
+            users = users.Where(u => _dbContext.UserRoles.Any(ur =>
+                ur.UserId == u.Id
+                && _dbContext.Roles.Any(r => r.Id == ur.RoleId && r.Name == roleName)));
+        }
+
+        if (query.IsActive is { } isActive)
+        {
+            users = users.Where(u => u.IsActive == isActive);
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            var pattern = $"%{query.Search.Trim()}%";
+            users = users.Where(u =>
+                EF.Functions.ILike(u.FirstName + " " + u.LastName, pattern)
+                || (u.Email != null && EF.Functions.ILike(u.Email, pattern)));
+        }
+
+        var totalItems = await users.CountAsync(cancellationToken);
+
+        var page = await users
+            .OrderBy(u => u.FirstName).ThenBy(u => u.LastName)
+            .Skip((query.Page - 1) * query.PageSize)
+            .Take(query.PageSize)
+            .Select(u => new
+            {
+                u.Id,
+                u.FirstName,
+                u.LastName,
+                u.Email,
+                u.IsActive,
+                u.EmailConfirmed,
+                u.CreatedAt,
+                Roles = _dbContext.UserRoles
+                    .Where(ur => ur.UserId == u.Id)
+                    .Join(_dbContext.Roles, ur => ur.RoleId, r => r.Id, (_, r) => r.Name!)
+                    .ToList()
+            })
+            .ToListAsync(cancellationToken);
+
+        return new PagedResult<AdminUserDto>
+        {
+            Items = page
+                .Select(u => new AdminUserDto
+                {
+                    Id = u.Id,
+                    FullName = $"{u.FirstName} {u.LastName}",
+                    Email = u.Email ?? string.Empty,
+                    Roles = u.Roles,
+                    IsActive = u.IsActive,
+                    EmailConfirmed = u.EmailConfirmed,
+                    CreatedAt = u.CreatedAt
+                })
+                .ToList(),
+            Page = query.Page,
+            PageSize = query.PageSize,
+            TotalItems = totalItems
+        };
+    }
+
     private async Task<Clinic> GetClinicAsync(Guid clinicId, CancellationToken cancellationToken) =>
         await _dbContext.Clinics.FirstOrDefaultAsync(c => c.Id == clinicId, cancellationToken)
         ?? throw new NotFoundException("Clinic", clinicId);
 
-    private static AdminClinicDto ToAdminDto(Clinic clinic) => new()
+    private static AdminClinicDto ToAdminDto(Clinic clinic, IReadOnlyList<ClinicAdministratorDto> administrators) => new()
     {
         Id = clinic.Id,
         Name = clinic.Name,
@@ -240,6 +314,7 @@ public class SuperAdminService : ISuperAdminService
         Website = clinic.Website,
         IsApproved = clinic.IsApproved,
         IsActive = clinic.IsActive,
-        CreatedAt = clinic.CreatedAt
+        CreatedAt = clinic.CreatedAt,
+        Administrators = administrators
     };
 }

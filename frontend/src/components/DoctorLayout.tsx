@@ -1,16 +1,15 @@
 import { Link, NavLink, Outlet, useMatch } from 'react-router-dom'
-import { Bell, CalendarDays, CalendarOff, Clock, Moon, Plus, Search, Sun, User } from 'lucide-react'
+import { Bell, CalendarDays, CalendarOff, Clock, Moon, Search, Sun } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
-import { useToast } from '../context/ToastContext'
 import { DoctorSearchProvider, useDoctorSearch } from '../context/DoctorSearchContext'
 import { initials } from './ui'
+import Logo from './Logo'
 
 const NAV_ITEMS = [
   { to: '/mjeku-panel/kalendari', icon: CalendarDays, label: 'Kalendari' },
   { to: '/mjeku-panel/orari', icon: Clock, label: 'Orari' },
   { to: '/mjeku-panel/mungesat', icon: CalendarOff, label: 'Mungesat' },
-  { to: '/mjeku-panel/profili', icon: User, label: 'Profili' },
 ]
 
 export default function DoctorLayout() {
@@ -24,7 +23,6 @@ export default function DoctorLayout() {
 function DoctorLayoutInner() {
   const { user } = useAuth()
   const { theme, toggleTheme } = useTheme()
-  const { notify } = useToast()
   const { searchTerm, setSearchTerm } = useDoctorSearch()
   const userInitials = user ? initials(user.firstName, user.lastName) : ''
   const isCalendar = useMatch('/mjeku-panel/kalendari')
@@ -34,7 +32,7 @@ function DoctorLayoutInner() {
     <div className="patient-shell">
       <header className="patient-topbar">
         <Link to="/" className="brand">
-          <span className="brand__mark" aria-hidden>＋</span>
+          <span className="brand__mark" aria-hidden><Logo size={22} /></span>
           <span className="brand__name">Termini<span className="brand__tld">.ks</span></span>
         </Link>
 
@@ -48,13 +46,6 @@ function DoctorLayoutInner() {
         </div>
 
         <div className="patient-topbar__right">
-          <button
-            type="button"
-            className="btn btn--primary btn--sm"
-            onClick={() => notify('Funksioni vjen së shpejti.', 'info')}
-          >
-            <Plus size={15} strokeWidth={1.5} /> Termin i Ri
-          </button>
           <button
             type="button"
             className="theme-toggle"

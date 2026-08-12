@@ -1,11 +1,14 @@
 /* ============ Tokens ============ */
 :root {
-  /* Single accent — Clinical Teal. No secondary brand hue exists by design. */
+  /* Clinical Teal is the primary accent for all UI surfaces. Gold is a brand
+     hue reserved for the logo mark only (the "booked slot" quadrant) — never
+     used as a general UI accent. */
   --primary: #0f6e62;
   --primary-600: #0c5d53;
   --primary-700: #0a4e45;   /* Teal Deep — accent text on wash, pressed states */
   --primary-050: #e6f0ee;   /* Teal Wash — tags, hovers, selected states */
   --primary-100: #cfe2de;
+  --gold: #f2a900;          /* Logo-only accent — the booked slot in the mark */
 
   --ink: #131718;           /* Charcoal Ink — primary text. Never #000 */
   --body: #3a4241;
@@ -243,8 +246,7 @@ input, select, textarea { font-family: inherit; font-size: 1rem; }
 }
 .brand__mark {
   display: grid; place-items: center; width: 34px; height: 34px;
-  background: var(--primary); color: #fff; border-radius: var(--radius-sm);
-  font-size: 1.15rem; font-weight: 700; line-height: 1;
+  border-radius: var(--radius-sm);
 }
 .brand__tld { color: var(--primary); }
 .navbar__links { display: flex; align-items: center; gap: 22px; }
@@ -308,13 +310,27 @@ input, select, textarea { font-family: inherit; font-size: 1rem; }
   font-size: .69rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
   color: var(--muted); margin-bottom: 4px;
 }
+/* Kept in the DOM for aria-labelledby, but visually absent — used where a
+   parent (e.g. ProfileField) already renders its own label above the field. */
+.cselect__label--hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: 0;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
 .cselect__trigger {
   display: flex; align-items: center; gap: 8px; width: 100%;
-  border: none; background: transparent; padding: 0; margin: 0;
+  border: 1px solid var(--line); background: var(--surface-sunk); border-radius: var(--radius-sm);
+  min-height: 44px; padding: 11px 12px; margin: 0;
   font-family: var(--font-display); font-size: .95rem; font-weight: 500;
   color: var(--ink); cursor: pointer; text-align: left;
+  transition: border-color var(--dur) var(--ease-spring), background var(--dur) var(--ease-spring);
 }
-.cselect__trigger:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; border-radius: 4px; }
+.cselect__trigger:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; border-radius: var(--radius-sm); }
+
+/* The hero search bar supplies its own pill chrome via `.lp-search` — its
+   fields render the trigger borderless so they read as one seamless bar. */
+.lp-search__field .cselect__trigger {
+  border: none; background: transparent; padding: 0; min-height: 0;
+}
 .cselect__value { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cselect__chevron { color: var(--muted); flex-shrink: 0; transition: transform var(--dur) var(--ease-spring); }
 .cselect__chevron.is-open { transform: rotate(180deg); color: var(--primary); }
@@ -332,6 +348,18 @@ input, select, textarea { font-family: inherit; font-size: 1rem; }
 .cselect__option:hover, .cselect__option.is-active { background: var(--primary-050); color: var(--primary-700); }
 .cselect__option.is-selected { background: var(--primary); color: #fff; }
 .cselect__option.is-selected svg { color: #fff; }
+
+/* Whole control disabled — inert filters not yet wired to data. */
+.cselect.is-disabled .cselect__trigger { cursor: not-allowed; opacity: .55; }
+.cselect.is-disabled .cselect__trigger:hover { border-color: var(--line); }
+
+/* Placeholder value ("Zgjidhni specializimin") shown muted, matching the
+   native `<option disabled>` look — and its list entry stays unselectable. */
+.cselect__value--placeholder { color: var(--muted); font-weight: 400; }
+.cselect__option.is-disabled {
+  color: var(--muted); cursor: default; font-style: italic;
+}
+.cselect__option.is-disabled:hover { background: transparent; color: var(--muted); }
 
 /* Hero search bar context — same component, landing-page tokens. */
 .lp-search__field .cselect__label { color: var(--lp-muted); }
@@ -583,7 +611,11 @@ input, select, textarea { font-family: inherit; font-size: 1rem; }
 .auth-card h1 { font-size: 1.7rem; }
 .auth-sub { color: var(--muted); margin: 8px 0 24px; }
 .form { display: flex; flex-direction: column; gap: 4px; }
+/* min-width: 0 overrides the grid item's default content-based minimum —
+   without it, a wide child (e.g. a datetime-local input) forces its 1fr
+   track past the container edge instead of shrinking to fit. */
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-row > * { min-width: 0; }
 .auth-alt { text-align: center; margin-top: 20px; color: var(--muted); }
 .auth-alt a { color: var(--primary); font-weight: 700; }
 .auth-demo {
@@ -764,6 +796,13 @@ input, select, textarea { font-family: inherit; font-size: 1rem; }
   border-radius: var(--radius); padding: 14px 16px; font-weight: 600; margin-bottom: 8px;
   display: flex; align-items: center; gap: 8px;
 }
+.errorbox__message { flex: 1; }
+.errorbox__retry {
+  flex-shrink: 0; background: none; border: 1px solid currentColor; color: inherit;
+  border-radius: var(--radius-sm); padding: 6px 12px; font-size: .82rem; font-weight: 700; cursor: pointer;
+  transition: background var(--dur) var(--ease-spring);
+}
+.errorbox__retry:hover { background: color-mix(in srgb, var(--danger) 12%, transparent); }
 .notfound { text-align: center; padding: 90px 20px; }
 .notfound__code { font-size: clamp(4rem, 12vw, 6rem); font-weight: 500; color: var(--primary-100); letter-spacing: -.05em; line-height: 1; }
 .notfound h1 { margin: 6px 0 10px; }
@@ -1722,6 +1761,7 @@ input, select, textarea { font-family: inherit; font-size: 1rem; }
 }
 .admin-card__status--approved { background: var(--ok-bg); color: var(--ok); }
 .admin-card__status--pending { background: var(--warn-bg); color: var(--warn); }
+.admin-card__status--inline { position: static; flex-shrink: 0; }
 
 .admin-card__top { display: flex; gap: 14px; align-items: flex-start; padding-right: 90px; }
 .admin-card__avatar {
@@ -1751,7 +1791,11 @@ input, select, textarea { font-family: inherit; font-size: 1rem; }
   border: 2px solid var(--surface); margin-left: -8px;
 }
 .admin-card__verifying { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
-.admin-card__manage { color: var(--primary); font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; gap: 4px; }
+.admin-card__manage {
+  color: var(--primary); font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; gap: 4px;
+  background: none; border: none; padding: 0; cursor: pointer; font-family: inherit;
+}
+.admin-card__manage:hover { color: var(--primary-700); }
 .admin-card__manage--disabled { color: var(--muted); pointer-events: none; }
 
 .admin-add-card {
@@ -1824,7 +1868,18 @@ input, select, textarea { font-family: inherit; font-size: 1rem; }
   transition: border-color var(--dur) var(--ease-spring), color var(--dur) var(--ease-spring);
 }
 .clinic-upload:hover { border-color: var(--primary); color: var(--primary); }
+.clinic-upload:disabled { cursor: not-allowed; }
 .clinic-upload span { font-size: 10px; font-weight: 700; letter-spacing: .06em; }
+.clinic-upload__preview {
+  position: relative; width: 72px; height: 72px; border-radius: var(--radius-sm); overflow: hidden;
+}
+.clinic-upload__preview img { width: 100%; height: 100%; object-fit: cover; }
+.clinic-upload__spinner {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  background: rgba(4, 7, 7, .45); color: #fff;
+}
+.clinic-upload__spin { animation: clinic-upload-spin .8s linear infinite; }
+@keyframes clinic-upload-spin { to { transform: rotate(360deg); } }
 
 .clinic-danger { border-left: 3px solid var(--danger); }
 .clinic-danger__title { font-size: 15px; font-weight: 700; color: var(--danger); margin-bottom: 10px; }
@@ -1928,6 +1983,49 @@ input, select, textarea { font-family: inherit; font-size: 1rem; }
 }
 .multiselect-pill:hover { border-color: var(--primary-100); }
 .multiselect-pill.is-selected { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* Fusha e fjalëkalimit fillestar: input + toggle shfaq/fshih + butoni Gjenero. */
+.password-generate { display: flex; align-items: center; gap: 8px; position: relative; }
+.password-generate input { flex: 1; min-width: 0; padding-right: 40px; }
+.password-generate__toggle {
+  position: absolute; right: 96px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; color: var(--muted); padding: 6px; cursor: pointer;
+  display: inline-flex; align-items: center;
+}
+.password-generate__toggle:hover { color: var(--ink); }
+.password-generate .btn { flex-shrink: 0; }
+@media (max-width: 620px) {
+  .password-generate { flex-wrap: wrap; }
+  .password-generate__toggle { right: 12px; top: 22px; transform: none; }
+  .password-generate .btn { width: 100%; }
+}
+
+/* Kredencialet e llogarisë së re — të lexueshme dhe të kopjueshme. */
+.credentials-block {
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: var(--surface-sunk); padding: 4px 14px; margin: 16px 0;
+}
+.credentials-block__row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 0; border-bottom: 1px solid var(--line-soft);
+}
+.credentials-block__row:last-child { border-bottom: none; }
+.credentials-block__label {
+  flex-shrink: 0; width: 88px;
+  font-size: .69rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+}
+.credentials-block__value {
+  flex: 1; min-width: 0; word-break: break-all;
+  font-family: var(--font-mono); font-size: 13px; color: var(--ink);
+}
+
+.credentials-warning {
+  display: flex; align-items: flex-start; gap: 10px;
+  border-left: 3px solid var(--warn); background: var(--warn-bg);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 12px 14px;
+  font-size: 12.5px; color: var(--body); line-height: 1.5;
+}
+.credentials-warning svg { flex-shrink: 0; margin-top: 1px; color: var(--warn); }
 
 .schedule-info-banner--warn { border-left-color: var(--warn); background: var(--warn-bg); color: var(--body); }
 

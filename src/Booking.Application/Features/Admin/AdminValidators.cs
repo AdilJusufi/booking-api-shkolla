@@ -24,6 +24,7 @@ public sealed class UpdateClinicRequestValidator : AbstractValidator<UpdateClini
         RuleFor(x => x.PhoneNumber).MaximumLength(30);
         RuleFor(x => x.Email).EmailAddress().MaximumLength(256).When(x => !string.IsNullOrEmpty(x.Email));
         RuleFor(x => x.Website).MaximumLength(300);
+        RuleFor(x => x.LogoUrl).MaximumLength(500);
     }
 }
 

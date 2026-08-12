@@ -14,7 +14,8 @@ import { api, ApiError } from '../lib/api'
 import { AppointmentStatus } from '../lib/types'
 import type { Gender, PatientProfile } from '../lib/types'
 import { useToast } from '../context/ToastContext'
-import { initials } from '../components/ui'
+import { CustomSelect, initials } from '../components/ui'
+import type { CustomSelectOption } from '../components/ui'
 
 const ACTIVE_STATUSES = [
   AppointmentStatus.Pending,
@@ -31,6 +32,13 @@ function formatDob(iso?: string): string {
   if (!m) return iso
   return `${Number(m[3])} ${MONTHS_SQ[Number(m[2]) - 1]} ${m[1]}`
 }
+
+const GENDER_OPTIONS: CustomSelectOption[] = [
+  { value: '', label: 'Zgjidhni...' },
+  { value: '1', label: 'Mashkull' },
+  { value: '2', label: 'Femër' },
+  { value: '3', label: 'Tjetër' },
+]
 
 function genderLabel(gender: Gender | undefined): string {
   switch (gender) {
@@ -102,6 +110,7 @@ export default function MyProfilePage() {
   const [formData, setFormData] = useState<FormData | null>(null)
   const [saving, setSaving] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [genderSelectOpen, setGenderSelectOpen] = useState(false)
 
   const formRef = useRef<HTMLDivElement>(null)
 
@@ -339,12 +348,15 @@ export default function MyProfilePage() {
           </div>
 
           <ProfileField label="Gjinia" editing={isEditing} value={genderLabel(profile.gender)} error={fieldErrors.gender}>
-            <select value={formData.gender} onChange={(e) => updateField('gender', e.target.value)}>
-              <option value="">Zgjidhni...</option>
-              <option value="1">Mashkull</option>
-              <option value="2">Femër</option>
-              <option value="3">Tjetër</option>
-            </select>
+            <CustomSelect
+              label="Gjinia"
+              hideLabel
+              options={GENDER_OPTIONS}
+              value={formData.gender}
+              onChange={(v) => updateField('gender', v)}
+              open={genderSelectOpen}
+              onOpenChange={setGenderSelectOpen}
+            />
           </ProfileField>
         </div>
 

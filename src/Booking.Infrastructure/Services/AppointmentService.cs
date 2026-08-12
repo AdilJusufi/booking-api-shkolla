@@ -48,35 +48,37 @@ public class AppointmentService : IAppointmentService
     {
         var patientProfileId = await GetPatientProfileIdAsync(userId, cancellationToken);
 
-        var rows = QueryRows(a => a.PatientProfileId == patientProfileId);
+        // Filter/order/page on the Appointment entity itself, then project only the
+        // page's rows — EF Core cannot translate Where/OrderBy applied after the
+        // QueryRows projection below, since it embeds `.First()` subqueries.
+        DateTime? fromUtc = query.From is { } from
+            ? _timeZoneService.ToUtc(from.ToDateTime(TimeOnly.MinValue))
+            : null;
+        DateTime? toUtc = query.To is { } to
+            ? _timeZoneService.ToUtc(to.AddDays(1).ToDateTime(TimeOnly.MinValue))
+            : null;
 
-        if (query.From is { } from)
-        {
-            var fromUtc = _timeZoneService.ToUtc(from.ToDateTime(TimeOnly.MinValue));
-            rows = rows.Where(r => r.StartUtc >= fromUtc);
-        }
+        var baseQuery = _dbContext.Appointments.Where(a =>
+            a.PatientProfileId == patientProfileId &&
+            (fromUtc == null || a.StartDateTime >= fromUtc) &&
+            (toUtc == null || a.StartDateTime < toUtc) &&
+            (query.Status == null || a.Status == query.Status));
 
-        if (query.To is { } to)
-        {
-            var toUtc = _timeZoneService.ToUtc(to.AddDays(1).ToDateTime(TimeOnly.MinValue));
-            rows = rows.Where(r => r.StartUtc < toUtc);
-        }
+        var totalItems = await baseQuery.CountAsync(cancellationToken);
 
-        if (query.Status is { } status)
-        {
-            rows = rows.Where(r => r.Status == status);
-        }
-
-        var totalItems = await rows.CountAsync(cancellationToken);
-        var items = await rows
-            .OrderByDescending(r => r.StartUtc)
+        var pagedIds = await baseQuery
+            .OrderByDescending(a => a.StartDateTime)
             .Skip((query.Page - 1) * query.PageSize)
             .Take(query.PageSize)
+            .Select(a => a.Id)
             .ToListAsync(cancellationToken);
+
+        var rowsById = await QueryRows(a => pagedIds.Contains(a.Id))
+            .ToDictionaryAsync(r => r.Id, cancellationToken);
 
         return new PagedResult<AppointmentDto>
         {
-            Items = items.Select(ToDto).ToList(),
+            Items = pagedIds.Select(id => ToDto(rowsById[id])).ToList(),
             Page = query.Page,
             PageSize = query.PageSize,
             TotalItems = totalItems

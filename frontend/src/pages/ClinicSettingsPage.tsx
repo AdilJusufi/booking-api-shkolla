@@ -1,10 +1,36 @@
-import { useState } from 'react'
-import { Image, Pencil } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Image, Loader2, Pencil, X } from 'lucide-react'
 import { api, ApiError } from '../lib/api'
 import type { UpdateClinicRequest } from '../lib/types'
 import { useToast } from '../context/ToastContext'
 import { useClinicContext } from '../components/ClinicDetailLayout'
 import { ErrorBox } from '../components/ui'
+
+const LOGO_ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp']
+const LOGO_MAX_BYTES = 2 * 1024 * 1024
+const LOGO_MIN_DIMENSION = 200
+
+/** Fut një transformim Cloudinary (f_auto,q_auto + madhësi) menjëherë pas "/upload/". */
+function cloudinaryDisplayUrl(url: string, transform: string): string {
+  return url.includes('/upload/') ? url.replace('/upload/', `/upload/${transform}/`) : url
+}
+
+function readImageDimensions(file: File): Promise<{ width: number; height: number } | null> {
+  if (file.type === 'image/svg+xml') return Promise.resolve(null)
+  return new Promise((resolve) => {
+    const objectUrl = URL.createObjectURL(file)
+    const img = new window.Image()
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl)
+      resolve({ width: img.naturalWidth, height: img.naturalHeight })
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl)
+      resolve(null)
+    }
+    img.src = objectUrl
+  })
+}
 
 interface FormState {
   name: string
@@ -138,21 +164,7 @@ export default function ClinicSettingsPage() {
       <div className="clinic-settings__side">
         <div className="admin-card">
           <h2 className="clinic-settings__card-title">Branding</h2>
-          <button
-            type="button"
-            className="clinic-upload"
-            onClick={() => notify('Funksion në zhvillim.', 'info')}
-          >
-            <Image size={26} strokeWidth={1.5} />
-            <span>LOGO E KLINIKËS</span>
-          </button>
-          <button
-            type="button"
-            className="btn btn--ghost btn--sm btn--block"
-            onClick={() => notify('Funksion në zhvillim.', 'info')}
-          >
-            Ndrysho Logon
-          </button>
+          <ClinicLogoUpload />
         </div>
 
         <div className="admin-card clinic-danger">
@@ -175,6 +187,140 @@ export default function ClinicSettingsPage() {
       </div>
 
     </div>
+  )
+}
+
+function ClinicLogoUpload() {
+  const { clinic, refresh } = useClinicContext()
+  const { notify } = useToast()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const [preview, setPreview] = useState<string | null>(null)
+
+  const savedLogo = clinic.logoUrl ? cloudinaryDisplayUrl(clinic.logoUrl, 'f_auto,q_auto,w_144,h_144,c_fill,g_auto') : null
+  const displayUrl = preview ?? savedLogo
+
+  function openFilePicker() {
+    if (uploading) return
+    fileInputRef.current?.click()
+  }
+
+  function currentClinicPayload(overrides: Partial<UpdateClinicRequest> = {}): UpdateClinicRequest {
+    return {
+      name: clinic.name,
+      description: clinic.description,
+      phoneNumber: clinic.phoneNumber,
+      email: clinic.email,
+      website: clinic.website,
+      logoUrl: clinic.logoUrl,
+      ...overrides,
+    }
+  }
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+
+    if (!LOGO_ACCEPTED_TYPES.includes(file.type)) {
+      notify('Formati i skedarit nuk mbështetet. Përdorni PNG, JPEG, SVG ose WEBP.', 'error')
+      return
+    }
+    if (file.size > LOGO_MAX_BYTES) {
+      notify('Skedari është shumë i madh. Madhësia maksimale është 2MB.', 'error')
+      return
+    }
+    const dimensions = await readImageDimensions(file)
+    if (dimensions && (dimensions.width < LOGO_MIN_DIMENSION || dimensions.height < LOGO_MIN_DIMENSION)) {
+      notify(`Imazhi duhet të jetë së paku ${LOGO_MIN_DIMENSION}x${LOGO_MIN_DIMENSION}px.`, 'error')
+      return
+    }
+
+    const localPreview = URL.createObjectURL(file)
+    setPreview(localPreview)
+    setUploading(true)
+
+    try {
+      const signature = await api.getClinicUploadSignature(clinic.id)
+
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('api_key', signature.apiKey)
+      formData.append('timestamp', String(signature.timestamp))
+      formData.append('signature', signature.signature)
+      formData.append('folder', signature.folder)
+
+      const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${signature.cloudName}/image/upload`, {
+        method: 'POST',
+        body: formData,
+      })
+      if (!uploadRes.ok) throw new Error('Cloudinary upload failed')
+      const uploaded = (await uploadRes.json()) as { secure_url: string }
+
+      await api.updateClinic(clinic.id, currentClinicPayload({ logoUrl: uploaded.secure_url }))
+      notify('Logo u ngarkua me sukses.', 'ok')
+      refresh()
+    } catch {
+      notify('Ngarkimi dështoi. Provoni përsëri.', 'error')
+    } finally {
+      URL.revokeObjectURL(localPreview)
+      setPreview(null)
+      setUploading(false)
+    }
+  }
+
+  async function handleRemove() {
+    if (uploading) return
+    setUploading(true)
+    try {
+      await api.updateClinic(clinic.id, currentClinicPayload({ logoUrl: undefined }))
+      notify('Logo u hoq.', 'ok')
+      refresh()
+    } catch {
+      notify('Gabim. Provoni përsëri.', 'error')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={LOGO_ACCEPTED_TYPES.join(',')}
+        style={{ display: 'none' }}
+        onChange={handleFileChange}
+      />
+      <button type="button" className="clinic-upload" onClick={openFilePicker} disabled={uploading}>
+        {displayUrl ? (
+          <div className="clinic-upload__preview">
+            <img src={displayUrl} alt="Logo e klinikës" />
+            {uploading && (
+              <div className="clinic-upload__spinner">
+                <Loader2 size={22} strokeWidth={1.5} className="clinic-upload__spin" />
+              </div>
+            )}
+          </div>
+        ) : uploading ? (
+          <Loader2 size={26} strokeWidth={1.5} className="clinic-upload__spin" />
+        ) : (
+          <>
+            <Image size={26} strokeWidth={1.5} />
+            <span>LOGO E KLINIKËS</span>
+          </>
+        )}
+      </button>
+      {clinic.logoUrl ? (
+        <button type="button" className="btn btn--ghost btn--sm btn--block" onClick={handleRemove} disabled={uploading}>
+          <X size={14} strokeWidth={1.5} /> Hiq Logon
+        </button>
+      ) : (
+        <button type="button" className="btn btn--ghost btn--sm btn--block" onClick={openFilePicker} disabled={uploading}>
+          Ngarko Logon
+        </button>
+      )}
+    </>
   )
 }
 
