@@ -1,0 +1,493 @@
+{
+  "home": {
+    "eyebrow": "18 klinika · 120+ mjekë · Kosovë",
+    "heroLine1": "Gjeni mjekun",
+    "heroLine2": "e duhur.",
+    "heroAccent": "Rezervoni",
+    "heroLine3": "në sekonda.",
+    "heroLead": "Rezervo Mjekun ju lidh me mjekë dhe klinika të verifikuara në Kosovë — pa pritje, pa telefonata.",
+    "cityLabel": "Qyteti",
+    "allCities": "Të gjitha qytetet",
+    "specialtyLabel": "Specialiteti",
+    "allSpecialties": "Të gjitha specialitetet",
+    "searchCta": "Kërko",
+    "trustFree": "Pa pagesë për pacientët",
+    "trustVerified": "Mjekë të verifikuar",
+    "trustEncrypted": "Të dhëna të enkriptuara",
+    "panel": {
+      "ariaLabel": "Shembull i rezervimit",
+      "doctorName": "Dr. Arben Gashi",
+      "doctorSpecialty": "Stomatologji · Prishtinë",
+      "available": "I lirë",
+      "freeSlotsLabel": "Oraret e lira",
+      "slotCount_one": "{{count}} termin",
+      "slotCount_other": "{{count}} terme",
+      "confirmCta": "Konfirmo terminin",
+      "reviewCount": "nga 640 pacientë"
+    },
+    "stats": {
+      "verifiedDoctors": "Mjekë të verifikuar",
+      "partnerClinics": "Klinika partnere",
+      "bookedAppointments": "Termine të rezervuara",
+      "citiesInKosovo": "Qytete në Kosovë"
+    },
+    "specialtiesSection": {
+      "kicker": "Specialitetet",
+      "title": "Specializimet më të kërkuara",
+      "subtitle": "Nga kardiologjia te pediatria — gjeni ekspertin që ju nevojitet.",
+      "seeAll": "Shih të gjitha",
+      "freeSlotsMeta": "Orare të lira"
+    },
+    "howItWorks": {
+      "kicker": "Procesi",
+      "title": "Si funksionon Rezervo Mjekun?",
+      "subtitle": "Tre hapa të thjeshtë deri te mjeku juaj — pa telefonata, pa pritje në sportel, pa letra.",
+      "cta": "Fillo tani",
+      "step1Title": "Kërkoni",
+      "step1Text": "Kërkoni sipas specializimit, emrit të mjekut ose klinikës. Filtroni sipas qytetit dhe disponueshmërisë.",
+      "step2Title": "Zgjidhni",
+      "step2Text": "Shikoni oraret e lira në kohë reale dhe zgjidhni kohën që ju përshtatet më mirë.",
+      "step3Title": "Konfirmoni",
+      "step3Text": "Rezervimi juaj konfirmohet menjëherë. Klinika njoftohet automatikisht — pa thirrje telefonike."
+    },
+    "doctorsSection": {
+      "kicker": "Mjekët",
+      "title": "Mjekë të Verifikuar",
+      "subtitle": "Të gjithë mjekët janë të licensuar dhe të verifikuar para se të shtohen në platformë.",
+      "seeAll": "Të gjithë mjekët",
+      "verified": "I verifikuar",
+      "experienceYears_one": "{{count}} vit përvojë",
+      "experienceYears_other": "{{count}} vjet përvojë",
+      "licensedDoctor": "Mjek i licencuar",
+      "browseSlots": "Shfleto oraret",
+      "firstAppointment": "Termini i parë:"
+    },
+    "features": {
+      "verifiedBig": "Verifikuar",
+      "verifiedLabel": "Mjekë të licencuar e kontrolluar",
+      "hoursBig": "24/7",
+      "hoursLabel": "Rezervim online, edhe natën",
+      "easyBig": "Lehtë",
+      "easyLabel": "Anuloni ose ricaktoni me një klik",
+      "coverageBig": "7 qytete",
+      "coverageLabel": "Mbulim në gjithë Kosovën"
+    },
+    "clinicsSection": {
+      "kicker": "Klinikat",
+      "title": "Klinika partnere në gjithë Kosovën",
+      "subtitle": "Nga qendrat spitalore te praktikat familjare të lagjes — të gjitha të verifikuara.",
+      "seeAll": "Shih të gjitha",
+      "viewClinic": "Shiko klinikën",
+      "doctorCount_one": "{{count}} mjek",
+      "doctorCount_other": "{{count}} mjekë"
+    },
+    "testimonials": {
+      "kicker": "Dëshmi",
+      "title": "Të besuar nga pacientë dhe klinika"
+    },
+    "finalCta": {
+      "kicker": "Falas për pacientët",
+      "title": "Gati të rezervoni terminin tuaj?",
+      "subtitle": "Bashkohuni me mijëra pacientë që tashmë i besojnë Rezervo Mjekun për shëndetin e tyre.",
+      "cta": "Filloni Tani",
+      "fineprint": "Pa kartë krediti · Anulim i lirë · Mbështetje në shqip"
+    },
+    "demo": {
+      "specialties": {
+        "cardiology": "Kardiologji",
+        "pediatrics": "Pediatri",
+        "neurology": "Neurologji",
+        "orthopedics": "Ortopedi",
+        "dermatology": "Dermatologji",
+        "gynecology": "Gjinekologji",
+        "ophthalmology": "Oftalmologji",
+        "psychiatry": "Psikiatri"
+      },
+      "doctors": [
+        {
+          "name": "Arben Vitia",
+          "specialty": "Kardiologji",
+          "next": "Sot, 14:30"
+        },
+        {
+          "name": "Linda Gashi",
+          "specialty": "Pediatri",
+          "next": "Sot, 16:00"
+        },
+        {
+          "name": "Besnik Ramadani",
+          "specialty": "Neurologji",
+          "next": "Nesër, 09:00"
+        },
+        {
+          "name": "Teuta Krasniqi",
+          "specialty": "Dermatologji",
+          "next": "Nesër, 11:30"
+        },
+        {
+          "name": "Driton Berisha",
+          "specialty": "Ortopedi",
+          "next": "E enjte, 08:30"
+        }
+      ],
+      "clinics": [
+        {
+          "name": "Spitali Amerikan",
+          "city": "Prishtinë",
+          "specialties": [
+            "Kardiologji",
+            "Pediatri",
+            "Neurologji"
+          ]
+        },
+        {
+          "name": "Poliklinika Rilindja",
+          "city": "Prishtinë",
+          "specialties": [
+            "Ortopedi",
+            "Dermatologji"
+          ]
+        },
+        {
+          "name": "Klinika Vita",
+          "city": "Prizren",
+          "specialties": [
+            "Gjinekologji",
+            "Pediatri"
+          ]
+        }
+      ],
+      "testimonials": [
+        {
+          "quote": "Kam rezervuar terminin te kardiologu në më pak se një minutë, në mbrëmje, pa telefonuar askënd. Konfirmimi erdhi menjëherë.",
+          "name": "Blerta Hoxha",
+          "role": "Pacient · Prishtinë"
+        },
+        {
+          "quote": "Si klinikë, kalendarin e kemi tani në një vend. Terminet e humbura na janë ulur ndjeshëm që kur kaluam te Rezervo Mjekun.",
+          "name": "Dr. Fatos Kelmendi",
+          "role": "Drejtor klinike · Prizren"
+        }
+      ]
+    }
+  },
+  "search": {
+    "title": "Gjeni mjekun ose klinikën e duhur",
+    "subtitle": "Kërkoni nga 500+ mjekë dhe 80+ klinika në Kosovë",
+    "searchPlaceholder": "Kërkoni mjek, klinikë, ose specialitet...",
+    "allSpecialtiesChip": "Të gjitha",
+    "tabClinics": "Klinika",
+    "tabDoctors": "Mjekët",
+    "filtersToggle": "Filtrat",
+    "cityLabel": "Qyteti",
+    "specialtyLabel": "Specialiteti",
+    "showLess": "Shfaq më pak ▴",
+    "showMore": "Shfaq më shumë ▾",
+    "minRatingLabel": "Vlerësimi minimal",
+    "andUp": "& lart",
+    "anyRating": "Çdo vlerësim",
+    "applyFilters": "Apliko filtrat",
+    "clearAllFilters": "Pastro të gjitha",
+    "headingClinicsIn": "Klinika në {{city}}",
+    "headingDoctorsIn": "Mjekë në {{city}}",
+    "defaultCity": "Kosovë",
+    "resultCount_one": "{{count}} rezultat i gjetur",
+    "resultCount_other": "{{count}} rezultate të gjetur",
+    "sortRelevance": "Rendito sipas: Relevanca",
+    "sortName": "Emri (A-Z)",
+    "sortRating": "Më të vlerësuarat",
+    "errorTitle": "Ndodhi një gabim",
+    "noResultsTitle": "Nuk u gjetën rezultate",
+    "noResultsHint": "Provoni të ndryshoni filtrat ose termin e kërkimit.",
+    "prevPage": "Prapa",
+    "nextPage": "Para"
+  },
+  "clinicDetail": {
+    "backToSearch": "Kthehu te kërkimi",
+    "loadingLabel": "Duke ngarkuar klinikën",
+    "branchesTitle": "Degët",
+    "servicesTitle": "Shërbimet & çmimet",
+    "minutesShort": "min",
+    "doctorsTitle": "Mjekët",
+    "noDoctorsListed": "Nuk ka mjekë të listuar"
+  },
+  "cards": {
+    "bookCta": "Rezervo",
+    "viewClinicCta": "Shiko klinikën"
+  },
+  "doctorDetail": {
+    "backToSearch": "Kthehu te kërkimi",
+    "loadingLabel": "Duke ngarkuar profilin",
+    "experienceYears_one": "{{count}} vit përvojë",
+    "experienceYears_other": "{{count}} vjet përvojë",
+    "aboutTitle": "Rreth mjekut",
+    "whereTitle": "Ku ordinon",
+    "servicesTitle": "Shërbimet",
+    "minutesShort": "min",
+    "bookingTitle": "Rezervoni termin",
+    "bookingSubtitle": "Plotësoni hapat për të rezervuar.",
+    "steps": {
+      "service": "Shërbimi",
+      "branch": "Dega",
+      "date": "Data",
+      "time": "Ora"
+    },
+    "chooseService": "Zgjidhni shërbimin",
+    "changeService": "Ndrysho shërbimin",
+    "chooseBranch": "Zgjidhni degën",
+    "changeBranch": "Ndrysho degën",
+    "chooseDate": "Zgjidhni datën",
+    "changeDate": "Ndrysho datën",
+    "chooseTime": "Zgjidhni orën",
+    "noSlotsForDate": "Nuk ka vende të lira për këtë datë.",
+    "tryAnotherDate": "Provoni datë tjetër",
+    "confirmBooking": "Konfirmo rezervimin",
+    "continueCta": "Vazhdo",
+    "loginRequiredHint": "Duhet të jeni të kyçur për të rezervuar.",
+    "loginCta": "Kyçuni"
+  },
+  "appointmentsList": {
+    "title": "Terminet e mia",
+    "subtitle": "Shikoni dhe menaxhoni të gjitha terminet tuaja në një vend.",
+    "newAppointmentCta": "Rezervo termin të ri",
+    "statsActive": "Aktive",
+    "statsCompleted": "Përfunduar",
+    "statsPending": "Në pritje",
+    "statsCancelled": "Anuluara",
+    "filterAll": "Të gjitha",
+    "filterActive": "Aktive",
+    "filterCompleted": "Përfunduar",
+    "filterCancelled": "Anuluara",
+    "searchPlaceholder": "Kërko sipas mjekut...",
+    "dateRange": {
+      "all": "Të gjitha datat",
+      "today": "Sot",
+      "week": "Kjo javë",
+      "month": "Ky muaj",
+      "last3months": "3 muajt e fundit",
+      "year": "Këtë vit"
+    },
+    "badges": {
+      "pending": "NË PRITJE",
+      "confirmed": "KONFIRMUAR",
+      "checkedIn": "MBËRRITUR",
+      "inProgress": "NË PROGRES",
+      "completed": "PËRFUNDUAR",
+      "cancelledByPatient": "ANULUAR",
+      "cancelledByClinic": "ANULUAR (KLINIKA)",
+      "noShow": "NUK U PARAQIT",
+      "rescheduled": "RISCHEDULUAR",
+      "unknown": "I PANJOHUR"
+    },
+    "errorTitle": "Ndodhi një gabim",
+    "noAppointmentsTitle": "Nuk keni termine",
+    "noAppointmentsHint": "Rezervoni terminin tuaj të parë tani.",
+    "confirmCancelPrompt": "Jeni i sigurt?",
+    "cancelling": "Duke anuluar…",
+    "confirmCancelYes": "Po, anulo",
+    "viewDetails": "Shiko detajet",
+    "cancelWindowNote": "Anulimi jo i mundur (< 12 orë)",
+    "cancelledToast": "Termini u anulua.",
+    "cancelFailedToast": "Anulimi dështoi.",
+    "cancelReasonDefault": "Anuluar nga pacienti"
+  },
+  "appointmentDetail": {
+    "backToAppointments": "Kthehu te terminet",
+    "notFoundTitle": "Termini nuk u gjet",
+    "notFoundHint": "Ky termin nuk ekziston ose nuk keni akses.",
+    "refLabel": "REF",
+    "timeAndPlace": "Koha & Vendi",
+    "dateLabel": "Data",
+    "timeLabel": "Ora",
+    "clinicLabel": "Klinika",
+    "branchLabel": "Dega",
+    "doctorAndService": "Mjeku & Shërbimi",
+    "serviceLabel": "Shërbimi",
+    "durationLabel": "Kohëzgjatja",
+    "durationMinutes": "{{count}} minuta",
+    "priceLabel": "Çmimi",
+    "patientSectionTitle": "Pacienti",
+    "bookedForLabel": "Rezervuar për",
+    "typeLabel": "Tipi",
+    "typeFamilyMember": "Anëtar Familjeje",
+    "typeIndividual": "Pacient Individual",
+    "noteLabel": "Keni shënim:",
+    "statusHistoryTitle": "Historiku i statusit",
+    "bookedEventLabel": "Rezervuar",
+    "statusDescriptionFallback": "Statusi i këtij termini nuk njihet.",
+    "statusDescriptions": {
+      "pending": "Termini juaj është duke pritur konfirmimin nga klinika.",
+      "confirmed": "Termini juaj është konfirmuar. Ju lutem mbërrini 10 minuta para kohës.",
+      "checkedIn": "Jeni shënuar si të mbërritur në klinikë.",
+      "inProgress": "Takimi juaj është duke u zhvilluar.",
+      "completed": "Ky termin është përfunduar.",
+      "cancelledByPatient": "Ky termin është anuluar nga ju.",
+      "cancelledByClinic": "Ky termin është anuluar nga klinika.",
+      "noShow": "Ju nuk keni mbërritur në këtë termin.",
+      "rescheduled": "Ky termin është ricaktuar."
+    },
+    "timelineLabels": {
+      "pending": "Në pritje",
+      "confirmed": "Konfirmuar",
+      "checkedIn": "Mbërritur në klinikë",
+      "inProgress": "Në proces",
+      "completed": "Përfunduar",
+      "cancelledByPatient": "Anuluar nga ju",
+      "cancelledByClinic": "Anuluar nga klinika",
+      "noShow": "Nuk u paraqit",
+      "rescheduled": "Riplanifikuar",
+      "unknown": "I panjohur"
+    },
+    "completedMessage": "Takimi u përfundua me sukses.",
+    "bookAnotherCta": "Rezervoni termin tjetër",
+    "cancelledMessage": "Termini u anulua.",
+    "findAnotherCta": "Gjeni termin tjetër",
+    "cannotCancelWithin12h": "Anulimi nuk është i mundur — takimi fillon brenda 12 orëve.",
+    "countdownDays": "Mbetet {{count}} ditë",
+    "countdownHoursMinutes": "Mbetet {{hours}} orë {{minutes}} min",
+    "rescheduleCta": "Rischeduloni terminin",
+    "cancelCta": "Anuloni terminin",
+    "cancelConfirmPrompt": "Anuloni terminin me Dr. {{lastName}}?",
+    "cancelling": "Duke anuluar…",
+    "confirmCancelYes": "Po, anulo",
+    "cancelDeadlineNote": "Mund të anuloni deri 12 orë para takimit.",
+    "questionsHint": "Nëse keni pyetje rreth terminit tuaj, kontaktoni klinikën direkt.",
+    "cancelledToast": "Termini u anulua.",
+    "rescheduledToast": "Termini u rischedulua me sukses.",
+    "rescheduleTitle": "Zgjidhni datë të re",
+    "rescheduleNoSlotsForDate": "Nuk ka vende të lira për këtë datë.",
+    "rescheduleNewDateSummary": "Data e re: {{date}} ora {{time}}",
+    "confirmReschedule": "Konfirmo rischedulimin",
+    "reschedulingInProgress": "Duke rischeduluar…",
+    "cancelReasonDefault": "Anuluar nga pacienti"
+  },
+  "confirmBooking": {
+    "backToDoctor": "Kthehu te mjeku",
+    "title": "Konfirmoni rezervimin",
+    "timeAndPlace": "Koha & Vendi",
+    "dateLabel": "Data",
+    "timeLabel": "Ora",
+    "branchLabel": "Dega",
+    "priceLabel": "Çmimi",
+    "noteLabel": "Shënim (opsionale)",
+    "notePlaceholder": "Diçka që klinika duhet ta dijë përpara vizitës...",
+    "confirmNotice": "Duke klikuar \"Konfirmo rezervimin\" pranoni terminin e mësipërm. Klinika do të njoftohet automatikisht.",
+    "confirmCta": "Konfirmo rezervimin",
+    "submitting": "Duke rezervuar…",
+    "changeSelection": "Ndrysho zgjedhjen",
+    "bookedToast": "Termini u rezervua me sukses."
+  },
+  "profile": {
+    "loadFailedTitle": "Profili nuk u ngarkua",
+    "loadFailedFallback": "Provoni të rifreskoni faqen.",
+    "changePhoto": "Ndrysho foton",
+    "photoComingSoon": "Ngarkimi i fotografisë vjen së shpejti.",
+    "roleBadge": "PACIENT",
+    "memberSince": "Anëtar që nga {{date}}",
+    "editCta": "Ndrysho",
+    "statTotalAppointments": "Gjithsej Termine",
+    "statActiveAppointments": "Termine Aktive",
+    "statFamilyMembers": "Anëtarë të Familjes",
+    "personalInfoTitle": "Informatat Personale",
+    "saving": "Duke ruajtur…",
+    "saveChanges": "Ruaj ndryshimet",
+    "firstNameLabel": "Emri",
+    "lastNameLabel": "Mbiemri",
+    "emailLabel": "Email (nuk ndryshohet)",
+    "emailImmutableNote": "Email adresa nuk mund të ndryshohet.",
+    "phoneLabel": "Telefoni",
+    "addressLabel": "Adresa",
+    "addressPlaceholder": "Rr. Nëna Terezë, nr. 10",
+    "cityLabel": "Qyteti",
+    "cityPlaceholder": "Prishtinë",
+    "dobLabel": "Data e lindjes",
+    "genderLabel": "Gjinia",
+    "genderPlaceholder": "Zgjidhni...",
+    "genderMale": "Mashkull",
+    "genderFemale": "Femër",
+    "genderOther": "Tjetër",
+    "accountDetailsTitle": "Detajet e Llogarisë",
+    "passwordLabel": "Fjalëkalimi",
+    "statusLabel": "Statusi",
+    "statusActive": "AKTIV",
+    "securityTitle": "Siguria e llogarisë",
+    "securityText": "Fjalëkalimi juaj është i enkriptuar dhe i mbrojtur. Rekomandojmë ta ndryshoni çdo 3 muaj.",
+    "changePasswordCta": "Ndrysho fjalëkalimin",
+    "validation": {
+      "firstNameTooShort": "Emri duhet të ketë së paku 2 shkronja.",
+      "lastNameTooShort": "Mbiemri duhet të ketë së paku 2 shkronja.",
+      "phoneRequired": "Telefoni është i detyrueshëm.",
+      "dobRequired": "Data e lindjes është e detyrueshme.",
+      "genderRequired": "Gjinia është e detyrueshme."
+    },
+    "updatedToast": "Profili u përditësua.",
+    "invalidDataToast": "Të dhënat nuk janë të vlefshme.",
+    "emailLabelBare": "Email",
+    "unsetValue": "—"
+  },
+  "dependents": {
+    "title": "Anëtarët e Familjes",
+    "subtitle": "Menaxhoni anëtarët e familjes për të cilët mund të rezervoni termine.",
+    "addMember": "Shto Anëtar",
+    "loadingLabel": "Duke ngarkuar anëtarët",
+    "emptyTitle": "Nuk keni shtuar asnjë anëtar të familjes ende.",
+    "emptyHint": "Shtoni anëtarë të familjes për të rezervuar termine në emrin e tyre.",
+    "addFirstMember": "Shto Anëtarin e Parë",
+    "relationships": {
+      "1": "Fëmijë",
+      "2": "Bashkëshort/e",
+      "3": "Prind",
+      "4": "Tjetër"
+    },
+    "genders": {
+      "1": "Mashkull",
+      "2": "Femër",
+      "3": "Tjetër"
+    },
+    "editAria": "Ndrysho anëtarin",
+    "deleteAria": "Fshij anëtarin",
+    "ageYears": "{{age}} vjeç",
+    "statusActive": "AKTIV",
+    "statusInactive": "JOAKTIV",
+    "canBookNote": "Mund të rezervoni termine për këtë anëtar.",
+    "inactiveNote": "Joaktiv — kontaktoni mbështetjen për riaktivizim.",
+    "deleteModalTitle": "Fshij Anëtarin",
+    "deleteConfirmText": "A jeni të sigurt që dëshironi të fshini <0>{{name}}</0>? Ky veprim nuk mund të kthehet.",
+    "deleteCta": "Fshij",
+    "deletedToast": "Anëtari u fshi me sukses.",
+    "editModalTitle": "Ndrysho Anëtarin",
+    "addModalTitle": "Shto Anëtar",
+    "firstNameLabel": "Emri",
+    "lastNameLabel": "Mbiemri",
+    "dobLabel": "Data e Lindjes",
+    "genderLabel": "Gjinia",
+    "relationshipLabel": "Relacioni",
+    "saving": "Duke ruajtur…",
+    "saveCta": "Ruaj",
+    "updatedToast": "Anëtari u përditësua.",
+    "createdToast": "Anëtari u shtua.",
+    "validation": {
+      "firstNameRequired": "Emri është i detyrueshëm.",
+      "lastNameRequired": "Mbiemri është i detyrueshëm.",
+      "dobRequired": "Data e lindjes është e detyrueshme.",
+      "dobMustBePast": "Data e lindjes duhet të jetë në të kaluarën."
+    }
+  },
+  "layout": {
+    "navAppointments": "Terminet",
+    "navProfile": "Profili",
+    "navFamily": "Familja",
+    "navSecurity": "Siguria",
+    "breadcrumbAccount": "Llogaria",
+    "breadcrumbMyProfile": "Profili im",
+    "breadcrumbFamilyMembers": "Anëtarët e Familjes",
+    "breadcrumbSecurity": "Siguria",
+    "breadcrumbAppointments": "Terminet",
+    "breadcrumbDetails": "Detajet"
+  },
+  "userMenu": {
+    "myProfile": "Profili im",
+    "familyMembers": "Anëtarët e familjes",
+    "changePassword": "Ndrysho fjalëkalimin"
+  }
+}

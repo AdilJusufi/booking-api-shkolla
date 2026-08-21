@@ -1,4 +1,4 @@
-# Design System: Termini.ks — Appointment Booking
+# Design System: Rezervo Mjekun — Appointment Booking
 
 > Source of truth for **the entire product**: the public marketing surface, the
 > patient app, the doctor portal and the admin panel. Tokens live in `:root` in

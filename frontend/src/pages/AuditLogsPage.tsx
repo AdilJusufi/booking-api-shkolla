@@ -1,8 +1,11 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { ChevronDown, ChevronLeft, ChevronRight, ClipboardList } from 'lucide-react'
-import { api, ApiError } from '../lib/api'
+import { useTranslation } from 'react-i18next'
+import { api } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
 import type { AuditLog } from '../lib/types'
 import { EmptyState, ErrorBox, SkeletonRows } from '../components/ui'
+import { monthName } from '../lib/format'
 
 const PAGE_SIZE = 50
 
@@ -17,9 +20,8 @@ function firstOfMonth(): string {
 
 function formatTimestamp(iso: string): string {
   const d = new Date(iso)
-  const MONTHS = ['Jan', 'Shk', 'Mar', 'Pri', 'Maj', 'Qer', 'Kor', 'Gus', 'Sht', 'Tet', 'Nën', 'Dhj']
   const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()} · ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  return `${d.getDate()} ${monthName(d.getMonth(), 'short')} ${d.getFullYear()} · ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
 function prettyJson(raw?: string): string | null {
@@ -32,6 +34,7 @@ function prettyJson(raw?: string): string | null {
 }
 
 export default function AuditLogsPage() {
+  const { t } = useTranslation('admin')
   const [logs, setLogs] = useState<AuditLog[]>([])
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
@@ -67,7 +70,7 @@ export default function AuditLogsPage() {
         setTotalPages(r.totalPages)
         setTotalItems(r.totalItems)
       })
-      .catch((e) => setError(e instanceof ApiError ? e.message : 'Ndodhi një gabim.'))
+      .catch((e) => setError(getErrorMessage(e)))
       .finally(() => setLoading(false))
   }, [appliedFilters, page])
 
@@ -90,39 +93,39 @@ export default function AuditLogsPage() {
     <div className="sa-audit-page">
       <div className="admin-header">
         <div>
-          <h1>Regjistrat e Auditimit</h1>
-          <p className="admin-header__sub">Historiku i veprimeve administrative në platformë.</p>
+          <h1>{t('audit.pageTitle')}</h1>
+          <p className="admin-header__sub">{t('audit.pageSubtitle')}</p>
         </div>
       </div>
 
       <div className="filters">
         <div className="filters__field">
-          <label>Veprimi</label>
-          <input type="text" placeholder="p.sh. ClinicApproved" value={actionFilter} onChange={(e) => setActionFilter(e.target.value)} />
+          <label>{t('audit.actionLabel')}</label>
+          <input type="text" placeholder={t('audit.actionPlaceholder')} value={actionFilter} onChange={(e) => setActionFilter(e.target.value)} />
         </div>
         <div className="filters__field">
-          <label>Entiteti</label>
-          <input type="text" placeholder="p.sh. Appointment" value={entityFilter} onChange={(e) => setEntityFilter(e.target.value)} />
+          <label>{t('audit.entityLabel')}</label>
+          <input type="text" placeholder={t('audit.entityPlaceholder')} value={entityFilter} onChange={(e) => setEntityFilter(e.target.value)} />
         </div>
         <div className="filters__field">
-          <label>Prej</label>
+          <label>{t('appointments.fromLabel')}</label>
           <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
         </div>
         <div className="filters__field">
-          <label>Deri</label>
+          <label>{t('appointments.toLabel')}</label>
           <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
         </div>
         <button type="button" className="btn btn--primary btn--sm" onClick={applyFilters} style={{ alignSelf: 'flex-end' }}>
-          Filtro
+          {t('audit.filterCta')}
         </button>
       </div>
 
-      {error && <ErrorBox message={error} />}
-
       {loading ? (
-        <SkeletonRows count={6} label="Duke ngarkuar regjistrat" />
+        <SkeletonRows count={6} label={t('audit.loadingLabel')} />
+      ) : error ? (
+        <ErrorBox message={error} onRetry={load} />
       ) : logs.length === 0 ? (
-        <EmptyState icon={ClipboardList} title="Nuk u gjet asnjë regjistrim me këto filtra." />
+        <EmptyState icon={ClipboardList} title={t('audit.emptyTitle')} />
       ) : (
         <>
           <div className="admin-card sa-table-card">
@@ -130,11 +133,11 @@ export default function AuditLogsPage() {
               <thead>
                 <tr>
                   <th />
-                  <th>Koha</th>
-                  <th>Veprimi</th>
-                  <th>Entiteti</th>
-                  <th>Përdoruesi</th>
-                  <th>IP</th>
+                  <th>{t('audit.columnTime')}</th>
+                  <th>{t('audit.columnAction')}</th>
+                  <th>{t('audit.columnEntity')}</th>
+                  <th>{t('audit.columnUser')}</th>
+                  <th>{t('audit.columnIp')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -164,7 +167,7 @@ export default function AuditLogsPage() {
                           {log.entityName}
                           {log.entityId && <div className="sa-table__mono">{log.entityId.slice(0, 8)}</div>}
                         </td>
-                        <td className="sa-table__mono">{log.userId ? log.userId.slice(0, 8) : 'Sistem'}</td>
+                        <td className="sa-table__mono">{log.userId ? log.userId.slice(0, 8) : t('audit.systemUser')}</td>
                         <td className="sa-table__mono">{log.ipAddress || '—'}</td>
                       </tr>
                       {expanded && (
@@ -172,11 +175,11 @@ export default function AuditLogsPage() {
                           <td colSpan={6}>
                             <div className="sa-table__json">
                               <div>
-                                <div className="sa-table__secondary" style={{ marginBottom: 6 }}>VLERAT E VJETRA</div>
+                                <div className="sa-table__secondary" style={{ marginBottom: 6 }}>{t('audit.oldValues')}</div>
                                 <pre>{oldJson ?? '—'}</pre>
                               </div>
                               <div>
-                                <div className="sa-table__secondary" style={{ marginBottom: 6 }}>VLERAT E REJA</div>
+                                <div className="sa-table__secondary" style={{ marginBottom: 6 }}>{t('audit.newValues')}</div>
                                 <pre>{newJson ?? '—'}</pre>
                               </div>
                             </div>
@@ -193,7 +196,7 @@ export default function AuditLogsPage() {
           {totalPages > 1 && (
             <div className="pagination">
               <button className="pagination__arrow" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-                <ChevronLeft size={16} strokeWidth={1.5} /> Prapa
+                <ChevronLeft size={16} strokeWidth={1.5} /> {t('audit.previousPage')}
               </button>
               {pageNumbers.map((p) => (
                 <button key={p} className={p === page ? 'is-active' : ''} onClick={() => setPage(p)}>
@@ -201,11 +204,11 @@ export default function AuditLogsPage() {
                 </button>
               ))}
               <button className="pagination__arrow" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-                Para <ChevronRight size={16} strokeWidth={1.5} />
+                {t('audit.nextPage')} <ChevronRight size={16} strokeWidth={1.5} />
               </button>
             </div>
           )}
-          <p className="results-head__count" style={{ marginTop: 8 }}>{totalItems} regjistrime gjithsej</p>
+          <p className="results-head__count" style={{ marginTop: 8 }}>{t('audit.totalCount', { count: totalItems })}</p>
         </>
       )}
     </div>

@@ -1,0 +1,128 @@
+{
+  "brand": {
+    "name": "Rezervo ",
+    "tld": "Mjekun",
+    "tagline": "Find the right doctor. Book in seconds."
+  },
+  "nav": {
+    "findDoctor": "Find a doctor",
+    "myAppointments": "My appointments",
+    "greeting": "Hello, {{firstName}}",
+    "login": "Log in",
+    "register": "Sign up",
+    "logout": "Log out",
+    "menu": "Menu",
+    "accountMenu": "Account menu"
+  },
+  "roles": {
+    "Patient": "Patient",
+    "Doctor": "Doctor",
+    "ClinicAdmin": "Clinic Admin",
+    "SuperAdmin": "Super Admin"
+  },
+  "theme": {
+    "switchToLight": "Switch to light theme",
+    "switchToDark": "Switch to dark theme"
+  },
+  "language": {
+    "label": "Language",
+    "sq": "Shqip",
+    "en": "English",
+    "sr": "Srpski"
+  },
+  "footer": {
+    "tagline": "Find the right doctor. Book in seconds.",
+    "servicesTitle": "Services",
+    "findDoctor": "Find a doctor",
+    "clinics": "Clinics",
+    "accountTitle": "Account",
+    "login": "Log in",
+    "register": "Sign up",
+    "myAppointments": "My appointments",
+    "contactTitle": "Contact",
+    "contactCity": "Pristina, Kosovo",
+    "contactEmail": "info@rezervomjekun.com",
+    "legalTitle": "Legal",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "copyright": "© {{year}} Rezervo Mjekun — Demo project."
+  },
+  "buttons": {
+    "retry": "Try again",
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "back": "Back",
+    "backHome": "Back to home",
+    "confirm": "Confirm",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add": "Add",
+    "search": "Search",
+    "next": "Next",
+    "previous": "Back",
+    "loadMore": "Load more"
+  },
+  "loading": "Loading",
+  "emptyState": {
+    "genericTitle": "There's nothing here yet"
+  },
+  "offline": {
+    "bannerMessage": "You're offline. Some actions won't work until the connection returns.",
+    "pageTitle": "No internet connection",
+    "pageMessage": "Rezervo Mjekun needs an internet connection to show appointments and doctors. Check your connection and try again."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "message": "The link may be old or mistyped."
+  },
+  "errors": {
+    "network": "Couldn't connect to the server. Check your internet connection and try again.",
+    "400": "Something went wrong with the request. Try refreshing the page.",
+    "401": "Your session has expired. Please log in again.",
+    "403": "You don't have access to this content.",
+    "404": "We couldn't find what you were looking for.",
+    "409": "Someone else changed this data in the meantime. Please try again.",
+    "422": "Something went wrong with the request. Try refreshing the page.",
+    "429": "You've made too many requests. Please wait a moment and try again.",
+    "500": "A server error occurred. Please try again shortly.",
+    "default": "Something went wrong. Please try again shortly.",
+    "slotTaken": "This slot was just taken by someone else. Please choose another time.",
+    "staleRecord": "Someone else changed this appointment in the meantime. The page was refreshed with the latest data."
+  },
+  "appointment": {
+    "status": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "checkedIn": "Checked in",
+      "inProgress": "In progress",
+      "completed": "Completed",
+      "cancelledByPatient": "Cancelled by you",
+      "cancelledByClinic": "Cancelled by clinic",
+      "noShow": "No-show",
+      "rescheduled": "Rescheduled",
+      "unknown": "Unknown"
+    },
+    "actions": {
+      "cancel": "Cancel",
+      "reschedule": "Reschedule"
+    },
+    "sessionCount_one": "{{count}} session",
+    "sessionCount_other": "{{count}} sessions"
+  },
+  "modal": {
+    "close": "Close"
+  },
+  "cities": {
+    "pristina": "Pristina",
+    "prizren": "Prizren",
+    "peja": "Peja",
+    "gjakova": "Gjakova",
+    "gjilan": "Gjilan",
+    "mitrovica": "Mitrovica",
+    "ferizaj": "Ferizaj",
+    "vushtrri": "Vushtrri",
+    "podujeva": "Podujeva",
+    "suhareka": "Suhareka"
+  }
+}

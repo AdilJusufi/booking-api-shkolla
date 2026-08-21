@@ -57,7 +57,12 @@ public class LoggingAppointmentNotificationService : IAppointmentNotificationSer
         _logger.LogInformation(
             "Njoftim termini {AppointmentId}: {Subject}", context.AppointmentId, subject);
 
-        await _emailService.SendAsync(context.PatientEmail, subject, body, cancellationToken);
+        // Email-i mungon te pacientët e krijuar me telefon nga recepsioni; SMS-ja
+        // mbetet kanali i tyre, prandaj mungesa e email-it nuk e ndal njoftimin.
+        if (!string.IsNullOrWhiteSpace(context.PatientEmail))
+        {
+            await _emailService.SendAsync(context.PatientEmail, subject, body, cancellationToken);
+        }
 
         if (!string.IsNullOrWhiteSpace(context.PatientPhoneNumber))
         {

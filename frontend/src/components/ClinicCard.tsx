@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom'
 import { ArrowRight, MapPin, Phone } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { Clinic } from '../lib/types'
 
 export default function ClinicCard({ clinic }: { clinic: Clinic }) {
+  const { t } = useTranslation('patient')
   return (
     <Link to={`/klinika/${clinic.id}`} className="card clinic-card" data-reveal>
       <div className="clinic-card__banner" aria-hidden>
@@ -24,7 +26,7 @@ export default function ClinicCard({ clinic }: { clinic: Clinic }) {
           )}
         </div>
         <span className="clinic-card__cta">
-          Shiko klinikën <ArrowRight size={16} strokeWidth={1.5} />
+          {t('cards.viewClinicCta')} <ArrowRight size={16} strokeWidth={1.5} />
         </span>
       </div>
     </Link>

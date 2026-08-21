@@ -1,49 +1,43 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { Bell, Building2, ClipboardList, Moon, Stethoscope, Sun, User } from 'lucide-react'
-import { useAuth } from '../context/AuthContext'
+import { useTranslation } from 'react-i18next'
 import { useTheme } from '../context/ThemeContext'
-import { initials } from './ui'
-
-const NAV_ITEMS = [
-  { to: '/super-admin/klinikat', icon: Building2, label: 'Klinikat' },
-  { to: '/super-admin/specializimet', icon: Stethoscope, label: 'Specializimet' },
-  { to: '/super-admin/perdoruesit', icon: User, label: 'Përdoruesit' },
-  { to: '/super-admin/regjistrat', icon: ClipboardList, label: 'Regjistrat' },
-]
+import UserMenu from './UserMenu'
 
 export default function SuperAdminLayout() {
-  const { user } = useAuth()
+  const { t } = useTranslation('admin')
+  const { t: tCommon } = useTranslation('common')
   const { theme, toggleTheme } = useTheme()
-  const userInitials = user ? initials(user.firstName, user.lastName) : 'SA'
+
+  const NAV_ITEMS = [
+    { to: '/super-admin/klinikat', icon: Building2, label: t('layout.navClinics') },
+    { to: '/super-admin/specializimet', icon: Stethoscope, label: t('layout.navSpecialties') },
+    { to: '/super-admin/perdoruesit', icon: User, label: t('layout.navUsers') },
+    { to: '/super-admin/regjistrat', icon: ClipboardList, label: t('layout.navAuditLogs') },
+  ]
 
   return (
     <div className="admin-layout">
       <header className="admin-topbar">
         <div className="admin-topbar__left">
-          <span className="admin-breadcrumb">Paneli / Super Admin</span>
-          <span className="admin-brand">Termini<span className="admin-brand__tld">.ks</span></span>
+          <span className="admin-breadcrumb">{t('layout.superAdminBreadcrumb')}</span>
+          <span className="admin-brand">{tCommon('brand.name')}<span className="admin-brand__tld">{tCommon('brand.tld')}</span></span>
         </div>
 
         <div className="admin-topbar__right">
           <button
             type="button"
             className="admin-icon-btn"
-            aria-label={theme === 'dark' ? 'Kalo në temën e çelët' : 'Kalo në temën e errët'}
+            aria-label={theme === 'dark' ? tCommon('theme.switchToLight') : tCommon('theme.switchToDark')}
             onClick={toggleTheme}
           >
             {theme === 'dark' ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}
           </button>
-          <button type="button" className="admin-icon-btn" aria-label="Njoftimet">
+          <button type="button" className="admin-icon-btn" aria-label={t('layout.notificationsAria')}>
             <Bell size={18} strokeWidth={1.5} />
           </button>
           <div className="admin-account">
-            <span className="admin-avatar" aria-hidden>{userInitials}</span>
-            <div className="admin-account__text">
-              <span className="admin-account__label">
-                {user ? `${user.firstName} ${user.lastName}` : 'Super Admin'}
-              </span>
-              <span className="admin-account__sub">Super Admin</span>
-            </div>
+            <UserMenu />
           </div>
         </div>
       </header>

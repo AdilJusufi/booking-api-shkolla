@@ -360,7 +360,7 @@ public class AppointmentService : IAppointmentService
             var context = new AppointmentNotificationContext
             {
                 AppointmentId = dto.Id,
-                PatientEmail = user.Email!,
+                PatientEmail = user.Email,
                 PatientPhoneNumber = user.PhoneNumber,
                 PatientName = $"{user.FirstName} {user.LastName}",
                 DoctorName = dto.DoctorName,

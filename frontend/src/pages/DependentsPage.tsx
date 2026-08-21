@@ -1,25 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Cake, Pencil, Plus, Trash2, User, Users } from 'lucide-react'
-import { api, ApiError } from '../lib/api'
+import { Trans, useTranslation } from 'react-i18next'
+import { api } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
 import type { CreateDependentRequest, Dependent, DependentRelationship, Gender } from '../lib/types'
 import { useToast } from '../context/ToastContext'
 import { CustomSelect, EmptyState, ErrorBox, Modal, SkeletonRows, initials } from '../components/ui'
 import type { CustomSelectOption } from '../components/ui'
-
-const MONTHS_SQ = ['Janar', 'Shkurt', 'Mars', 'Prill', 'Maj', 'Qershor', 'Korrik', 'Gusht', 'Shtator', 'Tetor', 'Nëntor', 'Dhjetor']
-
-const RELATIONSHIP_LABELS: Record<DependentRelationship, string> = {
-  1: 'Fëmijë',
-  2: 'Bashkëshort/e',
-  3: 'Prind',
-  4: 'Tjetër',
-}
-
-const GENDER_LABELS: Record<Gender, string> = {
-  1: 'Mashkull',
-  2: 'Femër',
-  3: 'Tjetër',
-}
+import { monthName } from '../lib/format'
 
 const EMPTY_FORM = {
   firstName: '',
@@ -32,7 +20,7 @@ const EMPTY_FORM = {
 function formatDob(iso: string): string {
   const m = iso.match(/(\d{4})-(\d{2})-(\d{2})/)
   if (!m) return iso
-  return `${Number(m[3])} ${MONTHS_SQ[Number(m[2]) - 1]} ${m[1]}`
+  return `${Number(m[3])} ${monthName(Number(m[2]) - 1)} ${m[1]}`
 }
 
 function calculateAge(dateOfBirth: string): number {
@@ -45,6 +33,8 @@ function calculateAge(dateOfBirth: string): number {
 }
 
 export default function DependentsPage() {
+  const { t } = useTranslation('patient')
+  const { t: tCommon } = useTranslation('common')
   const { notify } = useToast()
 
   const [dependents, setDependents] = useState<Dependent[]>([])
@@ -62,7 +52,7 @@ export default function DependentsPage() {
     api
       .getDependents()
       .then(setDependents)
-      .catch((e) => setError(e instanceof ApiError ? e.message : 'Ndodhi një gabim.'))
+      .catch((e) => setError(getErrorMessage(e)))
       .finally(() => setLoading(false))
   }, [])
 
@@ -91,10 +81,10 @@ export default function DependentsPage() {
         setRemovingId(null)
       }, 220)
       setDeleteTarget(null)
-      notify('Anëtari u fshi me sukses.', 'ok')
+      notify(t('dependents.deletedToast'), 'ok')
     } catch (e) {
       setRemovingId(null)
-      notify(e instanceof ApiError ? e.message : 'Gabim. Provoni përsëri.', 'error')
+      notify(getErrorMessage(e), 'error')
     }
   }
 
@@ -102,26 +92,26 @@ export default function DependentsPage() {
     <div className="deps-page">
       <div className="deps-header">
         <div>
-          <h1>Anëtarët e Familjes</h1>
-          <p className="deps-header__sub">Menaxhoni anëtarët e familjes për të cilët mund të rezervoni termine.</p>
+          <h1>{t('dependents.title')}</h1>
+          <p className="deps-header__sub">{t('dependents.subtitle')}</p>
         </div>
         <button type="button" className="btn btn--primary btn--sm" onClick={openAddModal}>
-          <Plus size={15} strokeWidth={1.5} /> Shto Anëtar
+          <Plus size={15} strokeWidth={1.5} /> {t('dependents.addMember')}
         </button>
       </div>
 
-      {error && <ErrorBox message={error} onRetry={load} />}
-
       {loading ? (
-        <SkeletonRows count={3} label="Duke ngarkuar anëtarët" />
+        <SkeletonRows count={3} label={t('dependents.loadingLabel')} />
+      ) : error ? (
+        <ErrorBox message={error} onRetry={load} />
       ) : dependents.length === 0 ? (
         <EmptyState
           icon={Users}
-          title="Nuk keni shtuar asnjë anëtar të familjes ende."
-          hint="Shtoni anëtarë të familjes për të rezervuar termine në emrin e tyre."
+          title={t('dependents.emptyTitle')}
+          hint={t('dependents.emptyHint')}
           action={
             <button type="button" className="btn btn--primary btn--sm" onClick={openAddModal}>
-              <Plus size={15} strokeWidth={1.5} /> Shto Anëtarin e Parë
+              <Plus size={15} strokeWidth={1.5} /> {t('dependents.addFirstMember')}
             </button>
           }
         />
@@ -151,10 +141,14 @@ export default function DependentsPage() {
       )}
 
       {deleteTarget && (
-        <Modal title="Fshij Anëtarin" onClose={() => setDeleteTarget(null)}>
+        <Modal title={t('dependents.deleteModalTitle')} onClose={() => setDeleteTarget(null)}>
           <p className="schedule-delete__text">
-            A jeni të sigurt që dëshironi të fshini <strong>{deleteTarget.firstName} {deleteTarget.lastName}</strong>?
-            Ky veprim nuk mund të kthehet.
+            <Trans
+              i18nKey="dependents.deleteConfirmText"
+              ns="patient"
+              values={{ name: `${deleteTarget.firstName} ${deleteTarget.lastName}` }}
+              components={[<strong key="0" />]}
+            />
           </p>
           <div className="schedule-delete__actions">
             <button
@@ -163,7 +157,7 @@ export default function DependentsPage() {
               style={{ flex: 1 }}
               onClick={() => setDeleteTarget(null)}
             >
-              Anulo
+              {tCommon('buttons.cancel')}
             </button>
             <button
               type="button"
@@ -172,7 +166,7 @@ export default function DependentsPage() {
               disabled={removingId === deleteTarget.id}
               onClick={confirmDelete}
             >
-              Fshij
+              {t('dependents.deleteCta')}
             </button>
           </div>
         </Modal>
@@ -192,6 +186,7 @@ function DependentCard({
   onEdit: () => void
   onDelete: () => void
 }) {
+  const { t } = useTranslation('patient')
   const age = calculateAge(dependent.dateOfBirth)
   return (
     <div className={`card deps-card ${removing ? 'is-removing' : ''}`} data-reveal>
@@ -199,34 +194,34 @@ function DependentCard({
         <div className="deps-card__avatar" aria-hidden>{initials(dependent.firstName, dependent.lastName)}</div>
         <div className="deps-card__identity">
           <h3 className="deps-card__name">{dependent.firstName} {dependent.lastName}</h3>
-          <span className="chip chip--soft">{RELATIONSHIP_LABELS[dependent.relationship]}</span>
+          <span className="chip chip--soft">{t(`dependents.relationships.${dependent.relationship}`)}</span>
         </div>
         <div className="deps-card__actions">
-          <button type="button" className="admin-icon-btn" onClick={onEdit} aria-label="Ndrysho anëtarin">
+          <button type="button" className="admin-icon-btn" onClick={onEdit} aria-label={t('dependents.editAria')}>
             <Pencil size={15} strokeWidth={1.5} />
           </button>
-          <button type="button" className="admin-icon-btn" onClick={onDelete} aria-label="Fshij anëtarin">
+          <button type="button" className="admin-icon-btn" onClick={onDelete} aria-label={t('dependents.deleteAria')}>
             <Trash2 size={15} strokeWidth={1.5} />
           </button>
         </div>
       </div>
 
       <div className="deps-card__meta">
-        <span><Cake size={13} strokeWidth={1.5} /> {formatDob(dependent.dateOfBirth)} ({age} vjeç)</span>
-        <span><User size={13} strokeWidth={1.5} /> {GENDER_LABELS[dependent.gender]}</span>
+        <span><Cake size={13} strokeWidth={1.5} /> {formatDob(dependent.dateOfBirth)} ({t('dependents.ageYears', { age })})</span>
+        <span><User size={13} strokeWidth={1.5} /> {t(`dependents.genders.${dependent.gender}`)}</span>
       </div>
 
       <div className="deps-card__status">
         <span className={`admin-card__status ${dependent.isActive ? 'admin-card__status--approved' : 'admin-card__status--pending'}`}>
-          {dependent.isActive ? 'AKTIV' : 'JOAKTIV'}
+          {dependent.isActive ? t('dependents.statusActive') : t('dependents.statusInactive')}
         </span>
       </div>
 
       <div className="deps-card__bottom">
         {dependent.isActive ? (
-          <span className="muted">Mund të rezervoni termine për këtë anëtar.</span>
+          <span className="muted">{t('dependents.canBookNote')}</span>
         ) : (
-          <span className="deps-card__inactive-note">Joaktiv — kontaktoni mbështetjen për riaktivizim.</span>
+          <span className="deps-card__inactive-note">{t('dependents.inactiveNote')}</span>
         )}
       </div>
     </div>
@@ -242,6 +237,8 @@ function DependentFormModal({
   onClose: () => void
   onSaved: () => void
 }) {
+  const { t } = useTranslation('patient')
+  const { t: tCommon } = useTranslation('common')
   const { notify } = useToast()
   const [form, setForm] = useState(() =>
     editing
@@ -258,22 +255,20 @@ function DependentFormModal({
   const [formError, setFormError] = useState('')
   const [openSelect, setOpenSelect] = useState<'gender' | 'relationship' | null>(null)
 
-  const genderOptions: CustomSelectOption[] = (Object.entries(GENDER_LABELS) as [string, string][]).map(
-    ([value, label]) => ({ value, label }),
-  )
-  const relationshipOptions: CustomSelectOption[] = (Object.entries(RELATIONSHIP_LABELS) as [string, string][]).map(
-    ([value, label]) => ({ value, label }),
-  )
+  const genderMap = t('dependents.genders', { returnObjects: true }) as Record<string, string>
+  const relationshipMap = t('dependents.relationships', { returnObjects: true }) as Record<string, string>
+  const genderOptions: CustomSelectOption[] = Object.entries(genderMap).map(([value, label]) => ({ value, label }))
+  const relationshipOptions: CustomSelectOption[] = Object.entries(relationshipMap).map(([value, label]) => ({ value, label }))
 
   function updateField<K extends keyof typeof form>(key: K, value: typeof form[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
   }
 
   async function handleSubmit() {
-    if (form.firstName.trim().length < 2) return setFormError('Emri është i detyrueshëm.')
-    if (form.lastName.trim().length < 2) return setFormError('Mbiemri është i detyrueshëm.')
-    if (!form.dateOfBirth) return setFormError('Data e lindjes është e detyrueshme.')
-    if (new Date(form.dateOfBirth) >= new Date()) return setFormError('Data e lindjes duhet të jetë në të kaluarën.')
+    if (form.firstName.trim().length < 2) return setFormError(t('dependents.validation.firstNameRequired'))
+    if (form.lastName.trim().length < 2) return setFormError(t('dependents.validation.lastNameRequired'))
+    if (!form.dateOfBirth) return setFormError(t('dependents.validation.dobRequired'))
+    if (new Date(form.dateOfBirth) >= new Date()) return setFormError(t('dependents.validation.dobMustBePast'))
 
     setFormError('')
     setSaving(true)
@@ -287,36 +282,36 @@ function DependentFormModal({
     try {
       if (editing) {
         await api.updateDependent(editing.id, payload)
-        notify('Anëtari u përditësua.', 'ok')
+        notify(t('dependents.updatedToast'), 'ok')
       } else {
         await api.createDependent(payload)
-        notify('Anëtari u shtua.', 'ok')
+        notify(t('dependents.createdToast'), 'ok')
       }
       onSaved()
     } catch (e) {
-      setFormError(e instanceof ApiError ? e.message : 'Gabim. Provoni përsëri.')
+      setFormError(getErrorMessage(e))
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <Modal title={editing ? 'Ndrysho Anëtarin' : 'Shto Anëtar'} onClose={onClose}>
+    <Modal title={editing ? t('dependents.editModalTitle') : t('dependents.addModalTitle')} onClose={onClose}>
       {formError && <ErrorBox message={formError} />}
 
       <div className="form-row">
         <div className="field">
-          <label>Emri</label>
+          <label>{t('dependents.firstNameLabel')}</label>
           <input type="text" value={form.firstName} onChange={(e) => updateField('firstName', e.target.value)} />
         </div>
         <div className="field">
-          <label>Mbiemri</label>
+          <label>{t('dependents.lastNameLabel')}</label>
           <input type="text" value={form.lastName} onChange={(e) => updateField('lastName', e.target.value)} />
         </div>
       </div>
 
       <div className="field">
-        <label>Data e Lindjes</label>
+        <label>{t('dependents.dobLabel')}</label>
         <input
           type="date"
           max={new Date().toISOString().slice(0, 10)}
@@ -327,7 +322,7 @@ function DependentFormModal({
 
       <div className="field">
         <CustomSelect
-          label="Gjinia"
+          label={t('dependents.genderLabel')}
           options={genderOptions}
           value={form.gender}
           onChange={(v) => updateField('gender', v)}
@@ -338,7 +333,7 @@ function DependentFormModal({
 
       <div className="field">
         <CustomSelect
-          label="Relacioni"
+          label={t('dependents.relationshipLabel')}
           options={relationshipOptions}
           value={form.relationship}
           onChange={(v) => updateField('relationship', v)}
@@ -349,9 +344,9 @@ function DependentFormModal({
 
       <div className="clinic-settings__actions">
         <button type="button" className="btn btn--primary btn--sm" disabled={saving} onClick={handleSubmit}>
-          {saving ? 'Duke ruajtur…' : 'Ruaj'}
+          {saving ? t('dependents.saving') : t('dependents.saveCta')}
         </button>
-        <button type="button" className="btn btn--ghost btn--sm" onClick={onClose}>Anulo</button>
+        <button type="button" className="btn btn--ghost btn--sm" onClick={onClose}>{tCommon('buttons.cancel')}</button>
       </div>
     </Modal>
   )

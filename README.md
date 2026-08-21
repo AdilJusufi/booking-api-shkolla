@@ -197,8 +197,41 @@ Formati i listave me pagination:
 ```
 
 Gabimet kthehen si **ProblemDetails (RFC 7807)** me `type`, `title`, `status`, `detail`,
-`instance` dhe `traceId`. Statuset: 200/201/204, 400, 401, 403, 404, 409 (konflikt slotesh),
+`instance`, `traceId` dhe `code`. Statuset: 200/201/204, 400, 401, 403, 404, 409 (konflikt slotesh),
 422 (validim / shkelje rregulli), 429 (rate limit).
+
+`code` është identifikuesi i lexueshëm nga makina i gabimit (i njëjti si pjesa e fundit e
+`type`, p.sh. `https://booking-api.dev/errors/account_locked` → `account_locked`). Klienti
+duhet të degëzojë sipas `code`, **kurrë sipas tekstit të `detail`** — teksti është për
+log/debug dhe mund të riformulohet.
+
+### Kodet e gabimeve të autentifikimit
+
+Këto kode janë **kontratë** me frontend-in — mos i ndrysho pa koordinim.
+
+`POST /api/auth/login`:
+
+| Rasti | `code` | HTTP |
+|---|---|---|
+| Email ose password i gabuar | `invalid_credentials` | 401 |
+| Llogaria e bllokuar (5 tentime të dështuara) | `account_locked` | 401 |
+| Email-i nuk është konfirmuar | `email_not_confirmed` | 401 |
+| Llogaria e çaktivizuar nga admini | `account_deactivated` | 403 |
+
+`account_deactivated` është i vetmi rast **403**: kredencialet janë të sakta, por llogarinë
+e ka çaktivizuar një SuperAdmin (`POST /api/admin/users/{id}/deactivate`). 401 do të thotë
+"provo kredenciale të tjera", 403 do të thotë "kontakto mbështetjen". Llogaria rikthehet me
+`POST /api/admin/users/{id}/activate`. Kontrolli i çaktivizimit bëhet **pas** verifikimit të
+password-it, që të mos zbulohet statusi i llogarive ndaj kujtdo që s'e di password-in.
+
+Endpoint-et e tjera të autentifikimit:
+
+| Rasti | `code` | HTTP |
+|---|---|---|
+| Refresh token i pavlefshëm/i rotuar/i revokuar | `invalid_refresh_token` | 401 |
+| Llogari e çaktivizuar gjatë refresh-it | `account_deactivated` | 403 |
+| Token rivendosjeje password-i i pavlefshëm | `invalid_reset_token` | 401 |
+| Token konfirmimi email-i i pavlefshëm | `invalid_confirmation_token` | 401 |
 
 ## Authentication flow
 

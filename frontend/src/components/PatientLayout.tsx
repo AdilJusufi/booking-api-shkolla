@@ -1,18 +1,21 @@
 import { Link, NavLink, Outlet, useMatch } from 'react-router-dom'
 import { Calendar, Lock, Moon, Sun, User, Users } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { initials } from './ui'
 import Logo from './Logo'
-
-const NAV_ITEMS = [
-  { to: '/terminet', icon: Calendar, label: 'Terminet', end: false },
-  { to: '/llogaria', icon: User, label: 'Profili', end: true },
-  { to: '/llogaria/anetaret', icon: Users, label: 'Familja', end: false },
-  { to: '/llogaria/fjalekalimi', icon: Lock, label: 'Siguria', end: false },
-]
+import UserMenu from './UserMenu'
 
 export default function PatientLayout() {
+  const { t } = useTranslation('patient')
+  const { t: tCommon } = useTranslation('common')
+  const NAV_ITEMS = [
+    { to: '/terminet', icon: Calendar, label: t('layout.navAppointments'), end: false },
+    { to: '/llogaria', icon: User, label: t('layout.navProfile'), end: true },
+    { to: '/llogaria/anetaret', icon: Users, label: t('layout.navFamily'), end: false },
+    { to: '/llogaria/fjalekalimi', icon: Lock, label: t('layout.navSecurity'), end: false },
+  ]
   const { user } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const userInitials = user ? initials(user.firstName, user.lastName) : ''
@@ -26,26 +29,26 @@ export default function PatientLayout() {
       <header className="patient-topbar">
         <Link to="/" className="brand">
           <span className="brand__mark" aria-hidden><Logo size={22} /></span>
-          <span className="brand__name">Termini<span className="brand__tld">.ks</span></span>
+          <span className="brand__name">{tCommon('brand.name')}<span className="brand__tld">{tCommon('brand.tld')}</span></span>
         </Link>
 
         <div className="patient-topbar__crumbs">
-          <Link to="/llogaria">Llogaria</Link>
+          <Link to="/llogaria">{t('layout.breadcrumbAccount')}</Link>
           <span>›</span>
           {isProfile ? (
-            <span>Profili im</span>
+            <span>{t('layout.breadcrumbMyProfile')}</span>
           ) : isDependents ? (
-            <span>Anëtarët e Familjes</span>
+            <span>{t('layout.breadcrumbFamilyMembers')}</span>
           ) : isChangePassword ? (
-            <span>Siguria</span>
+            <span>{t('layout.breadcrumbSecurity')}</span>
           ) : isDetail ? (
             <>
-              <Link to="/terminet">Terminet</Link>
+              <Link to="/terminet">{t('layout.breadcrumbAppointments')}</Link>
               <span>›</span>
-              <span>Detajet</span>
+              <span>{t('layout.breadcrumbDetails')}</span>
             </>
           ) : (
-            <span>Terminet</span>
+            <span>{t('layout.breadcrumbAppointments')}</span>
           )}
         </div>
 
@@ -53,12 +56,12 @@ export default function PatientLayout() {
           <button
             type="button"
             className="theme-toggle"
-            aria-label={theme === 'dark' ? 'Kalo në temën e çelët' : 'Kalo në temën e errët'}
+            aria-label={theme === 'dark' ? tCommon('theme.switchToLight') : tCommon('theme.switchToDark')}
             onClick={toggleTheme}
           >
             {theme === 'dark' ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}
           </button>
-          <span className="patient-avatar" aria-hidden>{userInitials}</span>
+          <UserMenu />
         </div>
       </header>
 
@@ -81,7 +84,7 @@ export default function PatientLayout() {
           <button
             type="button"
             className="theme-toggle theme-toggle--on-dark"
-            aria-label={theme === 'dark' ? 'Kalo në temën e çelët' : 'Kalo në temën e errët'}
+            aria-label={theme === 'dark' ? tCommon('theme.switchToLight') : tCommon('theme.switchToDark')}
             onClick={toggleTheme}
           >
             {theme === 'dark' ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}

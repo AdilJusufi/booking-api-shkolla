@@ -3,15 +3,98 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Rezervo terminin te mjeku online — shpejt, thjesht dhe pa telefonata. Klinika dentare dhe pediatrike në Kosovë." />
-    <title>Termini.ks — Rezervo terminin te mjeku online</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="48x48" />
+    <!-- iOS ignores the web app manifest for icons and reads this instead. -->
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" sizes="180x180" />
+    <!-- viewport-fit=cover lets the app paint edge-to-edge in standalone mode;
+         env(safe-area-inset-*) in index.css keeps content clear of the notch
+         and the home indicator. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Gjeni mjekun e duhur dhe rezervoni terminin tuaj në sekonda." />
+    <meta property="og:title" content="Rezervo Mjekun" />
+    <meta property="og:site_name" content="Rezervo Mjekun" />
+
+    <!-- Standalone launch. `apple-*` is the legacy iOS spelling, still required
+         alongside the standardised name. status-bar-style is deliberately
+         `default` rather than `black-translucent`: the app's header is white in
+         light theme, and translucent forces white status-bar glyphs that would
+         be invisible against it. -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Rezervo Mjekun" />
+    <!-- Runtime value, kept in sync with the active theme by ThemeContext. The
+         manifest's theme_color is the separate install-time default. -->
+    <meta name="theme-color" content="#ffffff" />
+
+    <title>Rezervo Mjekun</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
+    <!-- TODO(rebrand): one-time migration from the old "termini.*" storage-key
+         prefix (Termini.ks) to "rezervo.*" (Rezervo Mjekun) — copies each old
+         key's value over if present and the new key isn't already set, then
+         removes the old key. Runs before anything else touches storage, on
+         every page load (idempotent no-op once migrated). Safe to delete this
+         script — and the matching Object.keys(...).forEach loop it's paired
+         with — a reasonable while after the rebrand has shipped, once no
+         real users are likely to still be carrying only the old keys. -->
+    <script>
+      (function () {
+        var keyMap = {
+          'termini.theme': 'rezervo.theme',
+          'termini.language': 'rezervo.language',
+          'termini.accessToken': 'rezervo.accessToken',
+          'termini.refreshToken': 'rezervo.refreshToken',
+          'termini.user': 'rezervo.user',
+          'termini.pwa.installDismissed': 'rezervo.pwa.installDismissed',
+        };
+        for (var oldKey in keyMap) {
+          var newKey = keyMap[oldKey];
+          var oldValue = localStorage.getItem(oldKey);
+          if (oldValue !== null) {
+            if (localStorage.getItem(newKey) === null) {
+              localStorage.setItem(newKey, oldValue);
+            }
+            localStorage.removeItem(oldKey);
+          }
+        }
+      })();
+    </script>
+    <!-- Apply stored theme before first paint to prevent a flash of wrong theme,
+         and set the matching status-bar tint so it does not flash either.
+         The two colours are duplicated in ThemeContext.tsx — this script has to
+         run before any module loads, so it cannot import them. -->
+    <script>
+      (function () {
+        var stored = localStorage.getItem('rezervo.theme');
+        var theme;
+        if (stored === 'light' || stored === 'dark') {
+          theme = stored;
+        } else {
+          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', theme === 'dark' ? '#0e1111' : '#ffffff');
+      })();
+    </script>
+    <!-- Same idea for language: a returning visitor who picked en/sr would
+         otherwise see lang="sq" (this file's static default) until i18n.ts
+         finishes initialising and its 'languageChanged' listener corrects it.
+         Only reads the stored explicit choice — first-visit browser-language
+         detection genuinely needs i18next's LanguageDetector and can wait. -->
+    <script>
+      (function () {
+        var stored = localStorage.getItem('rezervo.language');
+        if (stored === 'sq' || stored === 'en' || stored === 'sr') {
+          document.documentElement.setAttribute('lang', stored);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

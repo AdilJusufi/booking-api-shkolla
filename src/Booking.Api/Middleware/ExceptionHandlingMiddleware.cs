@@ -43,8 +43,12 @@ public class ExceptionHandlingMiddleware
             NotFoundException => CreateProblem(
                 StatusCodes.Status404NotFound, "not-found", "Resursi nuk u gjet", exception.Message),
 
-            AuthenticationFailedException => CreateProblem(
-                StatusCodes.Status401Unauthorized, "authentication-failed", "Autentifikimi dështoi", exception.Message),
+            AuthenticationFailedException authenticationFailedException => CreateProblem(
+                authenticationFailedException.StatusCode, authenticationFailedException.ErrorCode,
+                authenticationFailedException.StatusCode == StatusCodes.Status403Forbidden
+                    ? "Qasja u refuzua"
+                    : "Autentifikimi dështoi",
+                exception.Message),
 
             ForbiddenAccessException => CreateProblem(
                 StatusCodes.Status403Forbidden, "forbidden", "Qasja u refuzua", exception.Message),
@@ -77,14 +81,21 @@ public class ExceptionHandlingMiddleware
         await context.Response.WriteAsJsonAsync(problemDetails);
     }
 
-    private static ProblemDetails CreateProblem(int status, string errorCode, string title, string detail) =>
-        new()
+    private static ProblemDetails CreateProblem(int status, string errorCode, string title, string detail)
+    {
+        var problem = new ProblemDetails
         {
             Type = $"{ErrorTypeBaseUrl}/{errorCode}",
             Title = title,
             Status = status,
             Detail = detail
         };
+
+        // `code` është i njëjti identifikues si pjesa e fundit e `type`, por i lexueshëm
+        // drejtpërdrejt nga klienti pa e ndarë URL-në.
+        problem.Extensions["code"] = errorCode;
+        return problem;
+    }
 
     private static ValidationProblemDetails CreateValidationProblem(ValidationException exception)
     {

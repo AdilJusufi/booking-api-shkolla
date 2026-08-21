@@ -24,6 +24,7 @@ import {
   X,
   type LucideProps,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 /** A shimmering block sized to the thing it stands in for. */
 export function Skeleton({ className = '', style }: { className?: string; style?: CSSProperties }) {
@@ -34,9 +35,10 @@ export function Skeleton({ className = '', style }: { className?: string; style?
  * Loading placeholders mirror the layout they replace rather than covering it
  * with a spinner, so the page does not reflow once the data lands.
  */
-export function SkeletonRows({ count = 4, label = 'Duke ngarkuar' }: { count?: number; label?: string }) {
+export function SkeletonRows({ count = 4, label }: { count?: number; label?: string }) {
+  const { t } = useTranslation('common')
   return (
-    <div className="sk-rows" role="status" aria-label={label}>
+    <div className="sk-rows" role="status" aria-label={label ?? t('loading')}>
       {Array.from({ length: count }, (_, i) => (
         <Skeleton key={i} className="sk-row" />
       ))}
@@ -45,9 +47,10 @@ export function SkeletonRows({ count = 4, label = 'Duke ngarkuar' }: { count?: n
 }
 
 /** Matches the detail-page shape: hero row, then a content / panel split. */
-export function SkeletonDetail({ label = 'Duke ngarkuar' }: { label?: string }) {
+export function SkeletonDetail({ label }: { label?: string }) {
+  const { t } = useTranslation('common')
   return (
-    <div className="sk-detail" role="status" aria-label={label}>
+    <div className="sk-detail" role="status" aria-label={label ?? t('loading')}>
       <div className="sk-detail__hero">
         <Skeleton className="sk-detail__avatar" />
         <div className="sk-stack" style={{ flex: 1 }}>
@@ -108,13 +111,14 @@ export function EmptyState({
 }
 
 export function ErrorBox({ message, onRetry }: { message: ReactNode; onRetry?: () => void }) {
+  const { t } = useTranslation('common')
   return (
     <div className="errorbox" role="alert">
       <AlertCircle size={16} strokeWidth={1.5} style={{ flexShrink: 0 }} />
       <span className="errorbox__message">{message}</span>
       {onRetry && (
         <button type="button" className="errorbox__retry" onClick={onRetry}>
-          Provo përsëri
+          {t('buttons.retry')}
         </button>
       )}
     </div>
@@ -136,6 +140,7 @@ export function Modal({
   children: ReactNode
   size?: 'md' | 'lg'
 }) {
+  const { t } = useTranslation('common')
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
@@ -149,7 +154,7 @@ export function Modal({
       <div className={`modal ${size === 'lg' ? 'modal--lg' : ''}`} onClick={(e) => e.stopPropagation()}>
         <div className="modal__header">
           <h3>{title}</h3>
-          <button type="button" className="modal__close" onClick={onClose} aria-label="Mbyll">
+          <button type="button" className="modal__close" onClick={onClose} aria-label={t('modal.close')}>
             <X size={18} strokeWidth={1.5} />
           </button>
         </div>

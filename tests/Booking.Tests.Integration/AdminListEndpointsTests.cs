@@ -82,7 +82,8 @@ public class AdminListEndpointsTests
         var appointmentId = await BookAppointmentAtDardaniaAsync(new TimeOnly(15, 0));
         var client = await ClinicAdminClientAsync();
 
-        var response = await client.GetAsync("/api/admin/appointments?pageSize=200");
+        // pageSize=100 është maksimumi i lejuar nga AdminAppointmentsQueryValidator.
+        var response = await client.GetAsync("/api/admin/appointments?pageSize=100");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.Content.ReadFromJsonAsync<PagedResult<AdminAppointmentListItemDto>>(TestHelpers.Json);
@@ -224,6 +225,79 @@ public class AdminListEndpointsTests
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
+    /// <summary>
+    /// Kontrollohet JSON-i i papërpunuar, jo DTO-ja: deserializimi te AdminUserDto
+    /// do t'i hidhte fushat e tepërta pa u vënë re. Pikërisht ato po i kërkojmë.
+    /// </summary>
+    [Fact]
+    public async Task Users_DoNotLeakIdentityInternalsOrPersonalNumber()
+    {
+        var client = await SuperAdminClientAsync();
+
+        var response = await client.GetAsync("/api/admin/users?pageSize=100");
+        var raw = await response.Content.ReadAsStringAsync();
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        raw.Should().NotBeEmpty();
+        foreach (var forbidden in new[]
+                 {
+                     "passwordHash", "securityStamp", "concurrencyStamp",
+                     "personalNumber", "twoFactorEnabled", "lockoutEnd", "accessFailedCount"
+                 })
+        {
+            raw.Should().NotContainEquivalentOf(forbidden);
+        }
+    }
+
+    [Fact]
+    public async Task Users_Listing_IsAuditLogged()
+    {
+        var client = await SuperAdminClientAsync();
+
+        await client.GetAsync("/api/admin/users?role=Doctor&search=zz-audit-probe");
+
+        var response = await client.GetAsync("/api/admin/audit-logs?pageSize=50");
+        var page = await response.Content.ReadFromJsonAsync<PagedResult<AuditLogDto>>(TestHelpers.Json);
+
+        var entry = page!.Items.Should()
+            .ContainSingle(l => l.Action == "USERS_LISTED_BY_SUPERADMIN"
+                                && l.NewValues != null
+                                && l.NewValues.Contains("zz-audit-probe"))
+            .Subject;
+
+        entry.UserEmail.Should().Be(DbSeeder.SuperAdminEmail);
+        // Filtrat auditohen, rreshtat jo — audit log-u s'bëhet bazë e dytë e të dhënave personale.
+        entry.NewValues.Should().NotContainEquivalentOf(DbSeeder.SuperAdminEmail);
+    }
+
+    // ---------- Kufijtë e pagination-it ----------
+
+    [Theory]
+    [InlineData("/api/admin/appointments?pageSize=101")]
+    [InlineData("/api/admin/appointments?pageSize=0")]
+    [InlineData("/api/admin/appointments?page=0")]
+    public async Task Appointments_RejectsOutOfRangePaging(string url)
+    {
+        var client = await ClinicAdminClientAsync();
+
+        var response = await client.GetAsync(url);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Theory]
+    [InlineData("/api/admin/users?pageSize=101")]
+    [InlineData("/api/admin/users?pageSize=0")]
+    [InlineData("/api/admin/users?page=0")]
+    public async Task Users_RejectsOutOfRangePaging(string url)
+    {
+        var client = await SuperAdminClientAsync();
+
+        var response = await client.GetAsync(url);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
     // ---------- DTO-t e plotësuara ----------
 
     [Fact]
@@ -308,6 +382,102 @@ public class AdminListEndpointsTests
         report.ByBranch.Sum(b => b.AppointmentCount).Should().Be(report.TotalAppointments);
     }
 
+    /// <summary>Çdo zbërthim duhet të mbledhë saktësisht totalin — numërime dhe të ardhura.</summary>
+    [Fact]
+    public async Task Report_Breakdowns_SumToOverallTotals()
+    {
+        var admin = await ClinicAdminClientAsync();
+        var report = await ReportAsync(admin, WideFrom, WideTo);
+
+        report.ByStatus.Values.Sum().Should().Be(report.TotalAppointments);
+        report.ByDoctor.Sum(d => d.AppointmentCount).Should().Be(report.TotalAppointments);
+        report.ByBranch.Sum(b => b.AppointmentCount).Should().Be(report.TotalAppointments);
+        report.ByService.Sum(s => s.AppointmentCount).Should().Be(report.TotalAppointments);
+
+        report.ByDoctor.Sum(d => d.Revenue).Should().Be(report.TotalRevenue);
+        report.ByBranch.Sum(b => b.Revenue).Should().Be(report.TotalRevenue);
+        report.ByService.Sum(s => s.Revenue).Should().Be(report.TotalRevenue);
+
+        report.ByDoctor.Sum(d => d.CompletedCount).Should().Be(report.CompletedAppointments);
+        report.ByDoctor.Sum(d => d.CancelledCount).Should().Be(report.CancelledAppointments);
+        report.ByDoctor.Sum(d => d.NoShowCount).Should().Be(report.NoShowAppointments);
+
+        (report.CompletedAppointments + report.CancelledAppointments + report.NoShowAppointments)
+            .Should().BeLessThanOrEqualTo(report.TotalAppointments);
+    }
+
+    /// <summary>Interval pa asnjë termin → zero kudo, jo gabim dhe jo null.</summary>
+    [Fact]
+    public async Task Report_EmptyRange_ReturnsZerosNotError()
+    {
+        var admin = await ClinicAdminClientAsync();
+
+        var report = await ReportAsync(admin, new DateOnly(2000, 1, 1), new DateOnly(2000, 1, 31));
+
+        report.TotalAppointments.Should().Be(0);
+        report.CompletedAppointments.Should().Be(0);
+        report.CancelledAppointments.Should().Be(0);
+        report.NoShowAppointments.Should().Be(0);
+        report.TotalRevenue.Should().Be(0m);
+        report.ByStatus.Should().BeEmpty();
+        report.ByDoctor.Should().BeEmpty();
+        report.ByBranch.Should().BeEmpty();
+        report.ByService.Should().BeEmpty();
+
+        // Pa të ardhura valuta bie te lista e çmimeve të klinikës — kurrë bosh.
+        report.Currency.Should().NotBeNullOrWhiteSpace();
+    }
+
+    /// <summary>Interval i përmbysur (from > to) — po ashtu zero, jo gabim.</summary>
+    [Fact]
+    public async Task Report_InvertedRange_ReturnsZerosNotError()
+    {
+        var admin = await ClinicAdminClientAsync();
+
+        var report = await ReportAsync(admin, WideTo, WideFrom);
+
+        report.TotalAppointments.Should().Be(0);
+        report.TotalRevenue.Should().Be(0m);
+    }
+
+    /// <summary>
+    /// Terminet e parezervuara nuk sjellin të ardhura: një termin i sapo-krijuar (Pending)
+    /// rrit totalin, por të ardhurat mbeten të pandryshuara — zero, jo null.
+    /// </summary>
+    [Fact]
+    public async Task Report_UncompletedAppointment_AddsNoRevenue()
+    {
+        var admin = await ClinicAdminClientAsync();
+        var before = await ReportAsync(admin, WideFrom, WideTo);
+
+        // Orari i seed-uar: 08:00–12:00 dhe 13:00–17:00, slote 30-minutëshe.
+        await BookAppointmentAtDardaniaAsync(new TimeOnly(14, 30));
+
+        var after = await ReportAsync(admin, WideFrom, WideTo);
+
+        after.TotalAppointments.Should().Be(before.TotalAppointments + 1);
+        after.TotalRevenue.Should().Be(before.TotalRevenue);
+        after.CompletedAppointments.Should().Be(before.CompletedAppointments);
+    }
+
+    /// <summary>
+    /// Pa override, të ardhurat duhet të ndjekin MedicalService.Price — ana tjetër e
+    /// çiftit me testin e CustomPrice më poshtë.
+    /// </summary>
+    [Fact]
+    public async Task Report_Revenue_FallsBackToServicePriceWithoutOverride()
+    {
+        var appointmentId = await BookAppointmentAtDardaniaAsync(new TimeOnly(16, 30));
+        var admin = await ClinicAdminClientAsync();
+        var before = await ReportAsync(admin, WideFrom, WideTo);
+
+        await CompleteAsync(admin, appointmentId);
+
+        var after = await ReportAsync(admin, WideFrom, WideTo);
+
+        AssertRevenueDelta(before, after, DentalCleaningBasePrice);
+    }
+
     /// <summary>
     /// Të ardhurat duhet të përdorin çmimin EFEKTIV: DoctorService.CustomPrice e
     /// mbivendos MedicalService.Price. Pa këtë, çdo doktor me override do të
@@ -317,7 +487,6 @@ public class AdminListEndpointsTests
     [Fact]
     public async Task Report_Revenue_UsesDoctorCustomPriceOverride()
     {
-        const decimal basePrice = 25m;      // Pastrim i dhëmbëve, sipas seed-it
         const decimal customPrice = 99.50m;
 
         var appointmentId = await BookAppointmentAtDardaniaAsync(new TimeOnly(16, 0));
@@ -326,37 +495,71 @@ public class AdminListEndpointsTests
         await SetCustomPriceAsync(customPrice);
         try
         {
-            // Pending → Confirmed → Completed (kalim i drejtpërdrejtë nuk lejohet).
-            await TransitionAsync(admin, appointmentId, AppointmentStatus.Confirmed);
-            await TransitionAsync(admin, appointmentId, AppointmentStatus.Completed);
+            var before = await ReportAsync(admin, WideFrom, WideTo);
+            await CompleteAsync(admin, appointmentId);
+            var after = await ReportAsync(admin, WideFrom, WideTo);
 
-            var from = DateOnly.FromDateTime(DateTime.UtcNow.Date).AddDays(-1);
-            var to = DateOnly.FromDateTime(DateTime.UtcNow.Date).AddDays(30);
-            var response = await admin.GetAsync(
-                $"/api/admin/clinics/{DbSeeder.Ids.ClinicDardania}/report?from={from:yyyy-MM-dd}&to={to:yyyy-MM-dd}");
+            AssertRevenueDelta(before, after, customPrice);
 
-            response.StatusCode.Should().Be(HttpStatusCode.OK);
-            var report = (await response.Content.ReadFromJsonAsync<ClinicReportDto>(TestHelpers.Json))!;
-
-            var cleaning = report.ByService.Single(s => s.ServiceId == DbSeeder.Ids.ServiceDentalCleaning);
-
-            // Çmimi bazë raportohet ende si referencë...
-            cleaning.Price.Should().Be(basePrice);
-            // ...por të ardhurat duhet të ndjekin override-in.
-            cleaning.Revenue.Should().Be(customPrice);
-            report.TotalRevenue.Should().Be(customPrice);
-            report.CompletedAppointments.Should().Be(1);
-
-            report.ByDoctor.Single(d => d.DoctorId == DbSeeder.Ids.DoctorArben)
-                .Revenue.Should().Be(customPrice);
-            report.ByBranch.Single(b => b.BranchId == DbSeeder.Ids.BranchDardania)
-                .Revenue.Should().Be(customPrice);
+            // Çmimi bazë raportohet ende si referencë, i pandikuar nga override-i.
+            after.ByService.Single(s => s.ServiceId == DbSeeder.Ids.ServiceDentalCleaning)
+                .Price.Should().Be(DentalCleaningBasePrice);
         }
         finally
         {
             await SetCustomPriceAsync(null);
         }
     }
+
+    /// <summary>Pastrim i dhëmbëve — çmimi bazë sipas seed-it.</summary>
+    private const decimal DentalCleaningBasePrice = 25m;
+
+    private static DateOnly WideFrom => DateOnly.FromDateTime(DateTime.UtcNow.Date).AddDays(-90);
+
+    private static DateOnly WideTo => DateOnly.FromDateTime(DateTime.UtcNow.Date).AddDays(90);
+
+    private static async Task<ClinicReportDto> ReportAsync(HttpClient admin, DateOnly from, DateOnly to)
+    {
+        var response = await admin.GetAsync(
+            $"/api/admin/clinics/{DbSeeder.Ids.ClinicDardania}/report?from={from:yyyy-MM-dd}&to={to:yyyy-MM-dd}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        return (await response.Content.ReadFromJsonAsync<ClinicReportDto>(TestHelpers.Json))!;
+    }
+
+    /// <summary>Pending → Confirmed → Completed (kalimi i drejtpërdrejtë nuk lejohet).</summary>
+    private static async Task CompleteAsync(HttpClient admin, Guid appointmentId)
+    {
+        await TransitionAsync(admin, appointmentId, AppointmentStatus.Confirmed);
+        await TransitionAsync(admin, appointmentId, AppointmentStatus.Completed);
+    }
+
+    /// <summary>
+    /// Krahasim me diferencë, jo me vlerë absolute: testet e klasës ndajnë të njëjtën DB
+    /// dhe të njëjtën datë rezervimi, prandaj një total absolut do të varej nga radha e ekzekutimit.
+    /// </summary>
+    private static void AssertRevenueDelta(ClinicReportDto before, ClinicReportDto after, decimal expectedRevenue)
+    {
+        after.CompletedAppointments.Should().Be(before.CompletedAppointments + 1);
+        after.TotalRevenue.Should().Be(before.TotalRevenue + expectedRevenue);
+
+        RevenueOf(after.ByService, s => s.ServiceId == DbSeeder.Ids.ServiceDentalCleaning, s => s.Revenue)
+            .Should().Be(RevenueOf(before.ByService, s => s.ServiceId == DbSeeder.Ids.ServiceDentalCleaning, s => s.Revenue)
+                + expectedRevenue);
+
+        RevenueOf(after.ByDoctor, d => d.DoctorId == DbSeeder.Ids.DoctorArben, d => d.Revenue)
+            .Should().Be(RevenueOf(before.ByDoctor, d => d.DoctorId == DbSeeder.Ids.DoctorArben, d => d.Revenue)
+                + expectedRevenue);
+
+        RevenueOf(after.ByBranch, b => b.BranchId == DbSeeder.Ids.BranchDardania, b => b.Revenue)
+            .Should().Be(RevenueOf(before.ByBranch, b => b.BranchId == DbSeeder.Ids.BranchDardania, b => b.Revenue)
+                + expectedRevenue);
+    }
+
+    /// <summary>Rreshti mund të mos ekzistojë ende në raportin "para" — atëherë 0.</summary>
+    private static decimal RevenueOf<T>(
+        IReadOnlyList<T> rows, Func<T, bool> predicate, Func<T, decimal> revenue) =>
+        rows.Where(predicate).Select(revenue).SingleOrDefault();
 
     private async Task SetCustomPriceAsync(decimal? price)
     {

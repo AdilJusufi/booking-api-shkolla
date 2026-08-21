@@ -1,16 +1,20 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, CheckCircle, ChevronLeft, Mail, Moon, Sun } from 'lucide-react'
+import { Trans, useTranslation } from 'react-i18next'
 import { useTheme } from '../context/ThemeContext'
 import { useToast } from '../context/ToastContext'
 import { api, ApiError } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
+import { useCooldown } from '../lib/useCooldown'
 import { ErrorBox, Pending } from '../components/ui'
 import Logo from '../components/Logo'
 
-const RESEND_SECONDS = 60
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export default function ForgotPasswordPage() {
+  const { t: tCommon } = useTranslation('common')
+  const { t } = useTranslation('auth')
   const { theme, toggleTheme } = useTheme()
   const { notify } = useToast()
 
@@ -19,30 +23,12 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
-  const [cooldown, setCooldown] = useState(0)
+  const { secondsLeft: cooldown, startCooldown } = useCooldown()
 
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
-  }, [])
-
-  function startCooldown() {
-    setCooldown(RESEND_SECONDS)
-    if (intervalRef.current) clearInterval(intervalRef.current)
-    intervalRef.current = setInterval(() => {
-      setCooldown((prev) => {
-        if (prev <= 1) {
-          if (intervalRef.current) clearInterval(intervalRef.current)
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-  }
-
+  // The endpoint returns 204 regardless of whether the email exists (by
+  // design, so the response never reveals which). Only a genuine failure —
+  // network, 429, 500 — should ever produce an error state here; success
+  // is the *only* thing that should ever set `sent`.
   async function submit() {
     setError('')
     setLoading(true)
@@ -51,14 +37,8 @@ export default function ForgotPasswordPage() {
       setSent(true)
       startCooldown()
     } catch (err) {
-      if (err instanceof ApiError && err.status === 429) {
-        startCooldown()
-      } else if (err instanceof ApiError && err.status === 500) {
-        setError('Gabim i serverit. Provoni përsëri.')
-      } else {
-        setSent(true)
-        startCooldown()
-      }
+      if (err instanceof ApiError && err.status === 429) startCooldown()
+      setError(getErrorMessage(err, { default: t('forgotPassword.sendFailure') }))
     } finally {
       setLoading(false)
     }
@@ -68,7 +48,7 @@ export default function ForgotPasswordPage() {
     e.preventDefault()
     setFieldError('')
     if (!email.trim() || !EMAIL_RE.test(email)) {
-      setFieldError('Shkruani një email adresë të vlefshme.')
+      setFieldError(t('forgotPassword.invalidEmail'))
       return
     }
     submit()
@@ -76,17 +56,14 @@ export default function ForgotPasswordPage() {
 
   async function handleResend() {
     if (cooldown > 0) return
+    setError('')
     try {
       await api.forgotPassword(email)
-      notify('Email u ridërgua.', 'ok')
+      notify(t('forgotPassword.resentToast'), 'ok')
       startCooldown()
     } catch (err) {
-      if (err instanceof ApiError && err.status === 429) {
-        startCooldown()
-      } else if (!(err instanceof ApiError && err.status === 500)) {
-        notify('Email u ridërgua.', 'ok')
-        startCooldown()
-      }
+      if (err instanceof ApiError && err.status === 429) startCooldown()
+      setError(getErrorMessage(err, { default: t('forgotPassword.resendFailure') }))
     }
   }
 
@@ -95,13 +72,13 @@ export default function ForgotPasswordPage() {
       <button
         type="button"
         className="theme-toggle"
-        aria-label={theme === 'dark' ? 'Kalo në temën e çelët' : 'Kalo në temën e errët'}
+        aria-label={theme === 'dark' ? tCommon('theme.switchToLight') : tCommon('theme.switchToDark')}
         onClick={toggleTheme}
       >
         {theme === 'dark' ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}
       </button>
       <Link to="/hyr" className="link-icon">
-        <ChevronLeft size={16} strokeWidth={1.5} /> Kthehu te hyrja
+        <ChevronLeft size={16} strokeWidth={1.5} /> {t('common.backToLogin')}
       </Link>
     </div>
   )
@@ -111,27 +88,27 @@ export default function ForgotPasswordPage() {
       <div className="split-auth__brand">
         <span className="split-auth__brand-mark">
           <span className="split-auth__brand-icon" aria-hidden><Logo size={20} tone="inverted" /></span>
-          Termini.ks
+          {tCommon('brand.name')}{tCommon('brand.tld')}
         </span>
-        <h1>Shëndetësia juaj, e rezervuar me lehtësi.</h1>
+        <h1>{t('brand.taglineVariant')}</h1>
         <div className="split-auth__brand-trust">
           <span className="split-auth__trust-item">
-            <CheckCircle size={16} strokeWidth={1.5} /> 500+ Mjekë të verifikuar
+            <CheckCircle size={16} strokeWidth={1.5} /> {t('brand.trustDoctors')}
           </span>
           <span className="split-auth__trust-item">
-            <CheckCircle size={16} strokeWidth={1.5} /> 80+ Klinika në Kosovë
+            <CheckCircle size={16} strokeWidth={1.5} /> {t('brand.trustClinics')}
           </span>
           <span className="split-auth__trust-item">
-            <CheckCircle size={16} strokeWidth={1.5} /> Rezervim në 60 sekonda
+            <CheckCircle size={16} strokeWidth={1.5} /> {t('brand.trustBooking')}
           </span>
         </div>
-        <div className="split-auth__brand-copyright">© 2026 Termini.ks</div>
+        <div className="split-auth__brand-copyright">{t('brand.copyright', { year: new Date().getFullYear() })}</div>
       </div>
 
       <div className="split-auth__mobile-bar">
         <Link to="/" className="brand">
           <span className="brand__mark" aria-hidden><Logo size={22} tone="inverted" /></span>
-          <span className="brand__name">Termini<span className="brand__tld">.ks</span></span>
+          <span className="brand__name">{tCommon('brand.name')}<span className="brand__tld">{tCommon('brand.tld')}</span></span>
         </Link>
       </div>
 
@@ -142,23 +119,23 @@ export default function ForgotPasswordPage() {
           {!sent ? (
             <>
               <h1 style={{ fontSize: '1.7rem', fontWeight: 800, color: 'var(--ink)' }}>
-                Keni harruar fjalëkalimin?
+                {t('forgotPassword.title')}
               </h1>
               <p className="auth-sub" style={{ maxWidth: '34ch' }}>
-                Shkruani emailin tuaj dhe do t'ju dërgojmë udhëzime për rivendosje.
+                {t('forgotPassword.subtitle')}
               </p>
 
               <form onSubmit={handleSubmit} className="form">
                 {error && <ErrorBox message={error} />}
                 <div className="field field--icon">
-                  <label>Email adresa</label>
+                  <label>{t('fields.email.label')}</label>
                   <span className="field__icon" aria-hidden><Mail size={16} strokeWidth={1.5} /></span>
                   <input
                     type="email"
                     autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="emri@shembull.com"
+                    placeholder={t('fields.email.placeholder')}
                   />
                   {fieldError && <span className="field__error">{fieldError}</span>}
                 </div>
@@ -166,19 +143,19 @@ export default function ForgotPasswordPage() {
                 <button className="btn btn--primary btn--block" disabled={loading || cooldown > 0}>
                   {loading ? (
                     <>
-                      <Pending /> Duke dërguar…
+                      <Pending /> {t('forgotPassword.submitting')}
                     </>
                   ) : cooldown > 0 ? (
-                    `Ridërgoni (${cooldown}s)`
+                    t('forgotPassword.resendCountdown', { seconds: cooldown })
                   ) : (
                     <>
-                      Dërgoni udhëzimet <ArrowRight size={16} strokeWidth={1.5} />
+                      {t('forgotPassword.submit')} <ArrowRight size={16} strokeWidth={1.5} />
                     </>
                   )}
                 </button>
 
                 <p style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center', marginTop: 10 }}>
-                  Nëse nuk e shihni emailin, kontrolloni dosjen tuaj spam.
+                  {t('forgotPassword.spamHint')}
                 </p>
               </form>
             </>
@@ -188,30 +165,37 @@ export default function ForgotPasswordPage() {
                 <Mail size={28} strokeWidth={1.5} />
               </div>
               <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--ink)', textAlign: 'center' }}>
-                Kontrolloni emailin tuaj
+                {t('forgotPassword.checkEmailTitle')}
               </h1>
               <p
                 className="auth-sub"
                 style={{ maxWidth: '34ch', textAlign: 'center', marginInline: 'auto' }}
               >
-                Kemi dërguar udhëzime te <strong>{email}</strong> nëse ky adresë është e regjistruar.
+                <Trans
+                  i18nKey="forgotPassword.checkEmailBody"
+                  ns="auth"
+                  values={{ email }}
+                  components={[<strong key="0" />]}
+                />
               </p>
 
+              {error && <ErrorBox message={error} />}
+
               <div className="auth-resend">
-                <span>Nuk morët emailin?</span>
+                <span>{t('forgotPassword.notReceived')}</span>
                 <button
                   type="button"
                   className="btn btn--ghost btn--sm"
                   disabled={cooldown > 0}
                   onClick={handleResend}
                 >
-                  {cooldown > 0 ? `Ridërgoni (${cooldown}s)` : 'Ridërgoni'}
+                  {cooldown > 0 ? t('forgotPassword.resendCountdown', { seconds: cooldown }) : t('forgotPassword.resend')}
                 </button>
               </div>
 
               <p className="auth-alt" style={{ marginTop: 16 }}>
                 <Link to="/hyr" className="link-icon">
-                  <ChevronLeft size={16} strokeWidth={1.5} /> Kthehu te hyrja
+                  <ChevronLeft size={16} strokeWidth={1.5} /> {t('common.backToLogin')}
                 </Link>
               </p>
             </>

@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import i18n from '../i18n'
 import { api, getRefreshToken, registerSessionExpiredHandler, setRefreshToken, setToken } from '../lib/api'
 import type { AuthResponse, RegisterRequest } from '../lib/types'
 import { useToast } from './ToastContext'
@@ -24,7 +25,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-const USER_KEY = 'termini.user'
+const USER_KEY = 'rezervo.user'
 
 function loadUser(): AuthUser | null {
   try {
@@ -72,7 +73,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     function handleSessionExpired() {
       clearSession()
-      notify('Sesioni juaj ka skaduar. Ju lutem hyni përsëri.', 'error')
+      // Identical wording to common:errors.401 (this *is* that case — a
+      // silent-refresh failure means the session is gone) — reused via i18n
+      // directly rather than useTranslation(), since this handler is
+      // registered once (empty deps) and call-time i18n.t() stays correct
+      // across a language switch the same way errors.ts's helpers do.
+      notify(i18n.t('errors.401', { ns: 'common' }), 'error')
     }
     registerSessionExpiredHandler(handleSessionExpired)
     return () => registerSessionExpiredHandler(() => undefined)

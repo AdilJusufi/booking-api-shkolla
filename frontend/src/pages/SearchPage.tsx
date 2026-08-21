@@ -12,25 +12,18 @@ import {
   Star,
   Stethoscope,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
 import type { Clinic, Doctor, Specialty } from '../lib/types'
 import ClinicCard from '../components/ClinicCard'
 import DoctorCard from '../components/DoctorCard'
 import { Dropdown, EmptyState, specialtyLabel } from '../components/ui'
 import { useReveal } from '../lib/motion'
-
-const KOSOVO_CITIES = [
-  'Prishtinë', 'Prizren', 'Pejë', 'Gjakovë', 'Gjilan', 'Ferizaj', 'Mitrovicë', 'Vushtrri',
-]
+import { KOSOVO_CITIES } from '../lib/kosovoCities'
 
 type Tab = 'klinika' | 'mjeket'
 type SortOption = 'relevance' | 'name' | 'rating'
-
-const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: 'relevance', label: 'Rendito sipas: Relevanca' },
-  { value: 'name', label: 'Emri (A-Z)' },
-  { value: 'rating', label: 'Më të vlerësuarat' },
-]
 
 const PAGE_SIZE = 12
 
@@ -62,6 +55,13 @@ function SkeletonCards({ count }: { count: number }) {
 }
 
 export default function SearchPage() {
+  const { t } = useTranslation('patient')
+  const { t: tCommon } = useTranslation('common')
+  const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+    { value: 'relevance', label: t('search.sortRelevance') },
+    { value: 'name', label: t('search.sortName') },
+    { value: 'rating', label: t('search.sortRating') },
+  ]
   const revealRef = useReveal()
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -151,7 +151,7 @@ export default function SearchPage() {
             })
 
     load
-      .catch((e) => active && setError(e.message ?? 'Ndodhi një gabim.'))
+      .catch((e) => active && setError(getErrorMessage(e)))
       .finally(() => active && setLoading(false))
 
     return () => {
@@ -213,8 +213,14 @@ export default function SearchPage() {
     return arr
   }, [doctors, sort])
 
-  const cityHeading = urlCity || 'Kosovë'
-  const resultsHeading = tab === 'klinika' ? `Klinika në ${cityHeading}` : `Mjekë në ${cityHeading}`
+  // urlCity carries the stable Albanian value (see lib/kosovoCities.ts) — look
+  // up its translated display label rather than showing the raw value in an
+  // English/Serbian UI.
+  const matchedCity = KOSOVO_CITIES.find((c) => c.value === urlCity)
+  const cityHeading = matchedCity ? tCommon(`cities.${matchedCity.key}`) : urlCity || t('search.defaultCity')
+  const resultsHeading = tab === 'klinika'
+    ? t('search.headingClinicsIn', { city: cityHeading })
+    : t('search.headingDoctorsIn', { city: cityHeading })
 
   const pageNumbers = useMemo(() => {
     const pages: number[] = []
@@ -228,15 +234,15 @@ export default function SearchPage() {
     <>
       <section className="search-hero">
         <div className="container">
-          <h1>Gjeni mjekun ose klinikën e duhur</h1>
-          <p className="search-hero__sub">Kërkoni nga 500+ mjekë dhe 80+ klinika në Kosovë</p>
+          <h1>{t('search.title')}</h1>
+          <p className="search-hero__sub">{t('search.subtitle')}</p>
 
           <div className="searchbar">
             <div className="searchbar__input">
               <span className="searchbar__icon" aria-hidden><Search size={20} strokeWidth={1.5} /></span>
               <input
                 type="search"
-                placeholder="Kërkoni mjek, klinikë, ose specialitet..."
+                placeholder={t('search.searchPlaceholder')}
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
               />
@@ -245,7 +251,7 @@ export default function SearchPage() {
               className="btn btn--primary searchbar__submit"
               onClick={() => updateParams({ q: searchInput || undefined, page: 1 })}
             >
-              Kërko
+              {tCommon('buttons.search')}
             </button>
           </div>
 
@@ -254,7 +260,7 @@ export default function SearchPage() {
               className={`spec-chip ${selectedSpecialties.length === 0 ? 'is-active' : ''}`}
               onClick={() => selectQuickSpecialty('')}
             >
-              Të gjitha
+              {t('search.allSpecialtiesChip')}
             </button>
             {specialties.map((s) => (
               <button
@@ -272,10 +278,10 @@ export default function SearchPage() {
       <div className="search-shell">
         <div className="search-tabs">
           <button className={`search-tab ${tab === 'klinika' ? 'is-active' : ''}`} onClick={() => switchTab('klinika')}>
-            <Building2 size={16} strokeWidth={1.5} /> Klinika
+            <Building2 size={16} strokeWidth={1.5} /> {t('search.tabClinics')}
           </button>
           <button className={`search-tab ${tab === 'mjeket' ? 'is-active' : ''}`} onClick={() => switchTab('mjeket')}>
-            <Stethoscope size={16} strokeWidth={1.5} /> Mjekët
+            <Stethoscope size={16} strokeWidth={1.5} /> {t('search.tabDoctors')}
           </button>
         </div>
 
@@ -287,30 +293,30 @@ export default function SearchPage() {
               onClick={() => setFilterOpen((v) => !v)}
             >
               <span>
-                <SlidersHorizontal size={16} strokeWidth={1.5} /> Filtrat
+                <SlidersHorizontal size={16} strokeWidth={1.5} /> {t('search.filtersToggle')}
                 {activeFilterCount > 0 && <span className="filter-toggle__badge">{activeFilterCount}</span>}
               </span>
               <ChevronDown size={16} strokeWidth={1.5} className="filter-toggle__chevron" />
             </button>
 
             <div className={`filter-card ${filterOpen ? 'is-open' : ''}`}>
-              <div className="filter-card__section-label">Qyteti</div>
+              <div className="filter-card__section-label">{t('search.cityLabel')}</div>
               <div className="filter-card__list">
-                {KOSOVO_CITIES.map((city) => (
-                  <label key={city}>
+                {KOSOVO_CITIES.map(({ key, value }) => (
+                  <label key={value}>
                     <input
                       type="checkbox"
-                      checked={selectedCities.includes(city)}
-                      onChange={() => toggleCity(city)}
+                      checked={selectedCities.includes(value)}
+                      onChange={() => toggleCity(value)}
                     />
-                    {city}
+                    {tCommon(`cities.${key}`)}
                   </label>
                 ))}
               </div>
 
               <div className="filter-card__divider" />
 
-              <div className="filter-card__section-label">Specialiteti</div>
+              <div className="filter-card__section-label">{t('search.specialtyLabel')}</div>
               <div className="filter-card__list">
                 {visibleSpecialties.map((s) => (
                   <label key={s.id}>
@@ -325,36 +331,36 @@ export default function SearchPage() {
               </div>
               {specialties.length > 6 && (
                 <button className="filter-card__more" onClick={() => setShowMoreSpecs((v) => !v)}>
-                  {showMoreSpecs ? 'Shfaq më pak ▴' : 'Shfaq më shumë ▾'}
+                  {showMoreSpecs ? t('search.showLess') : t('search.showMore')}
                 </button>
               )}
 
               {tab === 'mjeket' && (
                 <>
                   <div className="filter-card__divider" />
-                  <div className="filter-card__section-label">Vlerësimi minimal</div>
+                  <div className="filter-card__section-label">{t('search.minRatingLabel')}</div>
                   <div className="filter-card__list">
                     <label>
-                      <input type="radio" name="rating" /> <StarRating count={5} /> & lart
+                      <input type="radio" name="rating" /> <StarRating count={5} /> {t('search.andUp')}
                     </label>
                     <label>
-                      <input type="radio" name="rating" /> <StarRating count={4} /> & lart
+                      <input type="radio" name="rating" /> <StarRating count={4} /> {t('search.andUp')}
                     </label>
                     <label>
-                      <input type="radio" name="rating" /> <StarRating count={3} /> & lart
+                      <input type="radio" name="rating" /> <StarRating count={3} /> {t('search.andUp')}
                     </label>
                     <label>
-                      <input type="radio" name="rating" defaultChecked /> Çdo vlerësim
+                      <input type="radio" name="rating" defaultChecked /> {t('search.anyRating')}
                     </label>
                   </div>
                 </>
               )}
 
               <button className="btn btn--primary btn--block" style={{ marginTop: 16 }} onClick={applyFilters}>
-                Apliko filtrat
+                {t('search.applyFilters')}
               </button>
               <button className="filter-card__clear" onClick={clearAllFilters}>
-                Pastro të gjitha
+                {t('search.clearAllFilters')}
               </button>
             </div>
           </div>
@@ -363,7 +369,7 @@ export default function SearchPage() {
             <div className="results-head">
               <div>
                 <h2>{resultsHeading}</h2>
-                <div className="results-head__count">{totalItems} rezultate të gjetur</div>
+                <div className="results-head__count">{t('search.resultCount', { count: totalItems })}</div>
               </div>
               <Dropdown
                 options={SORT_OPTIONS}
@@ -376,11 +382,11 @@ export default function SearchPage() {
             {error ? (
               <EmptyState
                 icon={AlertCircle}
-                title="Ndodhi një gabim"
+                title={t('search.errorTitle')}
                 hint={error}
                 action={
                   <button type="button" className="btn btn--primary btn--sm" onClick={() => setRetryToken((n) => n + 1)}>
-                    Provo përsëri
+                    {tCommon('buttons.retry')}
                   </button>
                 }
               />
@@ -395,8 +401,8 @@ export default function SearchPage() {
                 </div>
               ) : (
                 <EmptyState
-                  title="Nuk u gjetën rezultate"
-                  hint="Provoni të ndryshoni filtrat ose termin e kërkimit."
+                  title={t('search.noResultsTitle')}
+                  hint={t('search.noResultsHint')}
                 />
               )
             ) : sortedDoctors.length ? (
@@ -408,15 +414,15 @@ export default function SearchPage() {
             ) : (
               <EmptyState
                 icon={Stethoscope}
-                title="Nuk u gjetën rezultate"
-                hint="Provoni të ndryshoni filtrat ose termin e kërkimit."
+                title={t('search.noResultsTitle')}
+                hint={t('search.noResultsHint')}
               />
             )}
 
             {!loading && !error && totalPages > 1 && (
               <div className="pagination">
                 <button className="pagination__arrow" disabled={page <= 1} onClick={() => goToPage(page - 1)}>
-                  <ChevronLeft size={16} strokeWidth={1.5} /> Prapa
+                  <ChevronLeft size={16} strokeWidth={1.5} /> {t('search.prevPage')}
                 </button>
                 {pageNumbers.map((p) => (
                   <button key={p} className={p === page ? 'is-active' : ''} onClick={() => goToPage(p)}>
@@ -424,7 +430,7 @@ export default function SearchPage() {
                   </button>
                 ))}
                 <button className="pagination__arrow" disabled={page >= totalPages} onClick={() => goToPage(page + 1)}>
-                  Para <ChevronRight size={16} strokeWidth={1.5} />
+                  {t('search.nextPage')} <ChevronRight size={16} strokeWidth={1.5} />
                 </button>
               </div>
             )}

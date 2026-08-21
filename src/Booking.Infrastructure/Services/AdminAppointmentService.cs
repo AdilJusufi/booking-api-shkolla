@@ -181,13 +181,21 @@ public class AdminAppointmentService : IAdminAppointmentService
 
         await _tenantAccess.EnsureCanManageClinicAsync(branch.ClinicId, cancellationToken);
 
-        var patient = await (
-                from p in _dbContext.PatientProfiles
-                join u in _dbContext.Users on p.UserId equals u.Id
-                where u.Email == request.PatientEmail && u.IsActive
-                select new { PatientProfileId = p.Id, p.UserId })
-            .FirstOrDefaultAsync(cancellationToken)
-            ?? throw new NotFoundException("Pacienti me këtë email nuk u gjet.");
+        // Pacienti identifikohet ose me profil-id (nga kërkimi/krijimi te
+        // api/admin/patients) ose me email për pajtueshmëri me thirrjet e vjetra.
+        // Validatori garanton se vjen saktësisht njëri.
+        var patientQuery =
+            from p in _dbContext.PatientProfiles
+            join u in _dbContext.Users on p.UserId equals u.Id
+            where u.IsActive
+            select new { PatientProfileId = p.Id, p.UserId, u.Email };
+
+        patientQuery = request.PatientProfileId is { } patientProfileId
+            ? patientQuery.Where(x => x.PatientProfileId == patientProfileId)
+            : patientQuery.Where(x => x.Email == request.PatientEmail);
+
+        var patient = await patientQuery.FirstOrDefaultAsync(cancellationToken)
+            ?? throw new NotFoundException("Pacienti nuk u gjet ose është joaktiv.");
 
         if (request.DependentId is { } dependentId)
         {
@@ -244,7 +252,7 @@ public class AdminAppointmentService : IAdminAppointmentService
         _dbContext.Appointments.Add(appointment);
 
         _auditService.Record("APPOINTMENT_CREATED_BY_ADMIN", nameof(Appointment), appointment.Id.ToString(), null,
-            new { request.PatientEmail, request.DoctorId, StartUtc = startUtc, EndUtc = endUtc });
+            new { patient.PatientProfileId, request.DoctorId, StartUtc = startUtc, EndUtc = endUtc });
 
         await SaveChangesGuardedAsync(cancellationToken);
 
@@ -440,7 +448,7 @@ public class AdminAppointmentService : IAdminAppointmentService
             await send(new AppointmentNotificationContext
             {
                 AppointmentId = dto.Id,
-                PatientEmail = user.Email!,
+                PatientEmail = user.Email,
                 PatientPhoneNumber = user.PhoneNumber,
                 PatientName = $"{user.FirstName} {user.LastName}",
                 DoctorName = doctorName,

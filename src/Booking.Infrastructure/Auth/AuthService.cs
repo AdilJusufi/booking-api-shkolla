@@ -93,25 +93,33 @@ public class AuthService : IAuthService
     public async Task<AuthResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
-        if (user is null || !user.IsActive)
+        if (user is null)
         {
-            throw new AuthenticationFailedException();
+            throw AuthenticationFailedException.InvalidCredentials();
         }
 
         if (await _userManager.IsLockedOutAsync(user))
         {
-            throw new AuthenticationFailedException("Llogaria është bllokuar përkohësisht nga tentimet e dështuara. Provo më vonë.");
+            throw AuthenticationFailedException.AccountLocked();
         }
 
         if (!await _userManager.CheckPasswordAsync(user, request.Password))
         {
             await _userManager.AccessFailedAsync(user);
-            throw new AuthenticationFailedException();
+            throw AuthenticationFailedException.InvalidCredentials();
+        }
+
+        // Pas verifikimit të password-it, që të mos zbulohet ekzistenca/statusi i llogarisë
+        // ndaj kujtdo që s'e di password-in. 403 jo 401: kredencialet janë të sakta,
+        // llogarinë e ka çaktivizuar admini.
+        if (!user.IsActive)
+        {
+            throw AuthenticationFailedException.AccountDeactivated();
         }
 
         if (_authSettings.RequireConfirmedEmail && !user.EmailConfirmed)
         {
-            throw new AuthenticationFailedException("Email-i nuk është konfirmuar ende. Kontrollo postën tënde.");
+            throw AuthenticationFailedException.EmailNotConfirmed();
         }
 
         await _userManager.ResetAccessFailedCountAsync(user);
@@ -129,7 +137,7 @@ public class AuthService : IAuthService
 
         if (storedToken is null)
         {
-            throw new AuthenticationFailedException("Refresh token i pavlefshëm.");
+            throw new AuthenticationFailedException(AuthErrorCodes.InvalidRefreshToken, "Refresh token i pavlefshëm.");
         }
 
         if (!storedToken.IsActive(now))
@@ -142,13 +150,18 @@ public class AuthService : IAuthService
                 await RevokeAllActiveTokensAsync(storedToken.UserId, now, cancellationToken);
             }
 
-            throw new AuthenticationFailedException("Refresh token i pavlefshëm.");
+            throw new AuthenticationFailedException(AuthErrorCodes.InvalidRefreshToken, "Refresh token i pavlefshëm.");
         }
 
         var user = await _userManager.FindByIdAsync(storedToken.UserId.ToString());
-        if (user is null || !user.IsActive)
+        if (user is null)
         {
-            throw new AuthenticationFailedException();
+            throw new AuthenticationFailedException(AuthErrorCodes.InvalidRefreshToken, "Refresh token i pavlefshëm.");
+        }
+
+        if (!user.IsActive)
+        {
+            throw AuthenticationFailedException.AccountDeactivated();
         }
 
         // Rotation: revoko të vjetrin, lësho të riun, lidhi zinxhir.
@@ -206,13 +219,13 @@ public class AuthService : IAuthService
         var user = await _userManager.FindByEmailAsync(request.Email);
         if (user is null)
         {
-            throw new AuthenticationFailedException("Tokeni i rivendosjes është i pavlefshëm.");
+            throw new AuthenticationFailedException(AuthErrorCodes.InvalidResetToken, "Tokeni i rivendosjes është i pavlefshëm.");
         }
 
         var result = await _userManager.ResetPasswordAsync(user, request.Token, request.NewPassword);
         if (!result.Succeeded)
         {
-            throw new AuthenticationFailedException("Tokeni i rivendosjes është i pavlefshëm.");
+            throw new AuthenticationFailedException(AuthErrorCodes.InvalidResetToken, "Tokeni i rivendosjes është i pavlefshëm.");
         }
 
         // Pas ndryshimit të password-it të gjitha sesionet ekzistuese bëhen të pavlefshme.
@@ -235,13 +248,13 @@ public class AuthService : IAuthService
         var user = await _userManager.FindByEmailAsync(request.Email);
         if (user is null)
         {
-            throw new AuthenticationFailedException("Tokeni i konfirmimit është i pavlefshëm.");
+            throw new AuthenticationFailedException(AuthErrorCodes.InvalidConfirmationToken, "Tokeni i konfirmimit është i pavlefshëm.");
         }
 
         var result = await _userManager.ConfirmEmailAsync(user, request.Token);
         if (!result.Succeeded)
         {
-            throw new AuthenticationFailedException("Tokeni i konfirmimit është i pavlefshëm.");
+            throw new AuthenticationFailedException(AuthErrorCodes.InvalidConfirmationToken, "Tokeni i konfirmimit është i pavlefshëm.");
         }
     }
 

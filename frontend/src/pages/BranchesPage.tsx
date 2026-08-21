@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Building2, MapPin, Navigation, Pencil, Phone, Plus } from 'lucide-react'
-import { api, ApiError } from '../lib/api'
+import { useTranslation } from 'react-i18next'
+import { api } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
 import type { ClinicBranch, CreateBranchRequest } from '../lib/types'
 import { useToast } from '../context/ToastContext'
 import { useClinicContext } from '../components/ClinicDetailLayout'
@@ -18,6 +20,7 @@ const EMPTY_FORM: CreateBranchRequest = {
 }
 
 export default function BranchesPage() {
+  const { t } = useTranslation('admin')
   const { clinic } = useClinicContext()
   const { notify } = useToast()
 
@@ -42,7 +45,7 @@ export default function BranchesPage() {
         setServiceCount(details?.services.length ?? 0)
         setDoctorCount(doctors.length)
       })
-      .catch((e) => setError(e instanceof ApiError ? e.message : 'Ndodhi një gabim.'))
+      .catch((e) => setError(getErrorMessage(e)))
       .finally(() => setLoading(false))
   }, [clinic.id])
 
@@ -55,32 +58,32 @@ export default function BranchesPage() {
   // No PUT /branches endpoint exists yet — the icon stays visible so the UI is
   // ready for it, but for now it only surfaces that editing isn't wired up.
   function openEditModal() {
-    notify('Funksion në zhvillim.', 'info')
+    notify(t('branches.featureInDevelopmentToast'), 'info')
   }
 
   return (
     <div className="branches-page">
       <div className="admin-header">
         <div>
-          <h1>Degët e Klinikës</h1>
-          <p className="admin-header__sub">Menaxhoni degët dhe lokacionet e klinikës tuaj.</p>
+          <h1>{t('branches.pageTitle')}</h1>
+          <p className="admin-header__sub">{t('branches.pageSubtitle')}</p>
         </div>
         <button type="button" className="btn btn--primary btn--sm" onClick={openAddModal}>
-          <Plus size={15} strokeWidth={1.5} /> Shto Degë
+          <Plus size={15} strokeWidth={1.5} /> {t('branches.addCta')}
         </button>
       </div>
 
-      {error && <ErrorBox message={error} />}
-
       {loading ? (
-        <SkeletonRows count={3} label="Duke ngarkuar degët" />
+        <SkeletonRows count={3} label={t('branches.loadingLabel')} />
+      ) : error ? (
+        <ErrorBox message={error} onRetry={load} />
       ) : branches.length === 0 ? (
         <EmptyState
           icon={Building2}
-          title="Kjo klinikë nuk ka asnjë degë të shtuar ende."
+          title={t('branches.emptyTitle')}
           action={
             <button type="button" className="btn btn--primary btn--sm" onClick={openAddModal}>
-              <Plus size={15} strokeWidth={1.5} /> Shto Degën e Parë
+              <Plus size={15} strokeWidth={1.5} /> {t('branches.addFirstCta')}
             </button>
           }
         />
@@ -126,14 +129,15 @@ function BranchCard({
   serviceCount: number
   onEdit: () => void
 }) {
+  const { t } = useTranslation('admin')
   return (
     <div className="admin-card branch-card">
       <div className="branch-card__top">
         <div className="branch-card__name-row">
           <h3 className="branch-card__name">{branch.name}</h3>
-          <span className="admin-card__status admin-card__status--approved">AKTIVE</span>
+          <span className="admin-card__status admin-card__status--approved">{t('branches.card.statusActive')}</span>
         </div>
-        <button type="button" className="admin-icon-btn" onClick={onEdit} aria-label="Ndrysho degën">
+        <button type="button" className="admin-icon-btn" onClick={onEdit} aria-label={t('branches.card.editAria')}>
           <Pencil size={15} strokeWidth={1.5} />
         </button>
       </div>
@@ -143,29 +147,29 @@ function BranchCard({
         {branch.phoneNumber && <span><Phone size={13} strokeWidth={1.5} /> {branch.phoneNumber}</span>}
         {branch.municipality && <span><Building2 size={13} strokeWidth={1.5} /> {branch.municipality}</span>}
         {branch.latitude != null && branch.longitude != null && (
-          <span><Navigation size={13} strokeWidth={1.5} /> GPS: {branch.latitude}, {branch.longitude}</span>
+          <span><Navigation size={13} strokeWidth={1.5} /> {t('branches.card.gpsPrefix')} {branch.latitude}, {branch.longitude}</span>
         )}
       </div>
 
       <div className="branch-card__stats">
         <div className="admin-card__stat">
-          <span className="admin-card__stat-label">Mjekë</span>
+          <span className="admin-card__stat-label">{t('branches.card.statDoctors')}</span>
           <span className="admin-card__stat-value num">{doctorCount}</span>
         </div>
         <div className="admin-card__stat">
-          <span className="admin-card__stat-label">Shërbime</span>
+          <span className="admin-card__stat-label">{t('branches.card.statServices')}</span>
           <span className="admin-card__stat-value num">{serviceCount}</span>
         </div>
         <div className="admin-card__stat">
-          <span className="admin-card__stat-label">Statusi</span>
-          <span className="admin-card__stat-value">Aktive</span>
+          <span className="admin-card__stat-label">{t('branches.card.statStatus')}</span>
+          <span className="admin-card__stat-value">{t('branches.card.statStatusValue')}</span>
         </div>
       </div>
 
       <div className="branch-card__bottom">
-        <span className="branch-card__id">ID: {branch.id}</span>
+        <span className="branch-card__id">{t('branches.card.idLabel', { id: branch.id })}</span>
         <Link to={`/admin-panel/klinikat/${clinicId}/mjeket`} className="admin-card__manage">
-          Menaxho Mjekët <ArrowRight size={14} strokeWidth={1.5} />
+          {t('branches.card.manageDoctorsCta')} <ArrowRight size={14} strokeWidth={1.5} />
         </Link>
       </div>
     </div>
@@ -181,6 +185,8 @@ function BranchFormModal({
   onClose: () => void
   onSaved: () => void
 }) {
+  const { t } = useTranslation('admin')
+  const { t: tCommon } = useTranslation('common')
   const { notify } = useToast()
   const [form, setForm] = useState<CreateBranchRequest>(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
@@ -198,15 +204,15 @@ function BranchFormModal({
 
   async function handleSubmit() {
     if (form.name.trim().length < 2) {
-      setFormError('Emri i degës është i detyrueshëm.')
+      setFormError(t('branches.formModal.nameRequired'))
       return
     }
     if (form.address.trim().length < 2) {
-      setFormError('Adresa është e detyrueshme.')
+      setFormError(t('branches.formModal.addressRequired'))
       return
     }
     if (form.city.trim().length < 2) {
-      setFormError('Qyteti është i detyrueshëm.')
+      setFormError(t('branches.formModal.cityRequired'))
       return
     }
 
@@ -222,43 +228,43 @@ function BranchFormModal({
         latitude: form.latitude,
         longitude: form.longitude,
       })
-      notify('Dega u shtua.', 'ok')
+      notify(t('branches.formModal.addedToast'), 'ok')
       onSaved()
     } catch (e) {
-      setFormError(e instanceof ApiError ? e.message : 'Gabim. Provoni përsëri.')
+      setFormError(getErrorMessage(e))
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <Modal title="Shto Degë të Re" onClose={onClose}>
+    <Modal title={t('branches.formModal.addTitle')} onClose={onClose}>
       {formError && <ErrorBox message={formError} />}
 
       <div className="field">
-        <label>Emri i Degës</label>
+        <label>{t('branches.formModal.nameLabel')}</label>
         <input
           type="text"
           value={form.name}
           onChange={(e) => updateField('name', e.target.value)}
-          placeholder="p.sh. Dega Qendër"
+          placeholder={t('branches.formModal.namePlaceholder')}
         />
       </div>
 
       <div className="form-row">
         <div className="field">
-          <label>Adresa</label>
+          <label>{t('branches.formModal.addressLabel')}</label>
           <input type="text" value={form.address} onChange={(e) => updateField('address', e.target.value)} />
         </div>
         <div className="field">
-          <label>Qyteti</label>
+          <label>{t('branches.formModal.cityLabel')}</label>
           <input type="text" value={form.city} onChange={(e) => updateField('city', e.target.value)} />
         </div>
       </div>
 
       <div className="form-row">
         <div className="field">
-          <label>Komuna</label>
+          <label>{t('branches.formModal.municipalityLabel')}</label>
           <input
             type="text"
             value={form.municipality ?? ''}
@@ -266,7 +272,7 @@ function BranchFormModal({
           />
         </div>
         <div className="field">
-          <label>Telefoni</label>
+          <label>{t('branches.formModal.phoneLabel')}</label>
           <input
             type="tel"
             value={form.phoneNumber ?? ''}
@@ -277,7 +283,7 @@ function BranchFormModal({
 
       <div className="form-row">
         <div className="field">
-          <label>Gjerësia Gjeografike</label>
+          <label>{t('branches.formModal.latitudeLabel')}</label>
           <input
             type="number"
             step="any"
@@ -286,7 +292,7 @@ function BranchFormModal({
           />
         </div>
         <div className="field">
-          <label>Gjatësia Gjeografike</label>
+          <label>{t('branches.formModal.longitudeLabel')}</label>
           <input
             type="number"
             step="any"
@@ -298,9 +304,9 @@ function BranchFormModal({
 
       <div className="clinic-settings__actions">
         <button type="button" className="btn btn--primary btn--sm" disabled={saving} onClick={handleSubmit}>
-          {saving ? 'Duke ruajtur…' : 'Ruaj Degën'}
+          {saving ? t('branches.formModal.savingCta') : t('branches.formModal.saveCta')}
         </button>
-        <button type="button" className="btn btn--ghost btn--sm" onClick={onClose}>Anulo</button>
+        <button type="button" className="btn btn--ghost btn--sm" onClick={onClose}>{tCommon('buttons.cancel')}</button>
       </div>
     </Modal>
   )

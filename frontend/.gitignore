@@ -1,5 +1,7 @@
 node_modules
 dist
 dist-ssr
+# TypeScript composite build output for tsconfig.node.json.
+dist-tsnode
 *.local
 .vite

@@ -102,7 +102,12 @@ public sealed class AdminCreateAppointmentRequestValidator : AbstractValidator<A
 {
     public AdminCreateAppointmentRequestValidator()
     {
-        RuleFor(x => x.PatientEmail).NotEmpty().EmailAddress();
+        // Duhet saktësisht njëri identifikues — pa këtë, një kërkesë pa asnjë të dhënë
+        // pacienti do të kalonte validimin dhe do të dështonte më vonë si "nuk u gjet".
+        RuleFor(x => x)
+            .Must(x => x.PatientProfileId.HasValue ^ !string.IsNullOrWhiteSpace(x.PatientEmail))
+            .WithMessage("Jep ose patientProfileId ose patientEmail — jo të dyja, jo asnjërin.");
+        RuleFor(x => x.PatientEmail).EmailAddress().When(x => !string.IsNullOrWhiteSpace(x.PatientEmail));
         RuleFor(x => x.DoctorId).NotEmpty();
         RuleFor(x => x.ClinicBranchId).NotEmpty();
         RuleFor(x => x.MedicalServiceId).NotEmpty();
@@ -131,6 +136,32 @@ public sealed class AdminCancelAppointmentRequestValidator : AbstractValidator<A
     }
 }
 
+public sealed class AdminAppointmentsQueryValidator : AbstractValidator<AdminAppointmentsQuery>
+{
+    public AdminAppointmentsQueryValidator()
+    {
+        RuleFor(x => x.Page).GreaterThanOrEqualTo(1);
+        RuleFor(x => x.PageSize).InclusiveBetween(1, 100);
+        RuleFor(x => x.Status).IsInEnum().When(x => x.Status.HasValue);
+        RuleFor(x => x.Search).MaximumLength(256);
+        RuleFor(x => x.To)
+            .GreaterThanOrEqualTo(x => x.From!.Value)
+            .When(x => x.From.HasValue && x.To.HasValue)
+            .WithMessage("Data 'to' nuk mund të jetë para 'from'.");
+    }
+}
+
+public sealed class AdminUsersQueryValidator : AbstractValidator<AdminUsersQuery>
+{
+    public AdminUsersQueryValidator()
+    {
+        RuleFor(x => x.Page).GreaterThanOrEqualTo(1);
+        RuleFor(x => x.PageSize).InclusiveBetween(1, 100);
+        RuleFor(x => x.Role).MaximumLength(100);
+        RuleFor(x => x.Search).MaximumLength(256);
+    }
+}
+
 public sealed class AuditLogQueryValidator : AbstractValidator<AuditLogQuery>
 {
     public AuditLogQueryValidator()
@@ -138,5 +169,40 @@ public sealed class AuditLogQueryValidator : AbstractValidator<AuditLogQuery>
         RuleFor(x => x.Page).GreaterThanOrEqualTo(1);
         RuleFor(x => x.PageSize).InclusiveBetween(1, 100);
         RuleFor(x => x.EntityName).MaximumLength(100);
+    }
+}
+
+public sealed class AdminPatientSearchQueryValidator : AbstractValidator<AdminPatientSearchQuery>
+{
+    public AdminPatientSearchQueryValidator()
+    {
+        // Minimumi 3 karaktere: bllokon enumerimin e bazës me një shkronjë të vetme.
+        RuleFor(x => x.Query)
+            .NotEmpty()
+            .MinimumLength(3).WithMessage("Kërkimi kërkon së paku 3 karaktere.")
+            .MaximumLength(256);
+        RuleFor(x => x.Page).GreaterThanOrEqualTo(1);
+        RuleFor(x => x.PageSize).InclusiveBetween(1, 50);
+    }
+}
+
+public sealed class AdminCreatePatientRequestValidator : AbstractValidator<AdminCreatePatientRequest>
+{
+    public AdminCreatePatientRequestValidator()
+    {
+        RuleFor(x => x.FirstName).NotEmpty().MaximumLength(100);
+        RuleFor(x => x.LastName).NotEmpty().MaximumLength(100);
+        RuleFor(x => x.PhoneNumber)
+            .NotEmpty()
+            .Matches(@"^\+?[0-9][0-9 \-]{5,19}$")
+            .WithMessage("Numri i telefonit duhet të përmbajë 6–20 shifra, opsionalisht me prefiks +.");
+        // Email-i mbetet opsional — thirrësi mund të mos ketë fare.
+        RuleFor(x => x.Email).EmailAddress().MaximumLength(256).When(x => !string.IsNullOrWhiteSpace(x.Email));
+        RuleFor(x => x.DateOfBirth)
+            .Must(dob => dob < DateOnly.FromDateTime(DateTime.UtcNow))
+            .WithMessage("Data e lindjes duhet të jetë në të kaluarën.");
+        RuleFor(x => x.Gender).IsInEnum();
+        RuleFor(x => x.Address).MaximumLength(300);
+        RuleFor(x => x.City).MaximumLength(100);
     }
 }

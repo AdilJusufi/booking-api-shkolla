@@ -94,7 +94,11 @@ describe('AppointmentDetailPage — reschedule 409 handling (3g)', () => {
 
     await user.click(screen.getByRole('button', { name: /Konfirmo rischedulimin/i }))
 
-    await waitFor(() => expect(screen.getByText('Ky termin u mor. Zgjidhni orë tjetër.')).toBeInTheDocument())
+    await waitFor(() =>
+      expect(
+        screen.getByText('Ky termin sapo u zu nga dikush tjetër. Ju lutem zgjidhni një kohë tjetër.'),
+      ).toBeInTheDocument(),
+    )
     expect(rescheduleCalls).toBe(1)
 
     // The failed slot is cleared and the date is re-selected, which refetches
@@ -133,7 +137,11 @@ describe('AppointmentDetailPage — reschedule 409 handling (3g)', () => {
 
     await openRescheduleAndPickSlot(user)
     await user.click(screen.getByRole('button', { name: /Konfirmo rischedulimin/i }))
-    await waitFor(() => expect(screen.getByText('Ky termin u mor. Zgjidhni orë tjetër.')).toBeInTheDocument())
+    await waitFor(() =>
+      expect(
+        screen.getByText('Ky termin sapo u zu nga dikush tjetër. Ju lutem zgjidhni një kohë tjetër.'),
+      ).toBeInTheDocument(),
+    )
 
     // Pick the (refetched) slot again and retry — no reload, same component instance.
     const retrySlot = await screen.findByRole('button', { name: '10:00' })

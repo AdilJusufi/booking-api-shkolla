@@ -69,6 +69,7 @@ try
     // Limitet janë të konfigurueshme (testet i rrisin që të mos marrin 429).
     var authPermitLimit = builder.Configuration.GetValue<int?>("RateLimiting:AuthPermitLimit") ?? 10;
     var bookingPermitLimit = builder.Configuration.GetValue<int?>("RateLimiting:BookingPermitLimit") ?? 20;
+    var patientSearchPermitLimit = builder.Configuration.GetValue<int?>("RateLimiting:PatientSearchPermitLimit") ?? 30;
 
     builder.Services.AddRateLimiter(options =>
     {
@@ -79,6 +80,21 @@ try
             _ => new FixedWindowRateLimiterOptions
             {
                 PermitLimit = authPermitLimit,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
+        // Kërkimi i pacientëve ndahet SIPAS USERIT, jo IP-së: një recepsion i tërë
+        // del nga një IP e vetme, kështu që ndarja sipas IP-je do t'i bënte kolegët
+        // të hanin buxhetin e njëri-tjetrit. Kufiri ekziston kundër enumerimit të
+        // bazës së pacientëve nga një llogari e vetme e komprometuar.
+        options.AddPolicy("patient-search", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.User.Identity?.Name
+                ?? httpContext.Connection.RemoteIpAddress?.ToString()
+                ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = patientSearchPermitLimit,
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0
             }));

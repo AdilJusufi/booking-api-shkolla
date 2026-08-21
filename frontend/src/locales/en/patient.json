@@ -1,0 +1,493 @@
+{
+  "home": {
+    "eyebrow": "18 clinics · 120+ doctors · Kosovo",
+    "heroLine1": "Find the right",
+    "heroLine2": "doctor.",
+    "heroAccent": "Book",
+    "heroLine3": "in seconds.",
+    "heroLead": "Rezervo Mjekun connects you with verified doctors and clinics across Kosovo — no waiting, no phone calls.",
+    "cityLabel": "City",
+    "allCities": "All cities",
+    "specialtyLabel": "Specialty",
+    "allSpecialties": "All specialties",
+    "searchCta": "Search",
+    "trustFree": "Free for patients",
+    "trustVerified": "Verified doctors",
+    "trustEncrypted": "Encrypted data",
+    "panel": {
+      "ariaLabel": "Booking example",
+      "doctorName": "Dr. Arben Gashi",
+      "doctorSpecialty": "Dentistry · Pristina",
+      "available": "Available",
+      "freeSlotsLabel": "Open slots",
+      "slotCount_one": "{{count}} slot",
+      "slotCount_other": "{{count}} slots",
+      "confirmCta": "Confirm appointment",
+      "reviewCount": "from 640 patients"
+    },
+    "stats": {
+      "verifiedDoctors": "Verified doctors",
+      "partnerClinics": "Partner clinics",
+      "bookedAppointments": "Appointments booked",
+      "citiesInKosovo": "Cities in Kosovo"
+    },
+    "specialtiesSection": {
+      "kicker": "Specialties",
+      "title": "Most requested specialties",
+      "subtitle": "From cardiology to pediatrics — find the expert you need.",
+      "seeAll": "See all",
+      "freeSlotsMeta": "Open slots"
+    },
+    "howItWorks": {
+      "kicker": "Process",
+      "title": "How does Rezervo Mjekun work?",
+      "subtitle": "Three simple steps to your doctor — no phone calls, no waiting in line, no paperwork.",
+      "cta": "Start now",
+      "step1Title": "Search",
+      "step1Text": "Search by specialty, doctor's name, or clinic. Filter by city and availability.",
+      "step2Title": "Choose",
+      "step2Text": "See open slots in real time and pick the time that works best for you.",
+      "step3Title": "Confirm",
+      "step3Text": "Your booking is confirmed instantly. The clinic is notified automatically — no phone calls."
+    },
+    "doctorsSection": {
+      "kicker": "Doctors",
+      "title": "Verified Doctors",
+      "subtitle": "Every doctor is licensed and verified before joining the platform.",
+      "seeAll": "All doctors",
+      "verified": "Verified",
+      "experienceYears_one": "{{count}} year of experience",
+      "experienceYears_other": "{{count}} years of experience",
+      "licensedDoctor": "Licensed doctor",
+      "browseSlots": "Browse slots",
+      "firstAppointment": "First available:"
+    },
+    "features": {
+      "verifiedBig": "Verified",
+      "verifiedLabel": "Licensed and vetted doctors",
+      "hoursBig": "24/7",
+      "hoursLabel": "Book online, even at night",
+      "easyBig": "Easy",
+      "easyLabel": "Cancel or reschedule in one click",
+      "coverageBig": "7 cities",
+      "coverageLabel": "Coverage across all of Kosovo"
+    },
+    "clinicsSection": {
+      "kicker": "Clinics",
+      "title": "Partner clinics across Kosovo",
+      "subtitle": "From hospital centers to neighborhood family practices — all verified.",
+      "seeAll": "See all",
+      "viewClinic": "View clinic",
+      "doctorCount_one": "{{count}} doctor",
+      "doctorCount_other": "{{count}} doctors"
+    },
+    "testimonials": {
+      "kicker": "Testimonials",
+      "title": "Trusted by patients and clinics"
+    },
+    "finalCta": {
+      "kicker": "Free for patients",
+      "title": "Ready to book your appointment?",
+      "subtitle": "Join thousands of patients who already trust Rezervo Mjekun with their health.",
+      "cta": "Get Started",
+      "fineprint": "No credit card · Free cancellation · Support in Albanian"
+    },
+    "demo": {
+      "specialties": {
+        "cardiology": "Cardiology",
+        "pediatrics": "Pediatrics",
+        "neurology": "Neurology",
+        "orthopedics": "Orthopedics",
+        "dermatology": "Dermatology",
+        "gynecology": "Gynecology",
+        "ophthalmology": "Ophthalmology",
+        "psychiatry": "Psychiatry"
+      },
+      "doctors": [
+        {
+          "name": "Arben Vitia",
+          "specialty": "Cardiology",
+          "next": "Today, 14:30"
+        },
+        {
+          "name": "Linda Gashi",
+          "specialty": "Pediatrics",
+          "next": "Today, 16:00"
+        },
+        {
+          "name": "Besnik Ramadani",
+          "specialty": "Neurology",
+          "next": "Tomorrow, 09:00"
+        },
+        {
+          "name": "Teuta Krasniqi",
+          "specialty": "Dermatology",
+          "next": "Tomorrow, 11:30"
+        },
+        {
+          "name": "Driton Berisha",
+          "specialty": "Orthopedics",
+          "next": "Thursday, 08:30"
+        }
+      ],
+      "clinics": [
+        {
+          "name": "Spitali Amerikan",
+          "city": "Pristina",
+          "specialties": [
+            "Cardiology",
+            "Pediatrics",
+            "Neurology"
+          ]
+        },
+        {
+          "name": "Poliklinika Rilindja",
+          "city": "Pristina",
+          "specialties": [
+            "Orthopedics",
+            "Dermatology"
+          ]
+        },
+        {
+          "name": "Klinika Vita",
+          "city": "Prizren",
+          "specialties": [
+            "Gynecology",
+            "Pediatrics"
+          ]
+        }
+      ],
+      "testimonials": [
+        {
+          "quote": "I booked my cardiologist appointment in under a minute, in the evening, without calling anyone. The confirmation came instantly.",
+          "name": "Blerta Hoxha",
+          "role": "Patient · Pristina"
+        },
+        {
+          "quote": "As a clinic, our whole calendar is now in one place. Missed appointments have dropped noticeably since we switched to Rezervo Mjekun.",
+          "name": "Dr. Fatos Kelmendi",
+          "role": "Clinic Director · Prizren"
+        }
+      ]
+    }
+  },
+  "search": {
+    "title": "Find the right doctor or clinic",
+    "subtitle": "Search from 500+ doctors and 80+ clinics in Kosovo",
+    "searchPlaceholder": "Search doctor, clinic, or specialty...",
+    "allSpecialtiesChip": "All",
+    "tabClinics": "Clinics",
+    "tabDoctors": "Doctors",
+    "filtersToggle": "Filters",
+    "cityLabel": "City",
+    "specialtyLabel": "Specialty",
+    "showLess": "Show less ▴",
+    "showMore": "Show more ▾",
+    "minRatingLabel": "Minimum rating",
+    "andUp": "& up",
+    "anyRating": "Any rating",
+    "applyFilters": "Apply filters",
+    "clearAllFilters": "Clear all",
+    "headingClinicsIn": "Clinics in {{city}}",
+    "headingDoctorsIn": "Doctors in {{city}}",
+    "defaultCity": "Kosovo",
+    "resultCount_one": "{{count}} result found",
+    "resultCount_other": "{{count}} results found",
+    "sortRelevance": "Sort by: Relevance",
+    "sortName": "Name (A-Z)",
+    "sortRating": "Top rated",
+    "errorTitle": "Something went wrong",
+    "noResultsTitle": "No results found",
+    "noResultsHint": "Try changing your filters or search term.",
+    "prevPage": "Back",
+    "nextPage": "Next"
+  },
+  "clinicDetail": {
+    "backToSearch": "Back to search",
+    "loadingLabel": "Loading clinic",
+    "branchesTitle": "Branches",
+    "servicesTitle": "Services & pricing",
+    "minutesShort": "min",
+    "doctorsTitle": "Doctors",
+    "noDoctorsListed": "No doctors listed"
+  },
+  "cards": {
+    "bookCta": "Book",
+    "viewClinicCta": "View clinic"
+  },
+  "doctorDetail": {
+    "backToSearch": "Back to search",
+    "loadingLabel": "Loading profile",
+    "experienceYears_one": "{{count}} year of experience",
+    "experienceYears_other": "{{count}} years of experience",
+    "aboutTitle": "About the doctor",
+    "whereTitle": "Where they practice",
+    "servicesTitle": "Services",
+    "minutesShort": "min",
+    "bookingTitle": "Book an appointment",
+    "bookingSubtitle": "Complete the steps to book.",
+    "steps": {
+      "service": "Service",
+      "branch": "Branch",
+      "date": "Date",
+      "time": "Time"
+    },
+    "chooseService": "Choose a service",
+    "changeService": "Change service",
+    "chooseBranch": "Choose a branch",
+    "changeBranch": "Change branch",
+    "chooseDate": "Choose a date",
+    "changeDate": "Change date",
+    "chooseTime": "Choose a time",
+    "noSlotsForDate": "No open slots for this date.",
+    "tryAnotherDate": "Try another date",
+    "confirmBooking": "Confirm booking",
+    "continueCta": "Continue",
+    "loginRequiredHint": "You need to be logged in to book.",
+    "loginCta": "Log in"
+  },
+  "appointmentsList": {
+    "title": "My Appointments",
+    "subtitle": "View and manage all your appointments in one place.",
+    "newAppointmentCta": "Book a new appointment",
+    "statsActive": "Active",
+    "statsCompleted": "Completed",
+    "statsPending": "Pending",
+    "statsCancelled": "Cancelled",
+    "filterAll": "All",
+    "filterActive": "Active",
+    "filterCompleted": "Completed",
+    "filterCancelled": "Cancelled",
+    "searchPlaceholder": "Search by doctor...",
+    "dateRange": {
+      "all": "All dates",
+      "today": "Today",
+      "week": "This week",
+      "month": "This month",
+      "last3months": "Last 3 months",
+      "year": "This year"
+    },
+    "badges": {
+      "pending": "PENDING",
+      "confirmed": "CONFIRMED",
+      "checkedIn": "CHECKED IN",
+      "inProgress": "IN PROGRESS",
+      "completed": "COMPLETED",
+      "cancelledByPatient": "CANCELLED",
+      "cancelledByClinic": "CANCELLED (CLINIC)",
+      "noShow": "NO-SHOW",
+      "rescheduled": "RESCHEDULED",
+      "unknown": "UNKNOWN"
+    },
+    "errorTitle": "Something went wrong",
+    "noAppointmentsTitle": "You have no appointments",
+    "noAppointmentsHint": "Book your first appointment now.",
+    "confirmCancelPrompt": "Are you sure?",
+    "cancelling": "Cancelling…",
+    "confirmCancelYes": "Yes, cancel",
+    "viewDetails": "View details",
+    "cancelWindowNote": "Cancellation not available (< 12 hours)",
+    "cancelledToast": "Appointment cancelled.",
+    "cancelFailedToast": "Cancellation failed.",
+    "cancelReasonDefault": "Cancelled by patient"
+  },
+  "appointmentDetail": {
+    "backToAppointments": "Back to appointments",
+    "notFoundTitle": "Appointment not found",
+    "notFoundHint": "This appointment doesn't exist or you don't have access to it.",
+    "refLabel": "REF",
+    "timeAndPlace": "Time & Place",
+    "dateLabel": "Date",
+    "timeLabel": "Time",
+    "clinicLabel": "Clinic",
+    "branchLabel": "Branch",
+    "doctorAndService": "Doctor & Service",
+    "serviceLabel": "Service",
+    "durationLabel": "Duration",
+    "durationMinutes": "{{count}} minutes",
+    "priceLabel": "Price",
+    "patientSectionTitle": "Patient",
+    "bookedForLabel": "Booked for",
+    "typeLabel": "Type",
+    "typeFamilyMember": "Family Member",
+    "typeIndividual": "Individual Patient",
+    "noteLabel": "You have a note:",
+    "statusHistoryTitle": "Status history",
+    "bookedEventLabel": "Booked",
+    "statusDescriptionFallback": "This appointment's status is unrecognized.",
+    "statusDescriptions": {
+      "pending": "Your appointment is waiting for confirmation from the clinic.",
+      "confirmed": "Your appointment is confirmed. Please arrive 10 minutes early.",
+      "checkedIn": "You've been marked as checked in at the clinic.",
+      "inProgress": "Your appointment is in progress.",
+      "completed": "This appointment has been completed.",
+      "cancelledByPatient": "This appointment was cancelled by you.",
+      "cancelledByClinic": "This appointment was cancelled by the clinic.",
+      "noShow": "You did not show up for this appointment.",
+      "rescheduled": "This appointment has been rescheduled."
+    },
+    "timelineLabels": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "checkedIn": "Checked in at clinic",
+      "inProgress": "In progress",
+      "completed": "Completed",
+      "cancelledByPatient": "Cancelled by you",
+      "cancelledByClinic": "Cancelled by clinic",
+      "noShow": "No-show",
+      "rescheduled": "Rescheduled",
+      "unknown": "Unknown"
+    },
+    "completedMessage": "The appointment was completed successfully.",
+    "bookAnotherCta": "Book another appointment",
+    "cancelledMessage": "The appointment was cancelled.",
+    "findAnotherCta": "Find another appointment",
+    "cannotCancelWithin12h": "Cancellation is not available — the appointment starts within 12 hours.",
+    "countdownDays": "{{count}} days left",
+    "countdownHoursMinutes": "{{hours}}h {{minutes}}m left",
+    "rescheduleCta": "Reschedule appointment",
+    "cancelCta": "Cancel appointment",
+    "cancelConfirmPrompt": "Cancel the appointment with Dr. {{lastName}}?",
+    "cancelling": "Cancelling…",
+    "confirmCancelYes": "Yes, cancel",
+    "cancelDeadlineNote": "You can cancel up to 12 hours before the appointment.",
+    "questionsHint": "If you have questions about your appointment, contact the clinic directly.",
+    "cancelledToast": "Appointment cancelled.",
+    "rescheduledToast": "Appointment rescheduled successfully.",
+    "rescheduleTitle": "Choose a new date",
+    "rescheduleNoSlotsForDate": "No open slots for this date.",
+    "rescheduleNewDateSummary": "New date: {{date}} at {{time}}",
+    "confirmReschedule": "Confirm reschedule",
+    "reschedulingInProgress": "Rescheduling…",
+    "cancelReasonDefault": "Cancelled by patient"
+  },
+  "confirmBooking": {
+    "backToDoctor": "Back to doctor",
+    "title": "Confirm your booking",
+    "timeAndPlace": "Time & Place",
+    "dateLabel": "Date",
+    "timeLabel": "Time",
+    "branchLabel": "Branch",
+    "priceLabel": "Price",
+    "noteLabel": "Note (optional)",
+    "notePlaceholder": "Anything the clinic should know before your visit...",
+    "confirmNotice": "By clicking \"Confirm booking\" you accept the appointment above. The clinic will be notified automatically.",
+    "confirmCta": "Confirm booking",
+    "submitting": "Booking…",
+    "changeSelection": "Change selection",
+    "bookedToast": "Appointment booked successfully."
+  },
+  "profile": {
+    "loadFailedTitle": "The profile didn't load",
+    "loadFailedFallback": "Try refreshing the page.",
+    "changePhoto": "Change photo",
+    "photoComingSoon": "Photo upload is coming soon.",
+    "roleBadge": "PATIENT",
+    "memberSince": "Member since {{date}}",
+    "editCta": "Edit",
+    "statTotalAppointments": "Total Appointments",
+    "statActiveAppointments": "Active Appointments",
+    "statFamilyMembers": "Family Members",
+    "personalInfoTitle": "Personal Information",
+    "saving": "Saving…",
+    "saveChanges": "Save changes",
+    "firstNameLabel": "First name",
+    "lastNameLabel": "Last name",
+    "emailLabel": "Email (cannot be changed)",
+    "emailImmutableNote": "The email address cannot be changed.",
+    "phoneLabel": "Phone",
+    "addressLabel": "Address",
+    "addressPlaceholder": "123 Main St.",
+    "cityLabel": "City",
+    "cityPlaceholder": "Pristina",
+    "dobLabel": "Date of birth",
+    "genderLabel": "Gender",
+    "genderPlaceholder": "Select...",
+    "genderMale": "Male",
+    "genderFemale": "Female",
+    "genderOther": "Other",
+    "accountDetailsTitle": "Account Details",
+    "passwordLabel": "Password",
+    "statusLabel": "Status",
+    "statusActive": "ACTIVE",
+    "securityTitle": "Account security",
+    "securityText": "Your password is encrypted and protected. We recommend changing it every 3 months.",
+    "changePasswordCta": "Change password",
+    "validation": {
+      "firstNameTooShort": "First name must be at least 2 characters.",
+      "lastNameTooShort": "Last name must be at least 2 characters.",
+      "phoneRequired": "Phone number is required.",
+      "dobRequired": "Date of birth is required.",
+      "genderRequired": "Gender is required."
+    },
+    "updatedToast": "Profile updated.",
+    "invalidDataToast": "The data is not valid.",
+    "emailLabelBare": "Email",
+    "unsetValue": "—"
+  },
+  "dependents": {
+    "title": "Family Members",
+    "subtitle": "Manage the family members you can book appointments for.",
+    "addMember": "Add Member",
+    "loadingLabel": "Loading members",
+    "emptyTitle": "You haven't added any family members yet.",
+    "emptyHint": "Add family members to book appointments on their behalf.",
+    "addFirstMember": "Add First Member",
+    "relationships": {
+      "1": "Child",
+      "2": "Spouse",
+      "3": "Parent",
+      "4": "Other"
+    },
+    "genders": {
+      "1": "Male",
+      "2": "Female",
+      "3": "Other"
+    },
+    "editAria": "Edit member",
+    "deleteAria": "Delete member",
+    "ageYears": "{{age}} years old",
+    "statusActive": "ACTIVE",
+    "statusInactive": "INACTIVE",
+    "canBookNote": "You can book appointments for this member.",
+    "inactiveNote": "Inactive — contact support to reactivate.",
+    "deleteModalTitle": "Delete Member",
+    "deleteConfirmText": "Are you sure you want to delete <0>{{name}}</0>? This action cannot be undone.",
+    "deleteCta": "Delete",
+    "deletedToast": "Member deleted successfully.",
+    "editModalTitle": "Edit Member",
+    "addModalTitle": "Add Member",
+    "firstNameLabel": "First name",
+    "lastNameLabel": "Last name",
+    "dobLabel": "Date of Birth",
+    "genderLabel": "Gender",
+    "relationshipLabel": "Relationship",
+    "saving": "Saving…",
+    "saveCta": "Save",
+    "updatedToast": "Member updated.",
+    "createdToast": "Member added.",
+    "validation": {
+      "firstNameRequired": "First name is required.",
+      "lastNameRequired": "Last name is required.",
+      "dobRequired": "Date of birth is required.",
+      "dobMustBePast": "Date of birth must be in the past."
+    }
+  },
+  "layout": {
+    "navAppointments": "Appointments",
+    "navProfile": "Profile",
+    "navFamily": "Family",
+    "navSecurity": "Security",
+    "breadcrumbAccount": "Account",
+    "breadcrumbMyProfile": "My profile",
+    "breadcrumbFamilyMembers": "Family Members",
+    "breadcrumbSecurity": "Security",
+    "breadcrumbAppointments": "Appointments",
+    "breadcrumbDetails": "Details"
+  },
+  "userMenu": {
+    "myProfile": "My profile",
+    "familyMembers": "Family members",
+    "changePassword": "Change password"
+  }
+}

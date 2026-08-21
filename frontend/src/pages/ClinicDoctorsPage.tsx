@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Trans, useTranslation } from 'react-i18next'
 import {
   AlertCircle,
   AlertTriangle,
@@ -16,6 +17,7 @@ import {
   Stethoscope,
 } from 'lucide-react'
 import { api, ApiError } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
 import type {
   ClinicBranch,
   CreateDoctorRequest,
@@ -29,8 +31,9 @@ import { useToast } from '../context/ToastContext'
 import { useClinicContext } from '../components/ClinicDetailLayout'
 import { CustomSelect, EmptyState, ErrorBox, Modal, SkeletonRows, initials } from '../components/ui'
 import type { CustomSelectOption } from '../components/ui'
+import { weekdayName } from '../lib/format'
 
-const DAYS_SQ = ['E Diel', 'E Hënë', 'E Martë', 'E Mërkurë', 'E Enjte', 'E Premte', 'E Shtunë']
+// Display order Monday-first while JS Date.getDay() stays Sunday(0)..Saturday(6).
 const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0]
 
 const EMPTY_DOCTOR_FORM: CreateDoctorRequest = {
@@ -54,10 +57,10 @@ type StatusFilter = 'all' | 'active' | 'inactive'
  * dhe Identity: gjatësi 8, shkronjë e madhe, e vogël, shifër — karakteri special
  * NUK kërkohet). Pa këtë kontroll, "abcdefgh" kalon te klienti dhe refuzohet nga serveri.
  */
-function passwordPolicyError(password: string): string | null {
-  if (password.length < 8) return 'Fjalëkalimi duhet të ketë të paktën 8 karaktere.'
+function passwordPolicyError(password: string, t: (key: string) => string): string | null {
+  if (password.length < 8) return t('doctors.addModal.passwordTooShort')
   if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
-    return 'Fjalëkalimi duhet të përmbajë shkronja të mëdha, të vogla dhe numra.'
+    return t('doctors.addModal.passwordPolicy')
   }
   return null
 }
@@ -95,6 +98,7 @@ interface CreatedDoctorCredentials {
 }
 
 export default function ClinicDoctorsPage() {
+  const { t } = useTranslation('admin')
   const { clinic } = useClinicContext()
   const { notify } = useToast()
 
@@ -145,7 +149,7 @@ export default function ClinicDoctorsPage() {
         }
         setDetails(map)
       })
-      .catch((e) => setError(e instanceof ApiError ? e.message : 'Ndodhi një gabim.'))
+      .catch((e) => setError(getErrorMessage(e)))
       .finally(() => setLoading(false))
   }, [clinic.id])
 
@@ -169,20 +173,20 @@ export default function ClinicDoctorsPage() {
   )
 
   const branchOptions: CustomSelectOption[] = useMemo(
-    () => [{ value: 'all', label: 'Të gjitha degët' }, ...branches.map((b) => ({ value: b.id, label: b.name }))],
-    [branches],
+    () => [{ value: 'all', label: t('doctors.filterAllBranches') }, ...branches.map((b) => ({ value: b.id, label: b.name }))],
+    [branches, t],
   )
   const specialtyOptions: CustomSelectOption[] = useMemo(
     () => [
-      { value: 'all', label: 'Të gjitha specializimet' },
+      { value: 'all', label: t('doctors.filterAllSpecialties') },
       ...specialties.map((s) => ({ value: s.id, label: s.name })),
     ],
-    [specialties],
+    [specialties, t],
   )
   const statusOptions: CustomSelectOption[] = [
-    { value: 'all', label: 'Të gjitha' },
-    { value: 'active', label: 'Aktiv' },
-    { value: 'inactive', label: 'Joaktiv' },
+    { value: 'all', label: t('doctors.filterAll') },
+    { value: 'active', label: t('doctors.filterActive') },
+    { value: 'inactive', label: t('doctors.filterInactive') },
   ]
 
   function handleAction(action: string, doctor: Doctor) {
@@ -192,11 +196,11 @@ export default function ClinicDoctorsPage() {
       return
     }
     if (action === 'toggle') {
-      notify('Funksion në zhvillim.', 'info')
+      notify(t('doctors.featureInDevelopmentToast'), 'info')
       return
     }
     if (action === 'edit') {
-      notify('Funksion në zhvillim.', 'info')
+      notify(t('doctors.featureInDevelopmentToast'), 'info')
     }
   }
 
@@ -204,18 +208,18 @@ export default function ClinicDoctorsPage() {
     <div className="doctors-page">
       <div className="admin-header">
         <div>
-          <h1>Mjekët e Klinikës</h1>
-          <p className="admin-header__sub">Menaxhoni mjekët, oraret dhe shërbimet e tyre.</p>
+          <h1>{t('doctors.pageTitle')}</h1>
+          <p className="admin-header__sub">{t('doctors.pageSubtitle')}</p>
         </div>
         <button type="button" className="btn btn--primary btn--sm" onClick={() => setAddModalOpen(true)}>
-          <Plus size={15} strokeWidth={1.5} /> Shto Mjek
+          <Plus size={15} strokeWidth={1.5} /> {t('doctors.addCta')}
         </button>
       </div>
 
       <div className="filters">
         <div className="filters__field">
           <CustomSelect
-            label="Dega"
+            label={t('doctors.filterBranchLabel')}
             options={branchOptions}
             value={branchFilter}
             onChange={setBranchFilter}
@@ -225,7 +229,7 @@ export default function ClinicDoctorsPage() {
         </div>
         <div className="filters__field">
           <CustomSelect
-            label="Specializimi"
+            label={t('doctors.filterSpecialtyLabel')}
             options={specialtyOptions}
             value={specialtyFilter}
             onChange={setSpecialtyFilter}
@@ -235,7 +239,7 @@ export default function ClinicDoctorsPage() {
         </div>
         <div className="filters__field">
           <CustomSelect
-            label="Statusi"
+            label={t('doctors.filterStatusLabel')}
             options={statusOptions}
             value={statusFilter}
             onChange={(v) => setStatusFilter(v as StatusFilter)}
@@ -245,22 +249,22 @@ export default function ClinicDoctorsPage() {
         </div>
       </div>
 
-      {error && <ErrorBox message={error} />}
-
       {loading ? (
-        <SkeletonRows count={4} label="Duke ngarkuar mjekët" />
+        <SkeletonRows count={4} label={t('doctors.loadingLabel')} />
+      ) : error ? (
+        <ErrorBox message={error} onRetry={load} />
       ) : doctors.length === 0 ? (
         <EmptyState
           icon={Stethoscope}
-          title="Kjo klinikë nuk ka asnjë mjek të shtuar ende."
+          title={t('doctors.emptyTitle')}
           action={
             <button type="button" className="btn btn--primary btn--sm" onClick={() => setAddModalOpen(true)}>
-              <Plus size={15} strokeWidth={1.5} /> Shto Mjekun e Parë
+              <Plus size={15} strokeWidth={1.5} /> {t('doctors.addFirstCta')}
             </button>
           }
         />
       ) : filtered.length === 0 ? (
-        <EmptyState icon={Stethoscope} title="Asnjë mjek nuk përputhet me filtrat e zgjedhur." />
+        <EmptyState icon={Stethoscope} title={t('doctors.noMatchTitle')} />
       ) : (
         <div className="doctor-grid">
           {filtered.map((d) => (
@@ -327,6 +331,7 @@ function ClinicDoctorCard({
   onCloseMenu: () => void
   onAction: (action: string) => void
 }) {
+  const { t } = useTranslation('admin')
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -350,7 +355,7 @@ function ClinicDoctorCard({
         <div className="doctor-admin-card__identity">
           <div className="doctor-admin-card__name-row">
             <h3 className="doctor-admin-card__name">Dr. {doctor.firstName} {doctor.lastName}</h3>
-            <span className="admin-card__status admin-card__status--approved admin-card__status--inline">AKTIV</span>
+            <span className="admin-card__status admin-card__status--approved admin-card__status--inline">{t('doctors.card.statusActive')}</span>
           </div>
           <div className="doctor-admin-card__specialties">
             {doctor.specialties.map((s) => (
@@ -359,26 +364,26 @@ function ClinicDoctorCard({
           </div>
         </div>
         <div className="doctor-admin-card__actions">
-          <button type="button" className="admin-icon-btn" onClick={() => onAction('edit')} aria-label="Ndrysho të dhënat">
+          <button type="button" className="admin-icon-btn" onClick={() => onAction('edit')} aria-label={t('doctors.card.editAria')}>
             <Pencil size={15} strokeWidth={1.5} />
           </button>
           <div className="doctor-admin-card__menu" ref={menuRef}>
-            <button type="button" className="admin-icon-btn" onClick={onToggleMenu} aria-label="Më shumë veprime">
+            <button type="button" className="admin-icon-btn" onClick={onToggleMenu} aria-label={t('doctors.card.moreActionsAria')}>
               <MoreVertical size={15} strokeWidth={1.5} />
             </button>
             {menuOpen && (
               <div className="dropdown__panel doctor-admin-card__menu-panel">
                 <button type="button" className="dropdown__option" onClick={() => onAction('edit')}>
-                  Ndrysho të dhënat
+                  {t('doctors.card.editMenuItem')}
                 </button>
                 <button type="button" className="dropdown__option" onClick={() => onAction('schedule')}>
-                  Menaxho orarin
+                  {t('doctors.card.manageScheduleMenuItem')}
                 </button>
                 <Link to={`/mjeku/${doctor.id}`} className="dropdown__option" onClick={onCloseMenu}>
-                  Shiko profilin publik
+                  {t('doctors.card.viewPublicProfile')}
                 </Link>
                 <button type="button" className="dropdown__option" onClick={() => onAction('toggle')}>
-                  Çaktivizo
+                  {t('doctors.card.deactivateMenuItem')}
                 </button>
               </div>
             )}
@@ -396,18 +401,18 @@ function ClinicDoctorCard({
         than omitting the row.
       */}
       <div className="doctor-admin-card__meta">
-        <span><Clock size={13} strokeWidth={1.5} /> <span className="num">{doctor.yearsOfExperience}</span> vjet përvojë</span>
+        <span><Clock size={13} strokeWidth={1.5} /> {t('doctors.card.yearsExperience', { count: doctor.yearsOfExperience })}</span>
       </div>
 
       <div className="doctor-admin-card__row">
-        <span className="doctor-admin-card__row-label">DEGËT:</span>
+        <span className="doctor-admin-card__row-label">{t('doctors.card.branchesLabel')}</span>
         {detail ? (
           detail.branches.length > 0 ? (
             detail.branches.map((b) => (
               <span key={b.branchId} className="chip chip--soft">{b.branchName}</span>
             ))
           ) : (
-            <span className="muted" style={{ fontSize: 12 }}>Asnjë degë e caktuar</span>
+            <span className="muted" style={{ fontSize: 12 }}>{t('doctors.card.noBranchAssigned')}</span>
           )
         ) : (
           <span className="muted" style={{ fontSize: 12 }}>—</span>
@@ -415,23 +420,23 @@ function ClinicDoctorCard({
       </div>
 
       <div className="doctor-admin-card__row">
-        <span className="doctor-admin-card__row-label">SHËRBIMET:</span>
+        <span className="doctor-admin-card__row-label">{t('doctors.card.servicesLabel')}</span>
         {visibleServices.length > 0 ? (
           <>
             {visibleServices.map((s) => (
               <span key={s.medicalServiceId} className="chip chip--soft">{s.name}</span>
             ))}
-            {extraServiceCount > 0 && <span className="chip chip--soft">+{extraServiceCount} më shumë</span>}
+            {extraServiceCount > 0 && <span className="chip chip--soft">{t('doctors.card.moreServicesCount', { count: extraServiceCount })}</span>}
           </>
         ) : (
-          <span className="muted" style={{ fontSize: 12 }}>Asnjë shërbim i caktuar</span>
+          <span className="muted" style={{ fontSize: 12 }}>{t('doctors.card.noServiceAssigned')}</span>
         )}
       </div>
 
       <div className="doctor-admin-card__bottom">
-        <span className="branch-card__id">ID: {doctor.id}</span>
+        <span className="branch-card__id">{t('doctors.card.idLabel', { id: doctor.id })}</span>
         <button type="button" className="admin-card__manage" onClick={() => onAction('schedule')}>
-          Menaxho Orarin <ArrowRight size={14} strokeWidth={1.5} />
+          {t('doctors.card.manageScheduleCta')} <ArrowRight size={14} strokeWidth={1.5} />
         </button>
       </div>
     </div>
@@ -447,8 +452,9 @@ function MultiSelectPills<T extends { id: string; name: string }>({
   selected: string[]
   onToggle: (id: string) => void
 }) {
+  const { t } = useTranslation('admin')
   if (options.length === 0) {
-    return <p className="muted" style={{ fontSize: 13 }}>Nuk ka opsione në dispozicion.</p>
+    return <p className="muted" style={{ fontSize: 13 }}>{t('doctors.multiSelect.noOptions')}</p>
   }
   return (
     <div className="multiselect-pills">
@@ -484,6 +490,8 @@ function AddDoctorModal({
   onClose: () => void
   onCreated: (credentials: CreatedDoctorCredentials) => void
 }) {
+  const { t } = useTranslation('admin')
+  const { t: tCommon } = useTranslation('common')
   const [form, setForm] = useState<CreateDoctorRequest>(EMPTY_DOCTOR_FORM)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
@@ -513,19 +521,19 @@ function AddDoctorModal({
     setLicenseError('')
     setFormError('')
 
-    if (form.firstName.trim().length < 2) return setFormError('Emri është i detyrueshëm.')
-    if (form.lastName.trim().length < 2) return setFormError('Mbiemri është i detyrueshëm.')
-    if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) return setFormError('Email-i nuk është i vlefshëm.')
+    if (form.firstName.trim().length < 2) return setFormError(t('doctors.addModal.firstNameRequired'))
+    if (form.lastName.trim().length < 2) return setFormError(t('doctors.addModal.lastNameRequired'))
+    if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) return setFormError(t('doctors.addModal.emailInvalid'))
     // Backend-i e kërkon PhoneNumber si NotEmpty — nuk është opsional.
-    if (form.phoneNumber.trim().length === 0) return setFormError('Telefoni është i detyrueshëm.')
-    if (form.licenseNumber.trim().length < 2) return setFormError('Numri i licencës është i detyrueshëm.')
-    if (!form.yearsOfExperience || form.yearsOfExperience < 0) return setFormError('Vitet e përvojës janë të detyrueshme.')
+    if (form.phoneNumber.trim().length === 0) return setFormError(t('doctors.addModal.phoneRequired'))
+    if (form.licenseNumber.trim().length < 2) return setFormError(t('doctors.addModal.licenseRequired'))
+    if (!form.yearsOfExperience || form.yearsOfExperience < 0) return setFormError(t('doctors.addModal.experienceRequired'))
 
-    const passwordError = passwordPolicyError(form.initialPassword)
+    const passwordError = passwordPolicyError(form.initialPassword, t)
     if (passwordError) return setFormError(passwordError)
 
-    if (form.specialtyIds.length === 0) return setFormError('Zgjidhni të paktën një specializim.')
-    if (form.branchIds.length === 0) return setFormError('Zgjidhni të paktën një degë.')
+    if (form.specialtyIds.length === 0) return setFormError(t('doctors.addModal.specialtyRequired'))
+    if (form.branchIds.length === 0) return setFormError(t('doctors.addModal.branchRequired'))
 
     setSaving(true)
     try {
@@ -552,10 +560,13 @@ function AddDoctorModal({
       })
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) {
-        if (/licenc/i.test(e.message)) setLicenseError(e.message)
-        else setEmailError(e.message || 'Ky email është i regjistruar tashmë në sistem.')
+        // The backend has no structured conflict discriminator — it's a free-text
+        // `detail` string. We sniff it only to route to the right field, and
+        // always display our own canonical Albanian copy, never the raw text.
+        if (/licenc/i.test(e.message)) setLicenseError(t('doctors.addModal.licenseConflict'))
+        else setEmailError(t('doctors.addModal.emailConflict'))
       } else {
-        setFormError(e instanceof ApiError ? e.message : 'Gabim. Provoni përsëri.')
+        setFormError(getErrorMessage(e))
       }
     } finally {
       setSaving(false)
@@ -563,23 +574,23 @@ function AddDoctorModal({
   }
 
   return (
-    <Modal title="Shto Mjek të Ri" onClose={onClose} size="lg">
+    <Modal title={t('doctors.addModal.title')} onClose={onClose} size="lg">
       {formError && <ErrorBox message={formError} />}
 
-      <p className="doctor-form__section-title">Të Dhënat Personale</p>
+      <p className="doctor-form__section-title">{t('doctors.addModal.personalSectionTitle')}</p>
       <div className="form-row">
         <div className="field">
-          <label>Emri</label>
+          <label>{t('doctors.addModal.firstNameLabel')}</label>
           <input type="text" value={form.firstName} onChange={(e) => updateField('firstName', e.target.value)} />
         </div>
         <div className="field">
-          <label>Mbiemri</label>
+          <label>{t('doctors.addModal.lastNameLabel')}</label>
           <input type="text" value={form.lastName} onChange={(e) => updateField('lastName', e.target.value)} />
         </div>
       </div>
       <div className="form-row">
         <div className="field">
-          <label>Email</label>
+          <label>{t('doctors.addModal.emailLabel')}</label>
           <input
             type="email"
             value={form.email}
@@ -588,24 +599,24 @@ function AddDoctorModal({
           {emailError && <span className="field__error">{emailError}</span>}
         </div>
         <div className="field">
-          <label>Telefoni</label>
+          <label>{t('doctors.addModal.phoneLabel')}</label>
           <input type="tel" value={form.phoneNumber} onChange={(e) => updateField('phoneNumber', e.target.value)} />
         </div>
       </div>
       <div className="field">
-        <label>Fjalëkalimi Fillestar</label>
+        <label>{t('doctors.addModal.initialPasswordLabel')}</label>
         <div className="password-generate">
           <input
             type={showPassword ? 'text' : 'password'}
             autoComplete="new-password"
             value={form.initialPassword}
             onChange={(e) => updateField('initialPassword', e.target.value)}
-            placeholder="Të paktën 8 karaktere"
+            placeholder={t('doctors.addModal.passwordPlaceholder')}
           />
           <button
             type="button"
             className="field__toggle password-generate__toggle"
-            aria-label={showPassword ? 'Fshih fjalëkalimin' : 'Shfaq fjalëkalimin'}
+            aria-label={showPassword ? t('doctors.addModal.hidePasswordAria') : t('doctors.addModal.showPasswordAria')}
             onClick={() => setShowPassword((v) => !v)}
           >
             {showPassword ? <EyeOff size={16} strokeWidth={1.5} /> : <Eye size={16} strokeWidth={1.5} />}
@@ -619,18 +630,18 @@ function AddDoctorModal({
               setShowPassword(true)
             }}
           >
-            <RefreshCw size={14} strokeWidth={1.5} /> Gjenero
+            <RefreshCw size={14} strokeWidth={1.5} /> {t('doctors.addModal.generateCta')}
           </button>
         </div>
         <span className="field__note">
-          Ky fjalëkalim duhet t'i komunikohet mjekut. Ai mund ta ndryshojë pas hyrjes së parë.
+          {t('doctors.addModal.passwordNote')}
         </span>
       </div>
 
-      <p className="doctor-form__section-title">Të Dhënat Profesionale</p>
+      <p className="doctor-form__section-title">{t('doctors.addModal.professionalSectionTitle')}</p>
       <div className="form-row">
         <div className="field">
-          <label>Numri i Licencës</label>
+          <label>{t('doctors.addModal.licenseLabel')}</label>
           <input
             type="text"
             value={form.licenseNumber}
@@ -639,7 +650,7 @@ function AddDoctorModal({
           {licenseError && <span className="field__error">{licenseError}</span>}
         </div>
         <div className="field">
-          <label>Vitet e Përvojës</label>
+          <label>{t('doctors.addModal.experienceLabel')}</label>
           <input
             type="number"
             min={0}
@@ -649,21 +660,21 @@ function AddDoctorModal({
         </div>
       </div>
       <div className="field">
-        <label>Biografia <span className="muted">(opsional)</span></label>
+        <label>{t('doctors.addModal.biographyLabel')} <span className="muted">{t('specialties.optional')}</span></label>
         <textarea rows={3} value={form.biography ?? ''} onChange={(e) => updateField('biography', e.target.value)} />
       </div>
 
-      <p className="doctor-form__section-title">Caktimi në Klinikë</p>
+      <p className="doctor-form__section-title">{t('doctors.addModal.assignmentSectionTitle')}</p>
       <div className="field">
-        <label>Specializimet</label>
+        <label>{t('doctors.addModal.specialtiesLabel')}</label>
         <MultiSelectPills options={specialties} selected={form.specialtyIds} onToggle={(id) => toggleId('specialtyIds', id)} />
       </div>
       <div className="field">
-        <label>Degët</label>
+        <label>{t('doctors.addModal.branchesFieldLabel')}</label>
         <MultiSelectPills options={branches} selected={form.branchIds} onToggle={(id) => toggleId('branchIds', id)} />
       </div>
       <div className="field">
-        <label>Shërbimet <span className="muted">(opsional)</span></label>
+        <label>{t('doctors.addModal.servicesFieldLabel')} <span className="muted">{t('specialties.optional')}</span></label>
         <MultiSelectPills
           options={availableServices}
           selected={form.serviceIds ?? []}
@@ -673,9 +684,9 @@ function AddDoctorModal({
 
       <div className="clinic-settings__actions">
         <button type="button" className="btn btn--primary btn--sm" disabled={saving} onClick={handleSubmit}>
-          {saving ? 'Duke krijuar…' : 'Krijo Mjekun'}
+          {saving ? t('doctors.addModal.creatingCta') : t('doctors.addModal.createCta')}
         </button>
-        <button type="button" className="btn btn--ghost btn--sm" onClick={onClose}>Anulo</button>
+        <button type="button" className="btn btn--ghost btn--sm" onClick={onClose}>{tCommon('buttons.cancel')}</button>
       </div>
     </Modal>
   )
@@ -720,34 +731,39 @@ function DoctorCredentialsModal({
   credentials: CreatedDoctorCredentials
   onClose: () => void
 }) {
+  const { t } = useTranslation('admin')
   return (
-    <Modal title="Mjeku u krijua me sukses" onClose={onClose}>
+    <Modal title={t('doctors.credentialsModal.title')} onClose={onClose}>
       <p className="profile-security__text">
-        Llogaria për <strong>Dr. {credentials.firstName} {credentials.lastName}</strong> është krijuar.
-        Komunikojani këto të dhëna mjekut — ai mund ta ndryshojë fjalëkalimin pas hyrjes së parë.
+        <Trans
+          i18nKey="doctors.credentialsModal.bodyText"
+          ns="admin"
+          values={{ firstName: credentials.firstName, lastName: credentials.lastName }}
+          components={[<strong key="0" />]}
+        />
       </p>
 
       <div className="credentials-block">
         <div className="credentials-block__row">
-          <span className="credentials-block__label">Email</span>
+          <span className="credentials-block__label">{t('doctors.credentialsModal.emailFieldLabel')}</span>
           <span className="credentials-block__value">{credentials.email}</span>
-          <CopyButton value={credentials.email} label="Kopjo email-in" />
+          <CopyButton value={credentials.email} label={t('doctors.credentialsModal.copyEmailAria')} />
         </div>
         <div className="credentials-block__row">
-          <span className="credentials-block__label">Fjalëkalimi</span>
+          <span className="credentials-block__label">{t('doctors.credentialsModal.passwordFieldLabel')}</span>
           <span className="credentials-block__value">{credentials.password}</span>
-          <CopyButton value={credentials.password} label="Kopjo fjalëkalimin" />
+          <CopyButton value={credentials.password} label={t('doctors.credentialsModal.copyPasswordAria')} />
         </div>
       </div>
 
       <div className="credentials-warning">
         <AlertTriangle size={15} strokeWidth={1.5} />
-        <span>Ky fjalëkalim nuk do të shfaqet përsëri. Sigurohuni ta ruani përpara se ta mbyllni.</span>
+        <span>{t('doctors.credentialsModal.warning')}</span>
       </div>
 
       <div className="clinic-settings__actions" style={{ marginTop: 16 }}>
         <button type="button" className="btn btn--primary btn--sm" onClick={onClose}>
-          E kuptova
+          {t('doctors.credentialsModal.gotItCta')}
         </button>
       </div>
     </Modal>
@@ -773,6 +789,7 @@ function DoctorScheduleModal({
   detail?: DoctorDetails
   onClose: () => void
 }) {
+  const { t } = useTranslation('admin')
   const { notify } = useToast()
   const [form, setForm] = useState(EMPTY_SCHEDULE_FORM)
   const [saving, setSaving] = useState(false)
@@ -781,10 +798,10 @@ function DoctorScheduleModal({
 
   const doctorBranches = detail?.branches ?? []
   const branchOptions: CustomSelectOption[] = [
-    { value: '', label: 'Zgjidhni degën', disabled: true },
+    { value: '', label: t('doctors.scheduleModal.selectBranchPlaceholder'), disabled: true },
     ...doctorBranches.map((b) => ({ value: b.branchId, label: b.branchName })),
   ]
-  const dayOptions: CustomSelectOption[] = DAY_ORDER.map((d) => ({ value: String(d), label: DAYS_SQ[d] }))
+  const dayOptions: CustomSelectOption[] = DAY_ORDER.map((d) => ({ value: String(d), label: weekdayName(d) }))
 
   useEffect(() => {
     if (doctorBranches.length > 0 && !form.clinicBranchId) {
@@ -798,9 +815,9 @@ function DoctorScheduleModal({
   }
 
   async function handleSubmit() {
-    if (!form.clinicBranchId) return setFormError('Zgjidhni degën.')
-    if (!form.startTime || !form.endTime) return setFormError('Ora e fillimit dhe mbarimit janë të detyrueshme.')
-    if (!form.slotDurationMinutes || form.slotDurationMinutes <= 0) return setFormError('Kohëzgjatja e sllotit duhet të jetë më e madhe se 0.')
+    if (!form.clinicBranchId) return setFormError(t('doctors.scheduleModal.branchRequired'))
+    if (!form.startTime || !form.endTime) return setFormError(t('doctors.scheduleModal.timeRequired'))
+    if (!form.slotDurationMinutes || form.slotDurationMinutes <= 0) return setFormError(t('doctors.scheduleModal.slotDurationInvalid'))
 
     setFormError('')
     setSaving(true)
@@ -815,36 +832,35 @@ function DoctorScheduleModal({
         validUntil: form.validUntil || undefined,
       }
       await api.createDoctorScheduleAsAdmin(doctor.id, payload)
-      notify('Orari u shtua.', 'ok')
+      notify(t('doctors.scheduleModal.addedToast'), 'ok')
       setForm({ ...EMPTY_SCHEDULE_FORM, clinicBranchId: form.clinicBranchId })
     } catch (e) {
-      setFormError(e instanceof ApiError ? e.message : 'Gabim. Provoni përsëri.')
+      setFormError(getErrorMessage(e))
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <Modal title={`Orari i Punës — Dr. ${doctor.firstName} ${doctor.lastName}`} onClose={onClose} size="lg">
+    <Modal title={t('doctors.scheduleModal.title', { firstName: doctor.firstName, lastName: doctor.lastName })} onClose={onClose} size="lg">
       <div className="schedule-info-banner schedule-info-banner--warn">
         <AlertCircle size={16} strokeWidth={1.5} color="var(--warn)" />
         <span>
-          Oraret ekzistuese të mjekut nuk mund të shfaqen këtu: endpoint-i i vetëm që i kthen
-          (<code>GET /api/doctor/working-schedules</code>) është i kufizuar vetëm për vetë mjekun e
-          kyçur dhe nuk pranon një ID mjeku si parametër. Nuk ekziston ende një endpoint administrativ
-          për të listuar oraret e një mjeku tjetër — ky është një gap në backend, jo në këtë faqe.
-          Formulari më poshtë funksionon (<code>POST /api/admin/doctors/&#123;id&#125;/working-schedules</code>)
-          dhe mund të shtoni orare të reja pa problem.
+          <Trans
+            i18nKey="doctors.scheduleModal.backendGapBanner"
+            ns="admin"
+            components={[<code key="0" />, <code key="1" />]}
+          />
         </span>
       </div>
 
       {formError && <ErrorBox message={formError} />}
 
-      <p className="doctor-form__section-title">Shto Orar të Ri</p>
+      <p className="doctor-form__section-title">{t('doctors.scheduleModal.addScheduleSectionTitle')}</p>
 
       <div className="field">
         <CustomSelect
-          label="Dega"
+          label={t('doctors.scheduleModal.branchFieldLabel')}
           options={branchOptions}
           value={form.clinicBranchId}
           onChange={(v) => updateField('clinicBranchId', v)}
@@ -852,13 +868,13 @@ function DoctorScheduleModal({
           onOpenChange={(isOpen) => setOpenSelect(isOpen ? 'branch' : null)}
         />
         {doctorBranches.length === 0 && (
-          <span className="field__note">Ky mjek nuk ka ende asnjë degë të caktuar.</span>
+          <span className="field__note">{t('doctors.scheduleModal.noBranchNote')}</span>
         )}
       </div>
 
       <div className="field">
         <CustomSelect
-          label="Dita"
+          label={t('doctors.scheduleModal.dayFieldLabel')}
           options={dayOptions}
           value={form.dayOfWeek}
           onChange={(v) => updateField('dayOfWeek', v)}
@@ -869,17 +885,17 @@ function DoctorScheduleModal({
 
       <div className="form-row">
         <div className="field">
-          <label>Ora e Fillimit</label>
+          <label>{t('doctors.scheduleModal.startTimeLabel')}</label>
           <input type="time" value={form.startTime} onChange={(e) => updateField('startTime', e.target.value)} />
         </div>
         <div className="field">
-          <label>Ora e Mbarimit</label>
+          <label>{t('doctors.scheduleModal.endTimeLabel')}</label>
           <input type="time" value={form.endTime} onChange={(e) => updateField('endTime', e.target.value)} />
         </div>
       </div>
 
       <div className="field">
-        <label>Kohëzgjatja e Sllotit (minuta)</label>
+        <label>{t('doctors.scheduleModal.slotDurationLabel')}</label>
         <input
           type="number"
           min={5}
@@ -891,11 +907,11 @@ function DoctorScheduleModal({
 
       <div className="form-row">
         <div className="field">
-          <label>Vlefshmëria Nga <span className="muted">(opsional)</span></label>
+          <label>{t('doctors.scheduleModal.validFromLabel')} <span className="muted">{t('specialties.optional')}</span></label>
           <input type="date" value={form.validFrom} onChange={(e) => updateField('validFrom', e.target.value)} />
         </div>
         <div className="field">
-          <label>Vlefshmëria Deri <span className="muted">(opsional)</span></label>
+          <label>{t('doctors.scheduleModal.validUntilLabel')} <span className="muted">{t('specialties.optional')}</span></label>
           <input type="date" value={form.validUntil} onChange={(e) => updateField('validUntil', e.target.value)} />
         </div>
       </div>
@@ -906,7 +922,7 @@ function DoctorScheduleModal({
         disabled={saving || doctorBranches.length === 0}
         onClick={handleSubmit}
       >
-        {saving ? 'Duke ruajtur…' : (<><Plus size={16} strokeWidth={1.5} /> Shto Orar</>)}
+        {saving ? t('doctors.scheduleModal.savingCta') : (<><Plus size={16} strokeWidth={1.5} /> {t('doctors.scheduleModal.addScheduleCta')}</>)}
       </button>
     </Modal>
   )

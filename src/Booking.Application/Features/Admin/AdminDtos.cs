@@ -199,8 +199,18 @@ public sealed record AdminUserDto
 
 public sealed record AdminCreateAppointmentRequest
 {
-    /// <summary>Email i pacientit ekzistues në sistem.</summary>
-    public required string PatientEmail { get; init; }
+    /// <summary>
+    /// Identifikuesi i pacientit nga kërkimi ose nga krijimi i tij
+    /// (<c>api/admin/patients</c>). Rruga e preferuar: një pacient i krijuar me
+    /// telefon mund të mos ketë fare email.
+    /// </summary>
+    public Guid? PatientProfileId { get; init; }
+
+    /// <summary>
+    /// Alternativë historike te <see cref="PatientProfileId"/>. Mbahet për
+    /// pajtueshmëri; funksionon vetëm për pacientët që kanë email.
+    /// </summary>
+    public string? PatientEmail { get; init; }
 
     public required Guid DoctorId { get; init; }
     public required Guid ClinicBranchId { get; init; }

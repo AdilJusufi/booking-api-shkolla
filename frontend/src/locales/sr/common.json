@@ -1,0 +1,129 @@
+{
+  "brand": {
+    "name": "Rezervo ",
+    "tld": "Mjekun",
+    "tagline": "Pronađite pravog lekara. Zakažite za sekunde."
+  },
+  "nav": {
+    "findDoctor": "Pronađi lekara",
+    "myAppointments": "Moji termini",
+    "greeting": "Zdravo, {{firstName}}",
+    "login": "Prijava",
+    "register": "Registracija",
+    "logout": "Odjava",
+    "menu": "Meni",
+    "accountMenu": "Meni naloga"
+  },
+  "roles": {
+    "Patient": "Pacijent",
+    "Doctor": "Lekar",
+    "ClinicAdmin": "Admin klinike",
+    "SuperAdmin": "Super admin"
+  },
+  "theme": {
+    "switchToLight": "Prebaci na svetlu temu",
+    "switchToDark": "Prebaci na tamnu temu"
+  },
+  "language": {
+    "label": "Jezik",
+    "sq": "Shqip",
+    "en": "English",
+    "sr": "Srpski"
+  },
+  "footer": {
+    "tagline": "Pronađite pravog lekara. Zakažite za sekunde.",
+    "servicesTitle": "Usluge",
+    "findDoctor": "Pronađi lekara",
+    "clinics": "Klinike",
+    "accountTitle": "Nalog",
+    "login": "Prijava",
+    "register": "Registracija",
+    "myAppointments": "Moji termini",
+    "contactTitle": "Kontakt",
+    "contactCity": "Priština, Kosovo",
+    "contactEmail": "info@rezervomjekun.com",
+    "legalTitle": "Pravno",
+    "privacyPolicy": "Politika privatnosti",
+    "termsOfService": "Uslovi korišćenja",
+    "copyright": "© {{year}} Rezervo Mjekun — Demo projekat."
+  },
+  "buttons": {
+    "retry": "Pokušaj ponovo",
+    "cancel": "Otkaži",
+    "save": "Sačuvaj",
+    "close": "Zatvori",
+    "back": "Nazad",
+    "backHome": "Nazad na početnu",
+    "confirm": "Potvrdi",
+    "edit": "Izmeni",
+    "delete": "Obriši",
+    "add": "Dodaj",
+    "search": "Pretraga",
+    "next": "Sledeće",
+    "previous": "Nazad",
+    "loadMore": "Učitaj još"
+  },
+  "loading": "Učitavanje",
+  "emptyState": {
+    "genericTitle": "Ovde još ništa nema"
+  },
+  "offline": {
+    "bannerMessage": "Trenutno ste offline. Neke radnje neće raditi dok se veza ne uspostavi.",
+    "pageTitle": "Nema internet veze",
+    "pageMessage": "Rezervo Mjekun zahteva internet vezu za prikaz termina i lekara. Proverite vezu i pokušajte ponovo."
+  },
+  "notFound": {
+    "title": "Stranica nije pronađena",
+    "message": "Link je možda zastareo ili pogrešno unet."
+  },
+  "errors": {
+    "network": "Nismo se povezali sa serverom. Proverite internet vezu i pokušajte ponovo.",
+    "400": "Nešto nije u redu sa zahtevom. Pokušajte da osvežite stranicu.",
+    "401": "Vaša sesija je istekla. Prijavite se ponovo.",
+    "403": "Nemate pristup ovom sadržaju.",
+    "404": "Nismo pronašli ono što ste tražili.",
+    "409": "Neko drugi je u međuvremenu izmenio ove podatke. Pokušajte ponovo.",
+    "422": "Nešto nije u redu sa zahtevom. Pokušajte da osvežite stranicu.",
+    "429": "Napravili ste previše zahteva. Sačekajte malo i pokušajte ponovo.",
+    "500": "Došlo je do greške na serveru. Pokušajte ponovo uskoro.",
+    "default": "Došlo je do greške. Pokušajte ponovo uskoro.",
+    "slotTaken": "Ovaj termin je upravo zauzeo neko drugi. Izaberite drugo vreme.",
+    "staleRecord": "Neko drugi je u međuvremenu izmenio ovaj termin. Stranica je osvežena sa najnovijim podacima."
+  },
+  "appointment": {
+    "status": {
+      "pending": "Na čekanju",
+      "confirmed": "Potvrđeno",
+      "checkedIn": "Prijavljen u klinici",
+      "inProgress": "U toku",
+      "completed": "Završeno",
+      "cancelledByPatient": "Otkazali ste",
+      "cancelledByClinic": "Otkazala klinika",
+      "noShow": "Nije se pojavio/la",
+      "rescheduled": "Pomereno",
+      "unknown": "Nepoznato"
+    },
+    "actions": {
+      "cancel": "Otkaži",
+      "reschedule": "Pomeri termin"
+    },
+    "sessionCount_one": "{{count}} sesija",
+    "sessionCount_few": "{{count}} sesije",
+    "sessionCount_other": "{{count}} sesija"
+  },
+  "modal": {
+    "close": "Zatvori"
+  },
+  "cities": {
+    "pristina": "Priština",
+    "prizren": "Prizren",
+    "peja": "Peć",
+    "gjakova": "Đakovica",
+    "gjilan": "Gnjilane",
+    "mitrovica": "Mitrovica",
+    "ferizaj": "Uroševac",
+    "vushtrri": "Vučitrn",
+    "podujeva": "Podujevo",
+    "suhareka": "Suva Reka"
+  }
+}

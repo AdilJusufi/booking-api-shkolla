@@ -280,6 +280,22 @@ public class SuperAdminService : ISuperAdminService
             })
             .ToListAsync(cancellationToken);
 
+        // Ky endpoint ekspozon tërë bazën e përdoruesve te SuperAdmin — listimi vetë
+        // auditohet. Ruajmë filtrat, jo rreshtat: "kush kërkoi çka" mjafton, ndërsa
+        // kopjimi i emrave/email-ave do ta shndërronte audit log-un në bazë të dytë
+        // të dhënash personale.
+        _auditService.Record("USERS_LISTED_BY_SUPERADMIN", nameof(ApplicationUser), null, null,
+            new
+            {
+                Role = query.Role,
+                IsActive = query.IsActive,
+                Search = query.Search,
+                query.Page,
+                query.PageSize,
+                ResultCount = totalItems
+            });
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
         return new PagedResult<AdminUserDto>
         {
             Items = page

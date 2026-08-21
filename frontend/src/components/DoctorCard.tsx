@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { Doctor } from '../lib/types'
 import { initials, specialtyIcon, specialtyLabel } from './ui'
 
 export default function DoctorCard({ doctor }: { doctor: Doctor }) {
+  const { t } = useTranslation('patient')
   return (
     <Link to={`/mjeku/${doctor.id}`} className="card doctor-card" data-reveal>
       <div className="doctor-card__avatar" aria-hidden>
@@ -23,12 +25,12 @@ export default function DoctorCard({ doctor }: { doctor: Doctor }) {
         </div>
         <p className="doctor-card__exp">
           {doctor.yearsOfExperience > 0
-            ? `${doctor.yearsOfExperience} vjet përvojë`
-            : 'Mjek i licencuar'}
+            ? t('home.doctorsSection.experienceYears', { count: doctor.yearsOfExperience })
+            : t('home.doctorsSection.licensedDoctor')}
         </p>
       </div>
       <span className="doctor-card__cta">
-        Rezervo <ArrowRight size={16} strokeWidth={1.5} />
+        {t('cards.bookCta')} <ArrowRight size={16} strokeWidth={1.5} />
       </span>
     </Link>
   )

@@ -1,15 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, ArrowUp, Calendar, CalendarX, ChevronLeft, ChevronRight, Clock, MapPin } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
 import type { AvailableSlot, DoctorBranch, DoctorDetails, DoctorService } from '../lib/types'
 import { useAuth } from '../context/AuthContext'
 import { ErrorBox, SkeletonDetail, initials, specialtyIcon, specialtyLabel } from '../components/ui'
-import { formatMoney, formatTime, toDateInput } from '../lib/format'
+import { formatMoney, formatTime, monthName, toDateInput, weekdayName } from '../lib/format'
 
-const DAYS_SQ = ['E Diel', 'E Hënë', 'E Martë', 'E Mërkurë', 'E Enjte', 'E Premte', 'E Shtunë']
-const WEEK_HEADERS = ['HËN', 'MAR', 'MËR', 'ENJ', 'PRE', 'SHT', 'DIE']
-const MONTHS_SQ = ['Janar', 'Shkurt', 'Mars', 'Prill', 'Maj', 'Qershor', 'Korrik', 'Gusht', 'Shtator', 'Tetor', 'Nëntor', 'Dhjetor']
+// Display order Monday-first while JS Date.getDay() stays Sunday(0)..Saturday(6).
+const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0]
 
 function parseLocal(iso: string): Date {
   const m = iso.match(/(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/)
@@ -27,10 +28,11 @@ function startOfWeek(d: Date): Date {
 
 function formatDateLabel(dateStr: string): string {
   const d = parseLocal(dateStr)
-  return `${DAYS_SQ[d.getDay()]}, ${d.getDate()} ${MONTHS_SQ[d.getMonth()]}`
+  return `${weekdayName(d.getDay())}, ${d.getDate()} ${monthName(d.getMonth())}`
 }
 
 export default function DoctorDetailPage() {
+  const { t } = useTranslation('patient')
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
@@ -49,22 +51,25 @@ export default function DoctorDetailPage() {
   const [slotsLoading, setSlotsLoading] = useState(false)
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()))
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (!id) return
     let active = true
     setLoading(true)
+    setError('')
     api
       .getDoctor(id)
       .then((d) => {
         if (!active) return
         setDoctor(d)
       })
-      .catch((e) => active && setError(e.message))
+      .catch((e) => active && setError(getErrorMessage(e)))
       .finally(() => active && setLoading(false))
     return () => {
       active = false
     }
   }, [id])
+
+  useEffect(load, [load])
 
   function fetchSlots(date: string, branch: DoctorBranch, service: DoctorService) {
     if (!id) return
@@ -109,7 +114,7 @@ export default function DoctorDetailPage() {
       return
     }
     sessionStorage.setItem(
-      'termini_pending_booking',
+      'rezervo_pending_booking',
       JSON.stringify({
         doctorId: id,
         doctorName: `Dr. ${doctor.firstName} ${doctor.lastName}`,
@@ -128,8 +133,8 @@ export default function DoctorDetailPage() {
     navigate('/rezervo/konfirmo')
   }
 
-  if (loading) return <div className="container page"><SkeletonDetail label="Duke ngarkuar profilin" /></div>
-  if (error) return <div className="container page"><ErrorBox message={error} /></div>
+  if (loading) return <div className="container page"><SkeletonDetail label={t('doctorDetail.loadingLabel')} /></div>
+  if (error) return <div className="container page"><ErrorBox message={error} onRetry={load} /></div>
   if (!doctor) return null
 
   return (
@@ -137,7 +142,7 @@ export default function DoctorDetailPage() {
       <div className="detail-hero">
         <div className="container">
           <Link to="/kerko" className="backlink link-icon">
-            <ChevronLeft size={16} strokeWidth={1.5} /> Kthehu te kërkimi
+            <ChevronLeft size={16} strokeWidth={1.5} /> {t('doctorDetail.backToSearch')}
           </Link>
           <div className="detail-hero__row">
             <div className="detail-hero__avatar" aria-hidden>
@@ -156,7 +161,7 @@ export default function DoctorDetailPage() {
                 })}
               </div>
               {doctor.yearsOfExperience > 0 && (
-                <p className="detail-hero__desc">{doctor.yearsOfExperience} vjet përvojë</p>
+                <p className="detail-hero__desc">{t('doctorDetail.experienceYears', { count: doctor.yearsOfExperience })}</p>
               )}
             </div>
           </div>
@@ -167,13 +172,13 @@ export default function DoctorDetailPage() {
         <div className="detail-col">
           {doctor.biography && (
             <section className="block">
-              <h2 className="block__title">Rreth mjekut</h2>
+              <h2 className="block__title">{t('doctorDetail.aboutTitle')}</h2>
               <p className="prose">{doctor.biography}</p>
             </section>
           )}
 
           <section className="block">
-            <h2 className="block__title">Ku ordinon</h2>
+            <h2 className="block__title">{t('doctorDetail.whereTitle')}</h2>
             <div className="grid grid--branches">
               {doctor.branches.map((b) => (
                 <div key={b.branchId} className="branch-card">
@@ -188,7 +193,7 @@ export default function DoctorDetailPage() {
           </section>
 
           <section className="block">
-            <h2 className="block__title">Shërbimet</h2>
+            <h2 className="block__title">{t('doctorDetail.servicesTitle')}</h2>
             <div className="service-list">
               {doctor.services.map((s) => {
                 const Icon = specialtyIcon(s.specialtyName)
@@ -197,7 +202,7 @@ export default function DoctorDetailPage() {
                     <span className="service-row__icon"><Icon size={20} strokeWidth={1.5} /></span>
                     <div className="service-row__info">
                       <strong>{s.name}</strong>
-                      <span><Clock size={12} strokeWidth={1.5} /> {s.durationMinutes} min</span>
+                      <span><Clock size={12} strokeWidth={1.5} /> {s.durationMinutes} {t('doctorDetail.minutesShort')}</span>
                     </div>
                     <span className="service-row__price">{formatMoney(s.price, s.currency)}</span>
                   </div>
@@ -210,15 +215,15 @@ export default function DoctorDetailPage() {
         <aside className="booking">
           <div className="booking__card booking-widget">
             <div className="booking-widget__head">
-              <h2 className="booking-widget__title">Rezervoni termin</h2>
-              <p className="booking-widget__sub">Plotësoni hapat për të rezervuar.</p>
+              <h2 className="booking-widget__title">{t('doctorDetail.bookingTitle')}</h2>
+              <p className="booking-widget__sub">{t('doctorDetail.bookingSubtitle')}</p>
             </div>
 
             <StepIndicator currentStep={currentStep} showBranch={!branchAutoSelected} />
 
             {currentStep === 1 && (
               <div className="booking-step">
-                <p className="booking-step__label">Zgjidhni shërbimin</p>
+                <p className="booking-step__label">{t('doctorDetail.chooseService')}</p>
                 <div className="booking-cards">
                   {doctor.services.map((s) => (
                     <button
@@ -229,7 +234,7 @@ export default function DoctorDetailPage() {
                     >
                       <span className="booking-choice__main">
                         <span className="booking-choice__name">{s.name}</span>
-                        <span className="booking-choice__sub"><Clock size={11} strokeWidth={1.5} /> {s.durationMinutes} min</span>
+                        <span className="booking-choice__sub"><Clock size={11} strokeWidth={1.5} /> {s.durationMinutes} {t('doctorDetail.minutesShort')}</span>
                       </span>
                       <span className="booking-choice__price">{formatMoney(s.price, s.currency)}</span>
                     </button>
@@ -241,9 +246,9 @@ export default function DoctorDetailPage() {
             {currentStep === 2 && (
               <div className="booking-step">
                 <button type="button" className="booking-back" onClick={() => { setCurrentStep(1); setSelectedBranch(null) }}>
-                  <ArrowLeft size={13} strokeWidth={1.5} /> Ndrysho shërbimin
+                  <ArrowLeft size={13} strokeWidth={1.5} /> {t('doctorDetail.changeService')}
                 </button>
-                <p className="booking-step__label">Zgjidhni degën</p>
+                <p className="booking-step__label">{t('doctorDetail.chooseBranch')}</p>
                 <div className="booking-cards">
                   {doctor.branches.map((b) => (
                     <button
@@ -269,9 +274,9 @@ export default function DoctorDetailPage() {
                   className="booking-back"
                   onClick={() => setCurrentStep(branchAutoSelected ? 1 : 2)}
                 >
-                  <ArrowLeft size={13} strokeWidth={1.5} /> {branchAutoSelected ? 'Ndrysho shërbimin' : 'Ndrysho degën'}
+                  <ArrowLeft size={13} strokeWidth={1.5} /> {branchAutoSelected ? t('doctorDetail.changeService') : t('doctorDetail.changeBranch')}
                 </button>
-                <p className="booking-step__label">Zgjidhni datën</p>
+                <p className="booking-step__label">{t('doctorDetail.chooseDate')}</p>
                 <WeekStrip
                   weekStart={weekStart}
                   setWeekStart={setWeekStart}
@@ -284,12 +289,12 @@ export default function DoctorDetailPage() {
             {currentStep === 4 && (
               <div className="booking-step">
                 <button type="button" className="booking-back" onClick={() => { setCurrentStep(3); setSelectedSlot('') }}>
-                  <ArrowLeft size={13} strokeWidth={1.5} /> Ndrysho datën
+                  <ArrowLeft size={13} strokeWidth={1.5} /> {t('doctorDetail.changeDate')}
                 </button>
                 <p className="booking-selected-date">
                   <Calendar size={13} strokeWidth={1.5} color="var(--primary)" /> {formatDateLabel(selectedDate)}
                 </p>
-                <p className="booking-step__label">Zgjidhni orën</p>
+                <p className="booking-step__label">{t('doctorDetail.chooseTime')}</p>
                 {slotsLoading ? (
                   <div className="booking-slotgrid">
                     {Array.from({ length: 6 }).map((_, i) => (
@@ -299,9 +304,9 @@ export default function DoctorDetailPage() {
                 ) : availableSlots.length === 0 ? (
                   <div className="booking-slots-empty">
                     <CalendarX size={28} strokeWidth={1.5} color="var(--line)" style={{ margin: '0 auto 8px' }} />
-                    <p>Nuk ka vende të lira për këtë datë.</p>
+                    <p>{t('doctorDetail.noSlotsForDate')}</p>
                     <button type="button" className="booking-empty-link" onClick={() => { setCurrentStep(3); setSelectedSlot('') }}>
-                      Provoni datë tjetër <ArrowUp size={12} strokeWidth={1.5} />
+                      {t('doctorDetail.tryAnotherDate')} <ArrowUp size={12} strokeWidth={1.5} />
                     </button>
                   </div>
                 ) : (
@@ -336,7 +341,7 @@ export default function DoctorDetailPage() {
                   disabled={currentStep !== 4 || !selectedSlot}
                   onClick={handleConfirm}
                 >
-                  {currentStep === 4 && selectedSlot ? 'Konfirmo rezervimin' : 'Vazhdo'}
+                  {currentStep === 4 && selectedSlot ? t('doctorDetail.confirmBooking') : t('doctorDetail.continueCta')}
                   <ArrowRight size={16} strokeWidth={1.5} />
                 </button>
               </>
@@ -344,8 +349,8 @@ export default function DoctorDetailPage() {
 
             {!isAuthenticated && (
               <p className="booking__hint booking-widget__login">
-                Duhet të jeni të kyçur për të rezervuar.{' '}
-                <Link to={`/hyr?redirect=/mjeku/${id}`} className="booking-widget__login-link">Kyçuni <ArrowRight size={13} strokeWidth={1.5} /></Link>
+                {t('doctorDetail.loginRequiredHint')}{' '}
+                <Link to={`/hyr?redirect=/mjeku/${id}`} className="booking-widget__login-link">{t('doctorDetail.loginCta')} <ArrowRight size={13} strokeWidth={1.5} /></Link>
               </p>
             )}
           </div>
@@ -355,9 +360,9 @@ export default function DoctorDetailPage() {
   )
 }
 
-const STEP_LABELS = ['Shërbimi', 'Dega', 'Data', 'Ora']
-
 function StepIndicator({ currentStep, showBranch }: { currentStep: number; showBranch: boolean }) {
+  const { t } = useTranslation('patient')
+  const STEP_LABELS = [t('doctorDetail.steps.service'), t('doctorDetail.steps.branch'), t('doctorDetail.steps.date'), t('doctorDetail.steps.time')]
   return (
     <div className="booking-steps">
       {STEP_LABELS.map((label, i) => {
@@ -418,15 +423,15 @@ function WeekStrip({
         <button type="button" onClick={() => shift(-1)} disabled={atFirstWeek} className={atFirstWeek ? 'is-disabled' : ''}>
           <ChevronLeft size={18} strokeWidth={1.5} />
         </button>
-        <span>{MONTHS_SQ[weekStart.getMonth()]} {weekStart.getFullYear()}</span>
+        <span>{monthName(weekStart.getMonth())} {weekStart.getFullYear()}</span>
         <button type="button" onClick={() => shift(1)}>
           <ChevronRight size={18} strokeWidth={1.5} />
         </button>
       </div>
 
       <div className="booking-week__days">
-        {WEEK_HEADERS.map((label) => (
-          <span key={label} className="booking-week__dayhead">{label}</span>
+        {WEEK_ORDER.map((day) => (
+          <span key={day} className="booking-week__dayhead">{weekdayName(day, 'short').toUpperCase()}</span>
         ))}
       </div>
 
