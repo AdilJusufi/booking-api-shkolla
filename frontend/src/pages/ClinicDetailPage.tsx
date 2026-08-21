@@ -1,38 +1,44 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ChevronLeft, Clock, Globe, Mail, MapPin, Phone, Stethoscope } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
 import type { ClinicDetails, Doctor } from '../lib/types'
 import DoctorCard from '../components/DoctorCard'
 import { EmptyState, ErrorBox, SkeletonDetail, specialtyIcon, specialtyLabel } from '../components/ui'
 import { formatMoney } from '../lib/format'
 
 export default function ClinicDetailPage() {
+  const { t } = useTranslation('patient')
   const { id } = useParams<{ id: string }>()
   const [clinic, setClinic] = useState<ClinicDetails | null>(null)
   const [doctors, setDoctors] = useState<Doctor[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (!id) return
     let active = true
     setLoading(true)
+    setError('')
     Promise.all([api.getClinic(id), api.getClinicDoctors(id).catch(() => [])])
       .then(([c, docs]) => {
         if (!active) return
         setClinic(c)
         setDoctors(docs)
       })
-      .catch((e) => active && setError(e.message))
+      .catch((e) => active && setError(getErrorMessage(e)))
       .finally(() => active && setLoading(false))
     return () => {
       active = false
     }
   }, [id])
 
-  if (loading) return <div className="container page"><SkeletonDetail label="Duke ngarkuar klinikën" /></div>
-  if (error) return <div className="container page"><ErrorBox message={error} /></div>
+  useEffect(load, [load])
+
+  if (loading) return <div className="container page"><SkeletonDetail label={t('clinicDetail.loadingLabel')} /></div>
+  if (error) return <div className="container page"><ErrorBox message={error} onRetry={load} /></div>
   if (!clinic) return null
 
   return (
@@ -40,7 +46,7 @@ export default function ClinicDetailPage() {
       <div className="detail-hero">
         <div className="container">
           <Link to="/kerko" className="backlink link-icon">
-            <ChevronLeft size={16} strokeWidth={1.5} /> Kthehu te kërkimi
+            <ChevronLeft size={16} strokeWidth={1.5} /> {t('clinicDetail.backToSearch')}
           </Link>
           <div className="detail-hero__row">
             <div className="detail-hero__logo" aria-hidden>{clinic.name.charAt(0)}</div>
@@ -72,7 +78,7 @@ export default function ClinicDetailPage() {
       <div className="container detail-body">
         {clinic.branches.length > 0 && (
           <section className="block">
-            <h2 className="block__title">Degët</h2>
+            <h2 className="block__title">{t('clinicDetail.branchesTitle')}</h2>
             <div className="grid grid--branches">
               {clinic.branches.map((b) => (
                 <div key={b.id} className="branch-card">
@@ -93,7 +99,7 @@ export default function ClinicDetailPage() {
 
         {clinic.services.length > 0 && (
           <section className="block">
-            <h2 className="block__title">Shërbimet & çmimet</h2>
+            <h2 className="block__title">{t('clinicDetail.servicesTitle')}</h2>
             <div className="service-list">
               {clinic.services.map((s) => {
                 const Icon = specialtyIcon(s.specialtyName)
@@ -102,7 +108,7 @@ export default function ClinicDetailPage() {
                     <span className="service-row__icon"><Icon size={20} strokeWidth={1.5} /></span>
                     <div className="service-row__info">
                       <strong>{s.name}</strong>
-                      <span>{specialtyLabel(s.specialtyName)} · <Clock size={12} strokeWidth={1.5} /> {s.durationMinutes} min</span>
+                      <span>{specialtyLabel(s.specialtyName)} · <Clock size={12} strokeWidth={1.5} /> {s.durationMinutes} {t('clinicDetail.minutesShort')}</span>
                     </div>
                     <span className="service-row__price">{formatMoney(s.price, s.currency)}</span>
                   </div>
@@ -113,7 +119,7 @@ export default function ClinicDetailPage() {
         )}
 
         <section className="block">
-          <h2 className="block__title">Mjekët</h2>
+          <h2 className="block__title">{t('clinicDetail.doctorsTitle')}</h2>
           {doctors.length ? (
             <div className="grid grid--cards">
               {doctors.map((d) => (
@@ -121,7 +127,7 @@ export default function ClinicDetailPage() {
               ))}
             </div>
           ) : (
-            <EmptyState icon={Stethoscope} title="Nuk ka mjekë të listuar" />
+            <EmptyState icon={Stethoscope} title={t('clinicDetail.noDoctorsListed')} />
           )}
         </section>
       </div>

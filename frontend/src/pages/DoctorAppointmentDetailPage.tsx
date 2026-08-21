@@ -11,14 +11,14 @@ import {
   Stethoscope,
   XCircle,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { api, ApiError } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
 import { AppointmentStatus } from '../lib/types'
 import type { DoctorAppointment } from '../lib/types'
 import { useToast } from '../context/ToastContext'
-import { Badge, Pending } from '../components/ui'
-
-const DAYS_SQ = ['E Diel', 'E Hënë', 'E Martë', 'E Mërkurë', 'E Enjte', 'E Premte', 'E Shtunë']
-const MONTHS_SQ = ['Janar', 'Shkurt', 'Mars', 'Prill', 'Maj', 'Qershor', 'Korrik', 'Gusht', 'Shtator', 'Tetor', 'Nëntor', 'Dhjetor']
+import { Badge, ErrorBox, Pending } from '../components/ui'
+import { monthName, weekdayName } from '../lib/format'
 
 function parseLocal(iso: string): Date {
   const m = iso.match(/(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/)
@@ -28,7 +28,7 @@ function parseLocal(iso: string): Date {
 
 function formatDateSq(iso: string): string {
   const d = parseLocal(iso)
-  return `${DAYS_SQ[d.getDay()]}, ${d.getDate()} ${MONTHS_SQ[d.getMonth()]} ${d.getFullYear()}`
+  return `${weekdayName(d.getDay())}, ${d.getDate()} ${monthName(d.getMonth())} ${d.getFullYear()}`
 }
 
 function formatTimeSq(iso: string): string {
@@ -46,45 +46,52 @@ function patientInitials(fullName: string): string {
   return (first + last).toUpperCase()
 }
 
-const STATUS_DESCRIPTIONS: Partial<Record<AppointmentStatus, string>> = {
-  [AppointmentStatus.Pending]: 'Termini pret konfirmimin tuaj.',
-  [AppointmentStatus.Confirmed]: 'Termini është konfirmuar. Pacienti është njoftuar.',
-  [AppointmentStatus.CheckedIn]: 'Pacienti ka mbërrritur.',
-  [AppointmentStatus.InProgress]: 'Konsulta është në progres.',
-  [AppointmentStatus.Completed]: 'Ky termin është përfunduar.',
-  [AppointmentStatus.CancelledByPatient]: 'Pacienti e anuloi këtë termin.',
-  [AppointmentStatus.CancelledByClinic]: 'Klinika e anuloi këtë termin.',
-  [AppointmentStatus.NoShow]: 'Pacienti nuk mbërriti në termin.',
-  [AppointmentStatus.Rescheduled]: 'Ky termin është ricaktuar.',
+const STATUS_KEYS: Partial<Record<AppointmentStatus, string>> = {
+  [AppointmentStatus.Pending]: 'pending',
+  [AppointmentStatus.Confirmed]: 'confirmed',
+  [AppointmentStatus.CheckedIn]: 'checkedIn',
+  [AppointmentStatus.InProgress]: 'inProgress',
+  [AppointmentStatus.Completed]: 'completed',
+  [AppointmentStatus.CancelledByPatient]: 'cancelledByPatient',
+  [AppointmentStatus.CancelledByClinic]: 'cancelledByClinic',
+  [AppointmentStatus.NoShow]: 'noShow',
+  [AppointmentStatus.Rescheduled]: 'rescheduled',
 }
 
-function statusBadge(status: AppointmentStatus) {
+function statusDescription(status: AppointmentStatus, t: (key: string) => string): string {
+  const key = STATUS_KEYS[status]
+  return key ? t(`appointmentDetail.statusDescriptions.${key}`) : t('appointmentDetail.statusDescriptionFallback')
+}
+
+function statusBadge(status: AppointmentStatus, t: (key: string) => string) {
   switch (status) {
     case AppointmentStatus.Pending:
-      return <Badge tone="warn">NË PRITJE</Badge>
+      return <Badge tone="warn">{t('appointmentDetail.badges.pending')}</Badge>
     case AppointmentStatus.Confirmed:
-      return <Badge tone="primary">KONFIRMUAR</Badge>
+      return <Badge tone="primary">{t('appointmentDetail.badges.confirmed')}</Badge>
     case AppointmentStatus.CheckedIn:
-      return <Badge tone="ok">MBËRRITI</Badge>
+      return <Badge tone="ok">{t('appointmentDetail.badges.checkedIn')}</Badge>
     case AppointmentStatus.InProgress:
-      return <Badge tone="primary">NË PROGRES</Badge>
+      return <Badge tone="primary">{t('appointmentDetail.badges.inProgress')}</Badge>
     case AppointmentStatus.Completed:
-      return <Badge tone="ok">PËRFUNDUAR</Badge>
+      return <Badge tone="ok">{t('appointmentDetail.badges.completed')}</Badge>
     case AppointmentStatus.CancelledByPatient:
     case AppointmentStatus.CancelledByClinic:
-      return <Badge tone="danger">ANULUAR</Badge>
+      return <Badge tone="danger">{t('appointmentDetail.badges.cancelled')}</Badge>
     case AppointmentStatus.NoShow:
-      return <Badge tone="muted">NUK ERDHI</Badge>
+      return <Badge tone="muted">{t('appointmentDetail.badges.noShow')}</Badge>
     case AppointmentStatus.Rescheduled:
-      return <Badge tone="warn">RICAKTUAR</Badge>
+      return <Badge tone="warn">{t('appointmentDetail.badges.rescheduled')}</Badge>
     default:
-      return <Badge tone="muted">I PANJOHUR</Badge>
+      return <Badge tone="muted">{t('appointmentDetail.badges.unknown')}</Badge>
   }
 }
 
 type ConfirmAction = 'confirm' | 'complete' | 'no-show' | null
 
 export default function DoctorAppointmentDetailPage() {
+  const { t } = useTranslation('doctor')
+  const { t: tCommon } = useTranslation('common')
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { notify } = useToast()
@@ -92,6 +99,7 @@ export default function DoctorAppointmentDetailPage() {
   const [appointment, setAppointment] = useState<DoctorAppointment | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [loadError, setLoadError] = useState('')
 
   const [pendingAction, setPendingAction] = useState<ConfirmAction>(null)
   const [acting, setActing] = useState(false)
@@ -103,6 +111,7 @@ export default function DoctorAppointmentDetailPage() {
     if (!id) return
     setLoading(true)
     setNotFound(false)
+    setLoadError('')
     api
       .getDoctorAppointmentDetail(id)
       .then((a) => {
@@ -114,7 +123,11 @@ export default function DoctorAppointmentDetailPage() {
           navigate('/hyr')
           return
         }
-        setNotFound(true)
+        if (e instanceof ApiError && e.status === 404) {
+          setNotFound(true)
+        } else {
+          setLoadError(getErrorMessage(e))
+        }
       })
       .finally(() => setLoading(false))
   }
@@ -133,9 +146,9 @@ export default function DoctorAppointmentDetailPage() {
             : await api.markDoctorAppointmentNoShow(id)
       setAppointment(updated)
       setPendingAction(null)
-      notify('Termini u përditësua.', 'ok')
+      notify(t('appointmentDetail.updatedToast'), 'ok')
     } catch (e) {
-      notify(e instanceof ApiError ? e.message : 'Gabim. Provoni përsëri.', 'error')
+      notify(getErrorMessage(e), 'error')
     } finally {
       setActing(false)
     }
@@ -147,9 +160,9 @@ export default function DoctorAppointmentDetailPage() {
     try {
       const updated = await api.updateDoctorAppointmentInternalNote(id, note)
       setAppointment(updated)
-      notify('Shënimi u ruajt.', 'ok')
+      notify(t('appointmentDetail.noteSavedToast'), 'ok')
     } catch (e) {
-      notify(e instanceof ApiError ? e.message : 'Gabim. Provoni përsëri.', 'error')
+      notify(getErrorMessage(e), 'error')
     } finally {
       setSavingNote(false)
     }
@@ -169,14 +182,22 @@ export default function DoctorAppointmentDetailPage() {
     )
   }
 
+  if (loadError) {
+    return (
+      <div className="detail-page">
+        <ErrorBox message={loadError} onRetry={load} />
+      </div>
+    )
+  }
+
   if (notFound || !appointment) {
     return (
       <div className="apptdetail-notfound">
         <CalendarX size={64} strokeWidth={1.5} color="var(--line)" style={{ margin: '0 auto 16px' }} />
-        <h2>Termini nuk u gjet</h2>
-        <p>Ky termin nuk ekziston ose nuk i përket kalendarit tuaj.</p>
+        <h2>{t('appointmentDetail.notFoundTitle')}</h2>
+        <p>{t('appointmentDetail.notFoundHint')}</p>
         <Link to="/mjeku-panel/kalendari" className="btn btn--ghost">
-          <ChevronLeft size={16} strokeWidth={1.5} /> Kthehu te kalendari
+          <ChevronLeft size={16} strokeWidth={1.5} /> {t('appointmentDetail.backToCalendar')}
         </Link>
       </div>
     )
@@ -193,31 +214,31 @@ export default function DoctorAppointmentDetailPage() {
   return (
     <div className="detail-page">
       <Link to="/mjeku-panel/kalendari" className="link-icon apptdetail-back">
-        <ChevronLeft size={16} strokeWidth={1.5} /> Kalendari
+        <ChevronLeft size={16} strokeWidth={1.5} /> {t('appointmentDetail.calendarLink')}
       </Link>
 
       <div className="apptdetail-layout">
         <div>
           <div className="card apptdetail-card">
             <div className="apptdetail-top">
-              {statusBadge(appointment.status)}
-              <span className="apptdetail-ref">REF: #{appointment.id.slice(0, 7).toUpperCase()}</span>
+              {statusBadge(appointment.status, t)}
+              <span className="apptdetail-ref">{t('appointmentDetail.refLabel')}: #{appointment.id.slice(0, 7).toUpperCase()}</span>
             </div>
 
-            <p className="apptdetail-section-label">Koha &amp; Vendi</p>
+            <p className="apptdetail-section-label">{t('appointmentDetail.timeAndPlace')}</p>
             <div className="apptdetail-grid">
               <div className="apptdetail-item">
-                <span className="apptdetail-label">Data</span>
+                <span className="apptdetail-label">{t('appointmentDetail.dateLabel')}</span>
                 <span className="apptdetail-value apptdetail-value--lg">{formatDateSq(appointment.startDateTime)}</span>
               </div>
               <div className="apptdetail-item">
-                <span className="apptdetail-label">Ora</span>
+                <span className="apptdetail-label">{t('appointmentDetail.timeLabel')}</span>
                 <span className="apptdetail-value apptdetail-value--md">
                   {formatTimeSq(appointment.startDateTime)} – {formatTimeSq(appointment.endDateTime)}
                 </span>
               </div>
               <div className="apptdetail-item">
-                <span className="apptdetail-label">Dega</span>
+                <span className="apptdetail-label">{t('appointmentDetail.branchLabel')}</span>
                 <span className="apptdetail-value apptdetail-value--row">
                   <MapPin size={13} strokeWidth={1.5} color="var(--muted)" />
                   {appointment.branchName}
@@ -227,14 +248,14 @@ export default function DoctorAppointmentDetailPage() {
 
             <div className="apptdetail-divider" />
 
-            <p className="apptdetail-section-label">Pacienti</p>
+            <p className="apptdetail-section-label">{t('appointmentDetail.patientSectionTitle')}</p>
             <div className="apptdetail-doctor">
               <div className="apptdetail-avatar">{patientInitials(appointment.patientName)}</div>
               <div>
                 <h2 className="apptdetail-doctor__name">{appointment.patientName}</h2>
                 {appointment.dependentName && (
                   <div className="apptdetail-doctor__meta">
-                    <span className="apptdetail-muted">Rezervuar për: {appointment.dependentName}</span>
+                    <span className="apptdetail-muted">{t('appointmentDetail.bookedFor', { name: appointment.dependentName })}</span>
                   </div>
                 )}
               </div>
@@ -242,39 +263,39 @@ export default function DoctorAppointmentDetailPage() {
             <div className="apptdetail-grid" style={{ marginTop: 14 }}>
               {appointment.patientPhoneNumber && (
                 <div className="apptdetail-item">
-                  <span className="apptdetail-label">Telefoni</span>
+                  <span className="apptdetail-label">{t('appointmentDetail.phoneLabel')}</span>
                   <a href={`tel:${appointment.patientPhoneNumber}`} className="apptdetail-value apptdetail-value--row">
                     <Phone size={13} strokeWidth={1.5} color="var(--muted)" /> {appointment.patientPhoneNumber}
                   </a>
                 </div>
               )}
               <div className="apptdetail-item">
-                <span className="apptdetail-label">ID e Termini</span>
+                <span className="apptdetail-label">{t('appointmentDetail.appointmentIdLabel')}</span>
                 <span className="apptdetail-value apptdetail-value--row sa-table__mono">#{appointment.id.slice(0, 8)}</span>
               </div>
             </div>
 
             <div className="apptdetail-divider" />
 
-            <p className="apptdetail-section-label">Shërbimi</p>
+            <p className="apptdetail-section-label">{t('appointmentDetail.serviceSectionTitle')}</p>
             <div className="apptdetail-grid">
               <div className="apptdetail-item">
-                <span className="apptdetail-label">Shërbimi</span>
+                <span className="apptdetail-label">{t('appointmentDetail.serviceLabel')}</span>
                 <span className="apptdetail-value apptdetail-value--row">
                   <Stethoscope size={13} strokeWidth={1.5} color="var(--muted)" /> {appointment.serviceName}
                 </span>
               </div>
               <div className="apptdetail-item">
-                <span className="apptdetail-label">Kohëzgjatja</span>
+                <span className="apptdetail-label">{t('appointmentDetail.durationLabel')}</span>
                 <span className="apptdetail-value apptdetail-value--row">
-                  <Clock size={13} strokeWidth={1.5} color="var(--muted)" /> {durationMinutes} minuta
+                  <Clock size={13} strokeWidth={1.5} color="var(--muted)" /> {t('appointmentDetail.durationMinutes', { count: durationMinutes })}
                 </span>
               </div>
             </div>
 
             {appointment.patientNote && (
               <div className="apptdetail-note">
-                <span className="apptdetail-note__label">Shënime të Pacientit</span>
+                <span className="apptdetail-note__label">{t('appointmentDetail.patientNotesLabel')}</span>
                 <p className="apptdetail-note__text">{appointment.patientNote}</p>
               </div>
             )}
@@ -283,15 +304,15 @@ export default function DoctorAppointmentDetailPage() {
 
         <div className="card apptdetail-action">
           <div className="apptdetail-status-card">
-            {statusBadge(appointment.status)}
+            {statusBadge(appointment.status, t)}
             <p className="apptdetail-status-desc">
-              {STATUS_DESCRIPTIONS[appointment.status] ?? 'Statusi i këtij termini nuk njihet.'}
+              {statusDescription(appointment.status, t)}
             </p>
           </div>
 
           {isReadOnly ? (
             <p className="muted" style={{ fontSize: 13, textAlign: 'center' }}>
-              Ky termin është vetëm për lexim — nuk ka veprime të disponueshme.
+              {t('appointmentDetail.readOnlyNote')}
             </p>
           ) : (
             <>
@@ -299,14 +320,14 @@ export default function DoctorAppointmentDetailPage() {
                 <div className="apptdetail-cancel-confirm">
                   <p>
                     {pendingAction === 'confirm'
-                      ? 'A jeni të sigurt që dëshironi të konfirmoni këtë termin?'
+                      ? t('appointmentDetail.confirmPrompt')
                       : pendingAction === 'complete'
-                        ? 'A jeni të sigurt që dëshironi ta shënoni si të përfunduar?'
-                        : 'A jeni të sigurt? Pacienti do të shënohet si i pa-ardhur.'}
+                        ? t('appointmentDetail.completePrompt')
+                        : t('appointmentDetail.noShowPrompt')}
                   </p>
                   <div className="apptdetail-cancel-confirm__row">
                     <button type="button" className="btn btn--ghost btn--sm" style={{ flex: 1 }} onClick={() => setPendingAction(null)}>
-                      Anulo
+                      {tCommon('appointment.actions.cancel')}
                     </button>
                     <button
                       type="button"
@@ -315,7 +336,7 @@ export default function DoctorAppointmentDetailPage() {
                       disabled={acting}
                       onClick={() => runAction(pendingAction)}
                     >
-                      {acting ? 'Duke ruajtur…' : 'Konfirmo'}
+                      {acting ? t('appointmentDetail.saving') : t('appointmentDetail.confirmCta')}
                     </button>
                   </div>
                 </div>
@@ -323,17 +344,17 @@ export default function DoctorAppointmentDetailPage() {
                 <>
                   {canConfirm && (
                     <button type="button" className="apptdetail-btn-primary" onClick={() => setPendingAction('confirm')}>
-                      <Check size={16} strokeWidth={1.5} /> Konfirmo
+                      <Check size={16} strokeWidth={1.5} /> {t('appointmentDetail.confirmCta')}
                     </button>
                   )}
                   {canComplete && (
                     <button type="button" className="apptdetail-btn-primary" onClick={() => setPendingAction('complete')}>
-                      <CheckCircle size={16} strokeWidth={1.5} /> Përfundo
+                      <CheckCircle size={16} strokeWidth={1.5} /> {t('appointmentDetail.completeCta')}
                     </button>
                   )}
                   {canNoShow && (
                     <button type="button" className="apptdetail-btn-danger-outline" onClick={() => setPendingAction('no-show')}>
-                      <XCircle size={16} strokeWidth={1.5} /> Shëno Si Nuk Erdhi
+                      <XCircle size={16} strokeWidth={1.5} /> {t('appointmentDetail.markNoShowCta')}
                     </button>
                   )}
                 </>
@@ -344,24 +365,24 @@ export default function DoctorAppointmentDetailPage() {
           <div className="apptdetail-divider" />
 
           <div className="profile-security__head">
-            <span>Shënime Interne</span>
+            <span>{t('appointmentDetail.internalNotesTitle')}</span>
           </div>
-          <p className="profile-security__text">Të dukshme vetëm për stafin mjekësor.</p>
+          <p className="profile-security__text">{t('appointmentDetail.internalNotesHint')}</p>
           <textarea
             rows={4}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Shkruani shënime interne këtu..."
+            placeholder={t('appointmentDetail.internalNotesPlaceholder')}
             style={{ width: '100%', resize: 'vertical' }}
           />
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
             <button type="button" className="btn btn--ghost btn--sm" disabled={savingNote} onClick={saveNote}>
               {savingNote ? (
                 <>
-                  <Pending /> Duke ruajtur…
+                  <Pending /> {t('appointmentDetail.saving')}
                 </>
               ) : (
-                'Ruaj Shënimin'
+                t('appointmentDetail.saveNoteCta')
               )}
             </button>
           </div>

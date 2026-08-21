@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Calendar, CalendarX, Check, ChevronLeft, Clock, MapPin } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { api, ApiError } from '../lib/api'
+import { getErrorMessage, getSlotTakenMessage } from '../lib/errors'
 import type { CreateAppointmentRequest } from '../lib/types'
 import { useToast } from '../context/ToastContext'
+import { useInstallPrompt } from '../context/InstallPromptContext'
 import { Pending } from '../components/ui'
 import { formatDateLong, formatMoney } from '../lib/format'
 
-const STORAGE_KEY = 'termini_pending_booking'
+const STORAGE_KEY = 'rezervo_pending_booking'
 
 interface PendingBooking {
   doctorId: string
@@ -37,8 +40,10 @@ function readPendingBooking(): PendingBooking | null {
 }
 
 export default function ConfirmBookingPage() {
+  const { t } = useTranslation('patient')
   const navigate = useNavigate()
   const { notify } = useToast()
+  const { requestInstallOffer } = useInstallPrompt()
 
   const [booking] = useState<PendingBooking | null>(() => readPendingBooking())
   const [note, setNote] = useState('')
@@ -65,15 +70,19 @@ export default function ConfirmBookingPage() {
       }
       const appointment = await api.createAppointment(payload)
       sessionStorage.removeItem(STORAGE_KEY)
-      notify('Termini u rezervua me sukses.', 'ok')
+      notify(t('confirmBooking.bookedToast'), 'ok')
+      // The app has just done the thing it exists for — the one moment where
+      // asking about installing is welcome rather than an interruption.
+      requestInstallOffer()
       navigate(`/terminet/${appointment.id}`)
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) {
-        setError('Ky orar u zu ndërkohë. Zgjidhni një orar tjetër.')
-      } else if (e instanceof ApiError) {
-        setError(e.message)
+        // Expected outcome, not an error state — rendered as an inline
+        // warning below, never an ErrorBox. No slot grid on this page to
+        // refetch; the "Ndrysho zgjedhjen" link is how the user picks again.
+        setError(getSlotTakenMessage())
       } else {
-        setError('Rezervimi dështoi. Provoni përsëri.')
+        setError(getErrorMessage(e))
       }
     } finally {
       setSubmitting(false)
@@ -83,13 +92,13 @@ export default function ConfirmBookingPage() {
   return (
     <div className="detail-page">
       <Link to={`/mjeku/${booking.doctorId}`} className="link-icon apptdetail-back">
-        <ChevronLeft size={16} strokeWidth={1.5} /> Kthehu te mjeku
+        <ChevronLeft size={16} strokeWidth={1.5} /> {t('confirmBooking.backToDoctor')}
       </Link>
 
       <div className="apptdetail-layout">
         <div>
           <div className="card apptdetail-card">
-            <p className="apptdetail-section-label">Konfirmoni rezervimin</p>
+            <p className="apptdetail-section-label">{t('confirmBooking.title')}</p>
 
             <div className="apptdetail-doctor">
               <div className="apptdetail-avatar">
@@ -110,17 +119,17 @@ export default function ConfirmBookingPage() {
 
             <div className="apptdetail-divider" />
 
-            <p className="apptdetail-section-label">Koha &amp; Vendi</p>
+            <p className="apptdetail-section-label">{t('confirmBooking.timeAndPlace')}</p>
             <div className="apptdetail-grid">
               <div className="apptdetail-item">
-                <span className="apptdetail-label">Data</span>
+                <span className="apptdetail-label">{t('confirmBooking.dateLabel')}</span>
                 <span className="apptdetail-value apptdetail-value--lg">
                   <Calendar size={14} strokeWidth={1.5} style={{ marginRight: 6 }} />
                   {formatDateLong(booking.startDateTime)}
                 </span>
               </div>
               <div className="apptdetail-item">
-                <span className="apptdetail-label">Ora</span>
+                <span className="apptdetail-label">{t('confirmBooking.timeLabel')}</span>
                 <span className="apptdetail-value apptdetail-value--md">
                   <Clock size={14} strokeWidth={1.5} style={{ marginRight: 6 }} />
                   {booking.time}
@@ -128,26 +137,26 @@ export default function ConfirmBookingPage() {
                 </span>
               </div>
               <div className="apptdetail-item">
-                <span className="apptdetail-label">Dega</span>
+                <span className="apptdetail-label">{t('confirmBooking.branchLabel')}</span>
                 <span className="apptdetail-value apptdetail-value--row">
                   <MapPin size={13} strokeWidth={1.5} color="var(--muted)" />
                   {booking.branchName}
                 </span>
               </div>
               <div className="apptdetail-item">
-                <span className="apptdetail-label">Çmimi</span>
+                <span className="apptdetail-label">{t('confirmBooking.priceLabel')}</span>
                 <span className="apptdetail-value">{formatMoney(booking.price, booking.currency)}</span>
               </div>
             </div>
 
             <div className="apptdetail-divider" />
 
-            <p className="apptdetail-section-label">Shënim (opsionale)</p>
+            <p className="apptdetail-section-label">{t('confirmBooking.noteLabel')}</p>
             <textarea
               className="input"
               rows={3}
               maxLength={1000}
-              placeholder="Diçka që klinika duhet ta dijë përpara vizitës..."
+              placeholder={t('confirmBooking.notePlaceholder')}
               value={note}
               onChange={(e) => setNote(e.target.value)}
               style={{ width: '100%', resize: 'vertical' }}
@@ -158,7 +167,7 @@ export default function ConfirmBookingPage() {
         <div className="card apptdetail-action">
           <div className="apptdetail-status-card">
             <p className="apptdetail-status-desc">
-              Duke klikuar "Konfirmo rezervimin" pranoni terminin e mësipërm. Klinika do të njoftohet automatikisht.
+              {t('confirmBooking.confirmNotice')}
             </p>
           </div>
 
@@ -177,17 +186,17 @@ export default function ConfirmBookingPage() {
           >
             {submitting ? (
               <>
-                <Pending /> Duke rezervuar…
+                <Pending /> {t('confirmBooking.submitting')}
               </>
             ) : (
               <>
-                <Check size={16} strokeWidth={1.5} /> Konfirmo rezervimin
+                <Check size={16} strokeWidth={1.5} /> {t('confirmBooking.confirmCta')}
               </>
             )}
           </button>
 
           <Link to={`/mjeku/${booking.doctorId}`} className="apptdetail-backlink">
-            <ChevronLeft size={14} strokeWidth={1.5} style={{ display: 'inline' }} /> Ndrysho zgjedhjen
+            <ChevronLeft size={14} strokeWidth={1.5} style={{ display: 'inline' }} /> {t('confirmBooking.changeSelection')}
           </Link>
         </div>
       </div>

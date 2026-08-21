@@ -86,3 +86,26 @@ public interface IAdminAppointmentService
     Task<DoctorAppointmentDto> RescheduleAsync(
         Guid appointmentId, AdminRescheduleAppointmentRequest request, CancellationToken cancellationToken = default);
 }
+
+/// <summary>
+/// Kërkimi dhe krijimi i pacientëve nga recepsioni — baza e rezervimit me telefon.
+/// Të dyja metodat auditohen: ekspozojnë të dhëna pacientësh te stafi i klinikës.
+/// </summary>
+public interface IAdminPatientService
+{
+    /// <summary>
+    /// Kërkon pacientë për të rezervuar në emër të tyre. Shtrirja varet nga forma e
+    /// query-t (email/telefon i plotë = global me detaje të reduktuara; emër = vetëm
+    /// pacientët e klinikave të mia). Kurrë nuk kthen PersonalNumber.
+    /// </summary>
+    Task<PagedResult<AdminPatientSearchResultDto>> SearchAsync(
+        AdminPatientSearchQuery query, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Krijon pacient për dikë që s'ka llogari. Llogaria krijohet pa password —
+    /// pacienti e merr në dorëzim vetë përmes rivendosjes së fjalëkalimit.
+    /// Hedh 409 nëse email-i ose telefoni ekziston tashmë.
+    /// </summary>
+    Task<AdminPatientDto> CreateAsync(
+        AdminCreatePatientRequest request, CancellationToken cancellationToken = default);
+}

@@ -12,28 +12,19 @@ import {
   Search,
   X,
 } from 'lucide-react'
-import { api, ApiError } from '../lib/api'
+import { useTranslation } from 'react-i18next'
+import { api } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
 import { AppointmentStatus } from '../lib/types'
 import type { Appointment } from '../lib/types'
 import { useToast } from '../context/ToastContext'
 import { Badge, Dropdown, EmptyState } from '../components/ui'
-import { formatTime, toDateInput } from '../lib/format'
+import { formatTime, monthName, toDateInput } from '../lib/format'
 
 const PAGE_SIZE = 10
 
-const MONTHS_ALB = ['JAN', 'SHK', 'MAR', 'PRI', 'MAJ', 'QER', 'KOR', 'GUS', 'SHT', 'TET', 'NËN', 'DHJ']
-
 type StatusFilter = 'all' | 'active' | 'completed' | 'cancelled'
 type DateRange = 'all' | 'today' | 'week' | 'month' | 'last3months' | 'year'
-
-const DATE_RANGE_OPTIONS: { value: DateRange; label: string }[] = [
-  { value: 'all', label: 'Të gjitha datat' },
-  { value: 'today', label: 'Sot' },
-  { value: 'week', label: 'Kjo javë' },
-  { value: 'month', label: 'Ky muaj' },
-  { value: 'last3months', label: '3 muajt e fundit' },
-  { value: 'year', label: 'Këtë vit' },
-]
 
 function parseLocal(iso: string): Date {
   const m = iso.match(/(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/)
@@ -73,28 +64,28 @@ function dateRangeToParams(range: DateRange): { dateFrom?: string; dateTo?: stri
   }
 }
 
-function statusBadge(status: AppointmentStatus) {
+function statusBadge(status: AppointmentStatus, t: (key: string) => string) {
   switch (status) {
     case AppointmentStatus.Pending:
-      return <Badge tone="warn">NË PRITJE</Badge>
+      return <Badge tone="warn">{t('appointmentsList.badges.pending')}</Badge>
     case AppointmentStatus.Confirmed:
-      return <Badge tone="primary">KONFIRMUAR</Badge>
+      return <Badge tone="primary">{t('appointmentsList.badges.confirmed')}</Badge>
     case AppointmentStatus.CheckedIn:
-      return <Badge tone="ok">MBËRRITUR</Badge>
+      return <Badge tone="ok">{t('appointmentsList.badges.checkedIn')}</Badge>
     case AppointmentStatus.InProgress:
-      return <span className="badge" style={{ background: '#ede9fe', color: '#7c3aed' }}>NË PROGRES</span>
+      return <span className="badge" style={{ background: '#ede9fe', color: '#7c3aed' }}>{t('appointmentsList.badges.inProgress')}</span>
     case AppointmentStatus.Completed:
-      return <Badge tone="ok">PËRFUNDUAR</Badge>
+      return <Badge tone="ok">{t('appointmentsList.badges.completed')}</Badge>
     case AppointmentStatus.CancelledByPatient:
-      return <Badge tone="danger">ANULUAR</Badge>
+      return <Badge tone="danger">{t('appointmentsList.badges.cancelledByPatient')}</Badge>
     case AppointmentStatus.CancelledByClinic:
-      return <Badge tone="danger">ANULUAR (KLINIKA)</Badge>
+      return <Badge tone="danger">{t('appointmentsList.badges.cancelledByClinic')}</Badge>
     case AppointmentStatus.NoShow:
-      return <Badge tone="muted">NUK U PARAQIT</Badge>
+      return <Badge tone="muted">{t('appointmentsList.badges.noShow')}</Badge>
     case AppointmentStatus.Rescheduled:
-      return <Badge tone="warn">RISCHEDULUAR</Badge>
+      return <Badge tone="warn">{t('appointmentsList.badges.rescheduled')}</Badge>
     default:
-      return <Badge tone="muted">I PANJOHUR</Badge>
+      return <Badge tone="muted">{t('appointmentsList.badges.unknown')}</Badge>
   }
 }
 
@@ -132,6 +123,16 @@ function SkeletonRows() {
 }
 
 export default function MyAppointmentsPage() {
+  const { t } = useTranslation('patient')
+  const { t: tCommon } = useTranslation('common')
+  const DATE_RANGE_OPTIONS: { value: DateRange; label: string }[] = [
+    { value: 'all', label: t('appointmentsList.dateRange.all') },
+    { value: 'today', label: t('appointmentsList.dateRange.today') },
+    { value: 'week', label: t('appointmentsList.dateRange.week') },
+    { value: 'month', label: t('appointmentsList.dateRange.month') },
+    { value: 'last3months', label: t('appointmentsList.dateRange.last3months') },
+    { value: 'year', label: t('appointmentsList.dateRange.year') },
+  ]
   const { notify } = useToast()
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
@@ -163,7 +164,7 @@ export default function MyAppointmentsPage() {
     api
       .getMyAppointments({ page: 1, pageSize: 100, dateFrom, dateTo })
       .then((r) => setAppointments(r.items))
-      .catch((e) => setError(e instanceof ApiError ? e.message : 'Ndodhi një gabim.'))
+      .catch((e) => setError(getErrorMessage(e)))
       .finally(() => setLoading(false))
   }, [dateRange])
 
@@ -207,10 +208,10 @@ export default function MyAppointmentsPage() {
     setCancellingId(id)
     setAppointments((prev) => prev.map((a) => (a.id === id ? { ...a, status: AppointmentStatus.CancelledByPatient } : a)))
     try {
-      await api.cancelAppointment(id, 'Anuluar nga pacienti')
-      notify('Termini u anulua.', 'error')
+      await api.cancelAppointment(id, t('appointmentsList.cancelReasonDefault'))
+      notify(t('appointmentsList.cancelledToast'), 'ok')
     } catch (e) {
-      notify(e instanceof ApiError ? e.message : 'Anulimi dështoi.', 'error')
+      notify(getErrorMessage(e, { default: t('appointmentsList.cancelFailedToast') }), 'error')
       load()
     } finally {
       setCancellingId('')
@@ -222,11 +223,11 @@ export default function MyAppointmentsPage() {
     <>
       <div className="appts-header">
         <div>
-          <h1>Terminet e mia</h1>
-          <p className="appts-header__sub">Shikoni dhe menaxhoni të gjitha terminet tuaja në një vend.</p>
+          <h1>{t('appointmentsList.title')}</h1>
+          <p className="appts-header__sub">{t('appointmentsList.subtitle')}</p>
         </div>
         <Link to="/kerko" className="btn btn--primary">
-          Rezervo termin të ri <ArrowRight size={16} strokeWidth={1.5} />
+          {t('appointmentsList.newAppointmentCta')} <ArrowRight size={16} strokeWidth={1.5} />
         </Link>
       </div>
 
@@ -237,7 +238,7 @@ export default function MyAppointmentsPage() {
           </div>
           <div>
             <div className="stat-card__count" style={{ color: 'var(--primary)' }}>{stats.active}</div>
-            <div className="stat-card__label">Aktive</div>
+            <div className="stat-card__label">{t('appointmentsList.statsActive')}</div>
           </div>
         </div>
         <div className="stat-card">
@@ -246,7 +247,7 @@ export default function MyAppointmentsPage() {
           </div>
           <div>
             <div className="stat-card__count" style={{ color: 'var(--ok)' }}>{stats.completed}</div>
-            <div className="stat-card__label">Përfunduar</div>
+            <div className="stat-card__label">{t('appointmentsList.statsCompleted')}</div>
           </div>
         </div>
         <div className="stat-card">
@@ -255,7 +256,7 @@ export default function MyAppointmentsPage() {
           </div>
           <div>
             <div className="stat-card__count" style={{ color: 'var(--warn)' }}>{stats.pending}</div>
-            <div className="stat-card__label">Në pritje</div>
+            <div className="stat-card__label">{t('appointmentsList.statsPending')}</div>
           </div>
         </div>
         <div className="stat-card">
@@ -264,24 +265,24 @@ export default function MyAppointmentsPage() {
           </div>
           <div>
             <div className="stat-card__count" style={{ color: 'var(--danger)' }}>{stats.cancelled}</div>
-            <div className="stat-card__label">Anuluara</div>
+            <div className="stat-card__label">{t('appointmentsList.statsCancelled')}</div>
           </div>
         </div>
       </div>
 
       <div className="appts-filter-row">
         <div className="status-tabs">
-          <button className={`status-tab ${statusFilter === 'all' ? 'is-active' : ''}`} onClick={() => setStatusFilter('all')}>Të gjitha</button>
-          <button className={`status-tab ${statusFilter === 'active' ? 'is-active' : ''}`} onClick={() => setStatusFilter('active')}>Aktive</button>
-          <button className={`status-tab ${statusFilter === 'completed' ? 'is-active' : ''}`} onClick={() => setStatusFilter('completed')}>Përfunduar</button>
-          <button className={`status-tab ${statusFilter === 'cancelled' ? 'is-active' : ''}`} onClick={() => setStatusFilter('cancelled')}>Anuluara</button>
+          <button className={`status-tab ${statusFilter === 'all' ? 'is-active' : ''}`} onClick={() => setStatusFilter('all')}>{t('appointmentsList.filterAll')}</button>
+          <button className={`status-tab ${statusFilter === 'active' ? 'is-active' : ''}`} onClick={() => setStatusFilter('active')}>{t('appointmentsList.filterActive')}</button>
+          <button className={`status-tab ${statusFilter === 'completed' ? 'is-active' : ''}`} onClick={() => setStatusFilter('completed')}>{t('appointmentsList.filterCompleted')}</button>
+          <button className={`status-tab ${statusFilter === 'cancelled' ? 'is-active' : ''}`} onClick={() => setStatusFilter('cancelled')}>{t('appointmentsList.filterCancelled')}</button>
         </div>
 
         <div className="appts-search">
           <Search size={16} strokeWidth={1.5} aria-hidden />
           <input
             type="search"
-            placeholder="Kërko sipas mjekut..."
+            placeholder={t('appointmentsList.searchPlaceholder')}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
           />
@@ -301,16 +302,16 @@ export default function MyAppointmentsPage() {
         ) : error ? (
           <EmptyState
             icon={AlertCircle}
-            title="Ndodhi një gabim"
+            title={t('appointmentsList.errorTitle')}
             hint={error}
             action={
               <button type="button" className="btn btn--primary btn--sm" onClick={load}>
-                Provo përsëri
+                {tCommon('buttons.retry')}
               </button>
             }
           />
         ) : filtered.length === 0 ? (
-          <EmptyState icon={Calendar} title="Nuk keni termine" hint="Rezervoni terminin tuaj të parë tani." />
+          <EmptyState icon={Calendar} title={t('appointmentsList.noAppointmentsTitle')} hint={t('appointmentsList.noAppointmentsHint')} />
         ) : (
           <>
             {pageItems.map((a) => {
@@ -321,7 +322,7 @@ export default function MyAppointmentsPage() {
                 <div className="appt-row" key={a.id} data-reveal>
                   <div className="appt-row__date">
                     <div className="appt-row__day">{d.getDate()}</div>
-                    <div className="appt-row__month">{MONTHS_ALB[d.getMonth()]}</div>
+                    <div className="appt-row__month">{monthName(d.getMonth(), 'short').toUpperCase()}</div>
                     <div className="appt-row__year">{d.getFullYear()}</div>
                   </div>
 
@@ -338,13 +339,13 @@ export default function MyAppointmentsPage() {
                     </div>
                     {confirmingCancelId === a.id && (
                       <div className="appt-row__cancel-confirm">
-                        <span>Jeni i sigurt?</span>
+                        <span>{t('appointmentsList.confirmCancelPrompt')}</span>
                         <button
                           type="button"
                           style={{ background: 'none', border: 'none', color: 'var(--danger)', textDecoration: 'underline', cursor: 'pointer' }}
                           onClick={() => setConfirmingCancelId('')}
                         >
-                          Anulo
+                          {tCommon('appointment.actions.cancel')}
                         </button>
                         <button
                           className="btn btn--sm"
@@ -352,27 +353,27 @@ export default function MyAppointmentsPage() {
                           disabled={cancellingId === a.id}
                           onClick={() => confirmCancel(a.id)}
                         >
-                          {cancellingId === a.id ? 'Duke anuluar…' : 'Po, anulo'}
+                          {cancellingId === a.id ? t('appointmentsList.cancelling') : t('appointmentsList.confirmCancelYes')}
                         </button>
                       </div>
                     )}
                   </div>
 
                   <div className="appt-row__side">
-                    {statusBadge(a.status)}
+                    {statusBadge(a.status, t)}
                     <div className="appt-row__actions">
-                      <Link to={`/terminet/${a.id}`} className="btn btn--ghost btn--sm">Shiko detajet</Link>
+                      <Link to={`/terminet/${a.id}`} className="btn btn--ghost btn--sm">{t('appointmentsList.viewDetails')}</Link>
                       {showCancel && confirmingCancelId !== a.id && (
                         <button
                           type="button"
                           className="btn btn--sm btn--danger-outline"
                           onClick={() => setConfirmingCancelId(a.id)}
                         >
-                          Anulo
+                          {tCommon('appointment.actions.cancel')}
                         </button>
                       )}
                     </div>
-                    {showNote && <span className="appt-row__note">Anulimi jo i mundur (&lt; 12 orë)</span>}
+                    {showNote && <span className="appt-row__note">{t('appointmentsList.cancelWindowNote')}</span>}
                   </div>
                 </div>
               )

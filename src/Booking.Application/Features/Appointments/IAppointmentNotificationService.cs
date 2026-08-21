@@ -4,7 +4,11 @@ namespace Booking.Application.Features.Appointments;
 public sealed record AppointmentNotificationContext
 {
     public required Guid AppointmentId { get; init; }
-    public required string PatientEmail { get; init; }
+    /// <summary>
+    /// Null për pacientët e krijuar nga administrata që s'kanë dhënë email
+    /// (rezervim me telefon) — atyre u shkon vetëm SMS.
+    /// </summary>
+    public string? PatientEmail { get; init; }
     public string? PatientPhoneNumber { get; init; }
     public required string PatientName { get; init; }
     public required string DoctorName { get; init; }

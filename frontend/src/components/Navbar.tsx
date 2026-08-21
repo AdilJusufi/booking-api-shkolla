@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { Moon, Sun } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import Logo from './Logo'
 
 export default function Navbar() {
+  const { t } = useTranslation('common')
   const { isAuthenticated, user, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const [open, setOpen] = useState(false)
@@ -22,12 +24,12 @@ export default function Navbar() {
       <div className="navbar__inner container">
         <Link to="/" className="brand" onClick={() => setOpen(false)}>
           <span className="brand__mark" aria-hidden><Logo size={22} /></span>
-          <span className="brand__name">Termini<span className="brand__tld">.ks</span></span>
+          <span className="brand__name">{t('brand.name')}<span className="brand__tld">{t('brand.tld')}</span></span>
         </Link>
 
         <button
           className="navbar__burger"
-          aria-label="Menyja"
+          aria-label={t('nav.menu')}
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
         >
@@ -35,23 +37,23 @@ export default function Navbar() {
         </button>
 
         <nav className={`navbar__links ${open ? 'is-open' : ''}`} onClick={() => setOpen(false)}>
-          <NavLink to="/kerko" className="navlink">Gjej mjekun</NavLink>
+          <NavLink to="/kerko" className="navlink">{t('nav.findDoctor')}</NavLink>
           {isAuthenticated ? (
             <>
-              <NavLink to="/terminet" className="navlink">Terminet e mia</NavLink>
-              <span className="navbar__user">Përshëndetje, {user?.firstName}</span>
-              <button className="btn btn--ghost" onClick={handleLogout}>Dil</button>
+              <NavLink to="/terminet" className="navlink">{t('nav.myAppointments')}</NavLink>
+              <span className="navbar__user">{t('nav.greeting', { firstName: user?.firstName })}</span>
+              <button className="btn btn--ghost" onClick={handleLogout}>{t('nav.logout')}</button>
             </>
           ) : (
             <>
-              <NavLink to="/hyr" className="navlink">Hyr</NavLink>
-              <Link to="/regjistrohu" className="btn btn--primary">Regjistrohu</Link>
+              <NavLink to="/hyr" className="navlink">{t('nav.login')}</NavLink>
+              <Link to="/regjistrohu" className="btn btn--primary">{t('nav.register')}</Link>
             </>
           )}
           <button
             className="theme-toggle"
             type="button"
-            aria-label={theme === 'dark' ? 'Kalo në temën e çelët' : 'Kalo në temën e errët'}
+            aria-label={theme === 'dark' ? t('theme.switchToLight') : t('theme.switchToDark')}
             onClick={(e) => { e.stopPropagation(); toggleTheme() }}
           >
             {theme === 'dark' ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}

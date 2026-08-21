@@ -1,16 +1,12 @@
 import { Link, NavLink, Outlet, useMatch } from 'react-router-dom'
 import { Bell, CalendarDays, CalendarOff, Clock, Moon, Search, Sun } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { DoctorSearchProvider, useDoctorSearch } from '../context/DoctorSearchContext'
 import { initials } from './ui'
 import Logo from './Logo'
-
-const NAV_ITEMS = [
-  { to: '/mjeku-panel/kalendari', icon: CalendarDays, label: 'Kalendari' },
-  { to: '/mjeku-panel/orari', icon: Clock, label: 'Orari' },
-  { to: '/mjeku-panel/mungesat', icon: CalendarOff, label: 'Mungesat' },
-]
+import UserMenu from './UserMenu'
 
 export default function DoctorLayout() {
   return (
@@ -21,6 +17,13 @@ export default function DoctorLayout() {
 }
 
 function DoctorLayoutInner() {
+  const { t } = useTranslation('doctor')
+  const { t: tCommon } = useTranslation('common')
+  const NAV_ITEMS = [
+    { to: '/mjeku-panel/kalendari', icon: CalendarDays, label: t('layout.navCalendar') },
+    { to: '/mjeku-panel/orari', icon: Clock, label: t('layout.navSchedule') },
+    { to: '/mjeku-panel/mungesat', icon: CalendarOff, label: t('layout.navUnavailability') },
+  ]
   const { user } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const { searchTerm, setSearchTerm } = useDoctorSearch()
@@ -33,13 +36,13 @@ function DoctorLayoutInner() {
       <header className="patient-topbar">
         <Link to="/" className="brand">
           <span className="brand__mark" aria-hidden><Logo size={22} /></span>
-          <span className="brand__name">Termini<span className="brand__tld">.ks</span></span>
+          <span className="brand__name">{tCommon('brand.name')}<span className="brand__tld">{tCommon('brand.tld')}</span></span>
         </Link>
 
         <div className="doctor-topbar__search">
           <Search size={15} strokeWidth={1.5} color="var(--muted)" />
           <input
-            placeholder="Kërko pacient..."
+            placeholder={t('layout.searchPatientPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -49,21 +52,20 @@ function DoctorLayoutInner() {
           <button
             type="button"
             className="theme-toggle"
-            aria-label={theme === 'dark' ? 'Kalo në temën e çelët' : 'Kalo në temën e errët'}
+            aria-label={theme === 'dark' ? tCommon('theme.switchToLight') : tCommon('theme.switchToDark')}
             onClick={toggleTheme}
           >
             {theme === 'dark' ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}
           </button>
           <Bell size={20} strokeWidth={1.5} color="var(--muted)" />
-          <span className="doctor-topbar__name">Dr. {user?.firstName} {user?.lastName}</span>
-          <span className="patient-avatar" aria-hidden>{userInitials}</span>
+          <UserMenu />
         </div>
       </header>
 
       <div className="doctor-breadcrumb">
-        <span>Paneli</span>
+        <span>{t('layout.breadcrumbPanel')}</span>
         <span>›</span>
-        <span>{isSchedule ? 'Orari i punës' : isCalendar ? 'Kalendari' : 'Paneli'}</span>
+        <span>{isSchedule ? t('layout.breadcrumbSchedule') : isCalendar ? t('layout.navCalendar') : t('layout.breadcrumbPanel')}</span>
       </div>
 
       <div className="patient-body">
@@ -84,7 +86,7 @@ function DoctorLayoutInner() {
           <button
             type="button"
             className="theme-toggle theme-toggle--on-dark"
-            aria-label={theme === 'dark' ? 'Kalo në temën e çelët' : 'Kalo në temën e errët'}
+            aria-label={theme === 'dark' ? tCommon('theme.switchToLight') : tCommon('theme.switchToDark')}
             onClick={toggleTheme}
           >
             {theme === 'dark' ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}

@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { Eye, EyeOff, Lock, RotateCcw, ShieldCheck } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { api, ApiError } from '../lib/api'
+import { getChangePasswordWrongCurrentMessage, getErrorMessage, isWrongCurrentPasswordError } from '../lib/errors'
+import { useCooldown } from '../lib/useCooldown'
 import { useToast } from '../context/ToastContext'
 import { ErrorBox, Pending } from '../components/ui'
 
 // Same palette as ResetPasswordPage's strength meter — danger -> warn -> accent -> ok.
 const STRENGTH_COLORS = ['#a83226', '#8a6212', '#0f6e62', '#14795a']
-const STRENGTH_LABELS = ['Dobët', 'Mesatar', 'Mirë', 'Shumë mirë']
 
 function strengthScore(password: string): number {
   let score = 0
@@ -24,6 +26,8 @@ function meetsPolicy(password: string): boolean {
 const EMPTY_FORM = { currentPassword: '', newPassword: '', confirmPassword: '' }
 
 export default function ChangePasswordPage() {
+  const { t } = useTranslation('auth')
+  const STRENGTH_LABELS = t('passwordStrength.labels', { returnObjects: true }) as string[]
   const { notify } = useToast()
 
   const [form, setForm] = useState(EMPTY_FORM)
@@ -34,6 +38,7 @@ export default function ChangePasswordPage() {
   const [currentPasswordError, setCurrentPasswordError] = useState('')
   const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
+  const { secondsLeft, startCooldown } = useCooldown()
 
   const score = strengthScore(form.newPassword)
   const mismatch = form.confirmPassword.length > 0 && form.confirmPassword !== form.newPassword
@@ -49,25 +54,26 @@ export default function ChangePasswordPage() {
     setFormError('')
     setCurrentPasswordError('')
 
-    if (!form.currentPassword) return setFormError('Shkruani fjalëkalimin aktual.')
-    if (form.confirmPassword !== form.newPassword) return setFormError('Fjalëkalimet nuk përputhen.')
-    if (!meetsPolicy(form.newPassword)) return setFormError('Fjalëkalimi nuk plotëson kërkesat.')
+    if (!form.currentPassword) return setFormError(t('changePassword.missingCurrent'))
+    if (form.confirmPassword !== form.newPassword) return setFormError(t('fields.passwordMismatch'))
+    if (!meetsPolicy(form.newPassword)) return setFormError(t('changePassword.doesNotMeetPolicy'))
     if (form.newPassword === form.currentPassword) {
-      return setFormError('Fjalëkalimi i ri duhet të jetë i ndryshëm nga ai aktual.')
+      return setFormError(t('changePassword.samePassword'))
     }
 
     setSaving(true)
     try {
       await api.changePassword(form.currentPassword, form.newPassword)
-      notify('Fjalëkalimi u ndryshua me sukses. Sesionet e tjera janë çregjistruar.', 'ok')
+      notify(t('changePassword.successToast'), 'ok')
       setForm(EMPTY_FORM)
       setTouchedConfirm(false)
     } catch (err) {
-      if (err instanceof ApiError && (err.status === 400 || err.status === 401 || err.status === 422)) {
-        setCurrentPasswordError('Fjalëkalimi aktual është i gabuar.')
-      } else {
-        setFormError(err instanceof ApiError ? err.message : 'Gabim. Provoni përsëri.')
+      if (isWrongCurrentPasswordError(err)) {
+        setCurrentPasswordError(getChangePasswordWrongCurrentMessage())
+        return
       }
+      if (err instanceof ApiError && err.status === 429) startCooldown()
+      setFormError(getErrorMessage(err))
     } finally {
       setSaving(false)
     }
@@ -77,17 +83,17 @@ export default function ChangePasswordPage() {
     <div className="profile-page">
       <div className="card profile-form" style={{ maxWidth: 480 }}>
         <div className="profile-form__header">
-          <h2 className="profile-form__title">Ndrysho Fjalëkalimin</h2>
+          <h2 className="profile-form__title">{t('changePassword.title')}</h2>
         </div>
         <p className="auth-sub" style={{ marginTop: -8, marginBottom: 20 }}>
-          Pas ndryshimit, të gjitha sesionet e tjera do të çregjistrohen.
+          {t('changePassword.subtitle')}
         </p>
 
         <form onSubmit={handleSubmit} className="form">
           {formError && <ErrorBox message={formError} />}
 
           <div className="field field--icon">
-            <label>Fjalëkalimi aktual</label>
+            <label>{t('changePassword.currentLabel')}</label>
             <span className="field__icon" aria-hidden><Lock size={16} strokeWidth={1.5} /></span>
             <input
               type={showCurrent ? 'text' : 'password'}
@@ -98,7 +104,7 @@ export default function ChangePasswordPage() {
             <button
               type="button"
               className="field__toggle"
-              aria-label={showCurrent ? 'Fshih fjalëkalimin' : 'Shfaq fjalëkalimin'}
+              aria-label={showCurrent ? t('passwordToggle.hide') : t('passwordToggle.show')}
               onClick={() => setShowCurrent((v) => !v)}
             >
               {showCurrent ? <EyeOff size={16} strokeWidth={1.5} /> : <Eye size={16} strokeWidth={1.5} />}
@@ -107,7 +113,7 @@ export default function ChangePasswordPage() {
           </div>
 
           <div className="field field--icon">
-            <label>Fjalëkalimi i ri</label>
+            <label>{t('fields.newPassword.label')}</label>
             <span className="field__icon" aria-hidden><ShieldCheck size={16} strokeWidth={1.5} /></span>
             <input
               type={showNew ? 'text' : 'password'}
@@ -118,7 +124,7 @@ export default function ChangePasswordPage() {
             <button
               type="button"
               className="field__toggle"
-              aria-label={showNew ? 'Fshih fjalëkalimin' : 'Shfaq fjalëkalimin'}
+              aria-label={showNew ? t('passwordToggle.hide') : t('passwordToggle.show')}
               onClick={() => setShowNew((v) => !v)}
             >
               {showNew ? <EyeOff size={16} strokeWidth={1.5} /> : <Eye size={16} strokeWidth={1.5} />}
@@ -143,7 +149,7 @@ export default function ChangePasswordPage() {
           </div>
 
           <div className="field field--icon">
-            <label>Konfirmo fjalëkalimin e ri</label>
+            <label>{t('fields.confirmPassword.label')}</label>
             <span className="field__icon" aria-hidden><RotateCcw size={16} strokeWidth={1.5} /></span>
             <input
               type={showConfirm ? 'text' : 'password'}
@@ -155,25 +161,27 @@ export default function ChangePasswordPage() {
             <button
               type="button"
               className="field__toggle"
-              aria-label={showConfirm ? 'Fshih fjalëkalimin' : 'Shfaq fjalëkalimin'}
+              aria-label={showConfirm ? t('passwordToggle.hide') : t('passwordToggle.show')}
               onClick={() => setShowConfirm((v) => !v)}
             >
               {showConfirm ? <EyeOff size={16} strokeWidth={1.5} /> : <Eye size={16} strokeWidth={1.5} />}
             </button>
-            {touchedConfirm && mismatch && <span className="field__error">Fjalëkalimet nuk përputhen.</span>}
+            {touchedConfirm && mismatch && <span className="field__error">{t('fields.passwordMismatch')}</span>}
           </div>
 
           <span className="field__note">
-            Minimumi 8 karaktere, të paktën një shkronjë e madhe, e vogël dhe një numër.
+            {t('changePassword.policyNote')}
           </span>
 
-          <button className="btn btn--primary" style={{ marginTop: 16, alignSelf: 'flex-start' }} disabled={saving}>
+          <button className="btn btn--primary" style={{ marginTop: 16, alignSelf: 'flex-start' }} disabled={saving || secondsLeft > 0}>
             {saving ? (
               <>
-                <Pending /> Duke ndryshuar…
+                <Pending /> {t('changePassword.submitting')}
               </>
+            ) : secondsLeft > 0 ? (
+              t('common.retryCountdown', { seconds: secondsLeft })
             ) : (
-              'Ndrysho Fjalëkalimin'
+              t('changePassword.title')
             )}
           </button>
         </form>

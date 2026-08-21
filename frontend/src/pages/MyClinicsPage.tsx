@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Building2, Clock, Lock, MapPin, Plus, RotateCw } from 'lucide-react'
-import { api, ApiError } from '../lib/api'
+import { Trans, useTranslation } from 'react-i18next'
+import { api } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
 import type { AdminClinic, ClinicBranch, Doctor, MedicalService } from '../lib/types'
 import { useToast } from '../context/ToastContext'
 import { ErrorBox, initials } from '../components/ui'
@@ -23,6 +25,7 @@ function ClinicCardSkeleton() {
 }
 
 export default function MyClinicsPage() {
+  const { t } = useTranslation('admin')
   const revealRef = useReveal()
   const { notify } = useToast()
 
@@ -31,7 +34,7 @@ export default function MyClinicsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  useEffect(() => {
+  const load = useCallback(() => {
     let active = true
     setLoading(true)
     setError('')
@@ -65,17 +68,19 @@ export default function MyClinicsPage() {
           })
         })
       })
-      .catch((e) => active && setError(e instanceof ApiError ? e.message : 'Ndodhi një gabim.'))
+      .catch((e) => active && setError(getErrorMessage(e)))
       .finally(() => active && setLoading(false))
     return () => {
       active = false
     }
   }, [])
 
+  useEffect(load, [load])
+
   const pendingClinics = useMemo(() => clinics.filter((c) => !c.isApproved), [clinics])
 
   function handleAddClinic() {
-    notify('Regjistrimi i klinikave të reja bëhet nga stafi i Termini.ks. Kontaktoni administratorin qendror.', 'info')
+    notify(t('myClinics.registerInfoToast'), 'info')
   }
 
   if (loading) {
@@ -83,8 +88,8 @@ export default function MyClinicsPage() {
       <>
         <div className="admin-header">
           <div>
-            <h1>Klinikat e mia</h1>
-            <p className="admin-header__sub">Zgjidhni klinikën për të menaxhuar stafin, oraret dhe pacientët.</p>
+            <h1>{t('myClinics.pageTitle')}</h1>
+            <p className="admin-header__sub">{t('myClinics.pageSubtitle')}</p>
           </div>
         </div>
         <div className="admin-grid">
@@ -99,11 +104,11 @@ export default function MyClinicsPage() {
       <>
         <div className="admin-header">
           <div>
-            <h1>Klinikat e mia</h1>
-            <p className="admin-header__sub">Zgjidhni klinikën për të menaxhuar stafin, oraret dhe pacientët.</p>
+            <h1>{t('myClinics.pageTitle')}</h1>
+            <p className="admin-header__sub">{t('myClinics.pageSubtitle')}</p>
           </div>
         </div>
-        <ErrorBox message={error} />
+        <ErrorBox message={error} onRetry={load} />
       </>
     )
   }
@@ -112,11 +117,11 @@ export default function MyClinicsPage() {
     <>
       <div className="admin-header">
         <div>
-          <h1>Klinikat e mia</h1>
-          <p className="admin-header__sub">Zgjidhni klinikën për të menaxhuar stafin, oraret dhe pacientët.</p>
+          <h1>{t('myClinics.pageTitle')}</h1>
+          <p className="admin-header__sub">{t('myClinics.pageSubtitle')}</p>
         </div>
         <button type="button" className="btn btn--primary" onClick={handleAddClinic}>
-          <Plus size={16} strokeWidth={1.5} /> Regjistro Klinikë të Re
+          <Plus size={16} strokeWidth={1.5} /> {t('myClinics.registerNewCta')}
         </button>
       </div>
 
@@ -124,9 +129,9 @@ export default function MyClinicsPage() {
         <div className="admin-pending-banner" key={c.id}>
           <Clock size={18} strokeWidth={1.5} />
           <div>
-            <div className="admin-pending-banner__title">Kërkesë në pritje</div>
+            <div className="admin-pending-banner__title">{t('myClinics.pendingBanner.title')}</div>
             <div className="admin-pending-banner__body">
-              Klinika "{c.name}" është duke u verifikuar nga stafi ynë. Disa funksione mund të jenë të kufizuara derisa të aprovohet.
+              <Trans i18nKey="myClinics.pendingBanner.body" ns="admin" values={{ name: c.name }} />
             </div>
           </div>
         </div>
@@ -135,8 +140,8 @@ export default function MyClinicsPage() {
       {clinics.length === 0 ? (
         <div className="admin-empty">
           <Building2 size={48} strokeWidth={1.5} color="var(--line)" />
-          <h3>Nuk keni asnjë klinikë të caktuar ende.</h3>
-          <p>Kontaktoni administratorin qendror të Termini.ks për t'ju caktuar një klinikë.</p>
+          <h3>{t('myClinics.emptyTitle')}</h3>
+          <p>{t('myClinics.emptyText')}</p>
         </div>
       ) : (
         <div className="admin-grid" ref={revealRef} data-reveal-root>
@@ -148,8 +153,8 @@ export default function MyClinicsPage() {
 
           <button type="button" className="admin-add-card" onClick={handleAddClinic} data-reveal>
             <Building2 size={28} strokeWidth={1.5} />
-            <span className="admin-add-card__title">Shto një klinikë tjetër</span>
-            <span className="admin-add-card__sub">Zgjero rrjetin tënd duke shtuar një lokacion të ri.</span>
+            <span className="admin-add-card__title">{t('myClinics.addAnotherTitle')}</span>
+            <span className="admin-add-card__sub">{t('myClinics.addAnotherSub')}</span>
           </button>
         </div>
       )}
@@ -158,6 +163,7 @@ export default function MyClinicsPage() {
 }
 
 function ClinicCard({ data }: { data: ClinicCardData }) {
+  const { t } = useTranslation('admin')
   const { clinic, address, city, branchCount, serviceCount, doctors, todayAppointmentCount } = data
   const isPending = !clinic.isApproved
   const shownDoctors = doctors.slice(0, 4)
@@ -166,7 +172,7 @@ function ClinicCard({ data }: { data: ClinicCardData }) {
   return (
     <div className="admin-card" data-reveal>
       <span className={`admin-card__status ${isPending ? 'admin-card__status--pending' : 'admin-card__status--approved'}`}>
-        {isPending ? 'NË PRITJE' : 'APROVUAR'}
+        {isPending ? t('myClinics.card.statusPending') : t('myClinics.card.statusApproved')}
       </span>
 
       <div className="admin-card__top">
@@ -183,19 +189,19 @@ function ClinicCard({ data }: { data: ClinicCardData }) {
 
       <div className="admin-card__stats">
         <div className="admin-card__stat">
-          <span className="admin-card__stat-label">Dega</span>
+          <span className="admin-card__stat-label">{t('myClinics.card.statBranches')}</span>
           <span className="admin-card__stat-value">{branchCount}</span>
         </div>
         <div className="admin-card__stat">
-          <span className="admin-card__stat-label">Mjekë</span>
+          <span className="admin-card__stat-label">{t('myClinics.card.statDoctors')}</span>
           <span className="admin-card__stat-value">{doctors.length}</span>
         </div>
         <div className="admin-card__stat">
-          <span className="admin-card__stat-label">Shërbime</span>
+          <span className="admin-card__stat-label">{t('myClinics.card.statServices')}</span>
           <span className="admin-card__stat-value">{serviceCount}</span>
         </div>
         <div className="admin-card__stat">
-          <span className="admin-card__stat-label">Sot</span>
+          <span className="admin-card__stat-label">{t('myClinics.card.statToday')}</span>
           <span className="admin-card__stat-value">{todayAppointmentCount}</span>
         </div>
       </div>
@@ -203,7 +209,7 @@ function ClinicCard({ data }: { data: ClinicCardData }) {
       <div className="admin-card__bottom">
         {isPending ? (
           <span className="admin-card__verifying">
-            <RotateCw size={13} strokeWidth={1.5} /> Verifikimi vazhdon...
+            <RotateCw size={13} strokeWidth={1.5} /> {t('myClinics.card.verifying')}
           </span>
         ) : (
           <div className="admin-card__avatars">
@@ -218,11 +224,11 @@ function ClinicCard({ data }: { data: ClinicCardData }) {
 
         {isPending ? (
           <span className="admin-card__manage admin-card__manage--disabled">
-            <Lock size={13} strokeWidth={1.5} /> Menaxho
+            <Lock size={13} strokeWidth={1.5} /> {t('myClinics.card.manageCta')}
           </span>
         ) : (
           <Link to={`/admin-panel/klinikat/${clinic.id}`} className="admin-card__manage">
-            Menaxho <ArrowRight size={14} strokeWidth={1.5} />
+            {t('myClinics.card.manageCta')} <ArrowRight size={14} strokeWidth={1.5} />
           </Link>
         )}
       </div>

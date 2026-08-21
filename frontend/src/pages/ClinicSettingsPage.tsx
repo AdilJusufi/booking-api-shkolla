@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react'
 import { Image, Loader2, Pencil, X } from 'lucide-react'
-import { api, ApiError } from '../lib/api'
+import { useTranslation } from 'react-i18next'
+import { api } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
 import type { UpdateClinicRequest } from '../lib/types'
 import { useToast } from '../context/ToastContext'
 import { useClinicContext } from '../components/ClinicDetailLayout'
@@ -41,6 +43,8 @@ interface FormState {
 }
 
 export default function ClinicSettingsPage() {
+  const { t } = useTranslation('admin')
+  const { t: tCommon } = useTranslation('common')
   const { clinic, refresh } = useClinicContext()
   const { notify } = useToast()
 
@@ -77,7 +81,7 @@ export default function ClinicSettingsPage() {
 
   async function handleSave() {
     if (form.name.trim().length < 2) {
-      setFormError('Emri i klinikës është i detyrueshëm.')
+      setFormError(t('settings.nameRequired'))
       return
     }
     setFormError('')
@@ -91,11 +95,11 @@ export default function ClinicSettingsPage() {
     }
     try {
       await api.updateClinic(clinic.id, payload)
-      notify('Ndryshimet u ruajtën.', 'ok')
+      notify(t('settings.savedToast'), 'ok')
       setIsEditing(false)
       refresh()
     } catch (e) {
-      setFormError(e instanceof ApiError ? e.message : 'Gabim. Provoni përsëri.')
+      setFormError(getErrorMessage(e))
     } finally {
       setSaving(false)
     }
@@ -105,10 +109,10 @@ export default function ClinicSettingsPage() {
     <div className="clinic-settings">
       <div className="admin-card clinic-settings__main">
         <div className="clinic-settings__card-head">
-          <h2>Informacioni Bazë</h2>
+          <h2>{t('settings.basicInfoTitle')}</h2>
           {!isEditing && (
             <button type="button" className="btn btn--ghost btn--sm" onClick={startEditing}>
-              <Pencil size={14} strokeWidth={1.5} /> Ndrysho
+              <Pencil size={14} strokeWidth={1.5} /> {t('settings.editCta')}
             </button>
           )}
         </div>
@@ -117,25 +121,25 @@ export default function ClinicSettingsPage() {
 
         <div className="clinic-settings__grid">
           <SettingsField
-            label="Emri i klinikës"
+            label={t('settings.nameLabel')}
             editing={isEditing}
             value={clinic.name}
             input={<input type="text" value={form.name} onChange={(e) => updateField('name', e.target.value)} />}
           />
           <SettingsField
-            label="Email-i i kontaktit"
+            label={t('settings.emailLabel')}
             editing={isEditing}
             value={clinic.email || '—'}
             input={<input type="email" value={form.email} onChange={(e) => updateField('email', e.target.value)} />}
           />
           <SettingsField
-            label="Telefoni"
+            label={t('settings.phoneLabel')}
             editing={isEditing}
             value={clinic.phoneNumber || '—'}
             input={<input type="tel" value={form.phoneNumber} onChange={(e) => updateField('phoneNumber', e.target.value)} />}
           />
           <SettingsField
-            label="Website"
+            label={t('settings.websiteLabel')}
             editing={isEditing}
             value={clinic.website || '—'}
             input={<input type="url" value={form.website} onChange={(e) => updateField('website', e.target.value)} />}
@@ -143,7 +147,7 @@ export default function ClinicSettingsPage() {
         </div>
 
         <SettingsField
-          label="Përshkrimi"
+          label={t('settings.descriptionLabel')}
           editing={isEditing}
           value={clinic.description || '—'}
           input={
@@ -154,34 +158,34 @@ export default function ClinicSettingsPage() {
         {isEditing && (
           <div className="clinic-settings__actions">
             <button type="button" className="btn btn--primary btn--sm" disabled={saving} onClick={handleSave}>
-              {saving ? 'Duke ruajtur…' : 'Ruaj'}
+              {saving ? t('settings.savingCta') : tCommon('buttons.save')}
             </button>
-            <button type="button" className="btn btn--ghost btn--sm" onClick={cancelEditing}>Anulo</button>
+            <button type="button" className="btn btn--ghost btn--sm" onClick={cancelEditing}>{tCommon('buttons.cancel')}</button>
           </div>
         )}
       </div>
 
       <div className="clinic-settings__side">
         <div className="admin-card">
-          <h2 className="clinic-settings__card-title">Branding</h2>
+          <h2 className="clinic-settings__card-title">{t('settings.brandingTitle')}</h2>
           <ClinicLogoUpload />
         </div>
 
         <div className="admin-card clinic-danger">
-          <h2 className="clinic-danger__title">Zona e rrezikut</h2>
+          <h2 className="clinic-danger__title">{t('settings.dangerZoneTitle')}</h2>
           <p className="clinic-danger__text">
-            Çaktivizimi i klinikës do të fshijë të gjitha të dhënat e pacientëve dhe mjekëve përgjithmonë.
+            {t('settings.dangerZoneText')}
           </p>
           <button
             type="button"
             className="clinic-danger__btn"
             disabled
-            title="Çaktivizimi kryhet vetëm nga stafi qendror i Termini.ks"
+            title={t('settings.deactivateBtnTitle')}
           >
-            Çaktivizo Klinikën
+            {t('settings.deactivateCta')}
           </button>
           <p className="clinic-danger__note">
-            Çaktivizimi kryhet vetëm nga stafi qendror i Termini.ks. Kontaktoni administratorin qendror.
+            {t('settings.deactivateNote')}
           </p>
         </div>
       </div>
@@ -191,6 +195,7 @@ export default function ClinicSettingsPage() {
 }
 
 function ClinicLogoUpload() {
+  const { t } = useTranslation('admin')
   const { clinic, refresh } = useClinicContext()
   const { notify } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -223,16 +228,16 @@ function ClinicLogoUpload() {
     if (!file) return
 
     if (!LOGO_ACCEPTED_TYPES.includes(file.type)) {
-      notify('Formati i skedarit nuk mbështetet. Përdorni PNG, JPEG, SVG ose WEBP.', 'error')
+      notify(t('settings.logo.unsupportedFormat'), 'error')
       return
     }
     if (file.size > LOGO_MAX_BYTES) {
-      notify('Skedari është shumë i madh. Madhësia maksimale është 2MB.', 'error')
+      notify(t('settings.logo.tooLarge'), 'error')
       return
     }
     const dimensions = await readImageDimensions(file)
     if (dimensions && (dimensions.width < LOGO_MIN_DIMENSION || dimensions.height < LOGO_MIN_DIMENSION)) {
-      notify(`Imazhi duhet të jetë së paku ${LOGO_MIN_DIMENSION}x${LOGO_MIN_DIMENSION}px.`, 'error')
+      notify(t('settings.logo.tooSmall', { size: LOGO_MIN_DIMENSION }), 'error')
       return
     }
 
@@ -258,10 +263,10 @@ function ClinicLogoUpload() {
       const uploaded = (await uploadRes.json()) as { secure_url: string }
 
       await api.updateClinic(clinic.id, currentClinicPayload({ logoUrl: uploaded.secure_url }))
-      notify('Logo u ngarkua me sukses.', 'ok')
+      notify(t('settings.logo.uploadedToast'), 'ok')
       refresh()
     } catch {
-      notify('Ngarkimi dështoi. Provoni përsëri.', 'error')
+      notify(t('settings.logo.uploadFailedToast'), 'error')
     } finally {
       URL.revokeObjectURL(localPreview)
       setPreview(null)
@@ -274,10 +279,10 @@ function ClinicLogoUpload() {
     setUploading(true)
     try {
       await api.updateClinic(clinic.id, currentClinicPayload({ logoUrl: undefined }))
-      notify('Logo u hoq.', 'ok')
+      notify(t('settings.logo.removedToast'), 'ok')
       refresh()
     } catch {
-      notify('Gabim. Provoni përsëri.', 'error')
+      notify(t('settings.logo.removeFailedToast'), 'error')
     } finally {
       setUploading(false)
     }
@@ -295,7 +300,7 @@ function ClinicLogoUpload() {
       <button type="button" className="clinic-upload" onClick={openFilePicker} disabled={uploading}>
         {displayUrl ? (
           <div className="clinic-upload__preview">
-            <img src={displayUrl} alt="Logo e klinikës" />
+            <img src={displayUrl} alt={t('settings.logo.logoAlt')} />
             {uploading && (
               <div className="clinic-upload__spinner">
                 <Loader2 size={22} strokeWidth={1.5} className="clinic-upload__spin" />
@@ -307,17 +312,17 @@ function ClinicLogoUpload() {
         ) : (
           <>
             <Image size={26} strokeWidth={1.5} />
-            <span>LOGO E KLINIKËS</span>
+            <span>{t('settings.logo.placeholder')}</span>
           </>
         )}
       </button>
       {clinic.logoUrl ? (
         <button type="button" className="btn btn--ghost btn--sm btn--block" onClick={handleRemove} disabled={uploading}>
-          <X size={14} strokeWidth={1.5} /> Hiq Logon
+          <X size={14} strokeWidth={1.5} /> {t('settings.logo.removeCta')}
         </button>
       ) : (
         <button type="button" className="btn btn--ghost btn--sm btn--block" onClick={openFilePicker} disabled={uploading}>
-          Ngarko Logon
+          {t('settings.logo.uploadCta')}
         </button>
       )}
     </>

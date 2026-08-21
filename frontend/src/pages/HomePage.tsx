@@ -27,10 +27,13 @@ import {
   type LucideProps,
 } from 'lucide-react'
 import type { ComponentType } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import type { Clinic, Doctor, Specialty } from '../lib/types'
 import { CustomSelect, initials, specialtyIcon, specialtyLabel } from '../components/ui'
 import type { CustomSelectOption } from '../components/ui'
+import { KOSOVO_CITIES } from '../lib/kosovoCities'
+import { formatNumber, weekdayName } from '../lib/format'
 import {
   useCountUp,
   useReveal,
@@ -39,112 +42,35 @@ import {
   useScrollProgress,
 } from '../lib/motion'
 
-const KOSOVO_CITIES = [
-  'Prishtinë', 'Prizren', 'Pejë', 'Gjakovë', 'Gjilan',
-  'Mitrovicë', 'Ferizaj', 'Vushtrri', 'Podujevë', 'Suharekë',
-]
+/* ---------- Hardcoded demo fallbacks (marketing page must never look empty) ----------
+ * Content (names, quotes, specialty labels) lives in patient.json's home.demo tree,
+ * keyed positionally — these arrays just carry the icon and structural shape that
+ * JSON can't. */
 
-const CITY_OPTIONS: CustomSelectOption[] = [
-  { value: '', label: 'Të gjitha qytetet' },
-  ...KOSOVO_CITIES.map((c) => ({ value: c, label: c })),
-]
+const DEMO_SPEC_ICONS: ComponentType<LucideProps>[] = [Heart, Baby, Brain, Bone, Scan, Venus, Eye, MessageCircleHeart]
+const DEMO_SPEC_KEYS = ['cardiology', 'pediatrics', 'neurology', 'orthopedics', 'dermatology', 'gynecology', 'ophthalmology', 'psychiatry'] as const
 
-/* ---------- Hardcoded demo fallbacks (marketing page must never look empty) ---------- */
+const DEMO_DOCTOR_EXPERIENCE = [12, 8, 15, 9, 17]
+const DEMO_CLINIC_DOCTOR_COUNTS = [42, 18, 11]
 
-type DemoSpec = { key: string; icon: ComponentType<LucideProps>; label: string }
-const DEMO_SPECS: DemoSpec[] = [
-  { key: 'Kardiologji', icon: Heart, label: 'Kardiologji' },
-  { key: 'Pediatri', icon: Baby, label: 'Pediatri' },
-  { key: 'Neurologji', icon: Brain, label: 'Neurologji' },
-  { key: 'Ortopedi', icon: Bone, label: 'Ortopedi' },
-  { key: 'Dermatologji', icon: Scan, label: 'Dermatologji' },
-  { key: 'Gjinekologji', icon: Venus, label: 'Gjinekologji' },
-  { key: 'Oftalmologji', icon: Eye, label: 'Oftalmologji' },
-  { key: 'Psikiatri', icon: MessageCircleHeart, label: 'Psikiatri' },
-]
-
-type DemoDoctor = { name: string; specialty: string; experience: number; next: string }
-const DEMO_DOCTORS: DemoDoctor[] = [
-  { name: 'Arben Vitia', specialty: 'Kardiologji', experience: 12, next: 'Sot, 14:30' },
-  { name: 'Linda Gashi', specialty: 'Pediatri', experience: 8, next: 'Sot, 16:00' },
-  { name: 'Besnik Ramadani', specialty: 'Neurologji', experience: 15, next: 'Nesër, 09:00' },
-  { name: 'Teuta Krasniqi', specialty: 'Dermatologji', experience: 9, next: 'Nesër, 11:30' },
-  { name: 'Driton Berisha', specialty: 'Ortopedi', experience: 17, next: 'E enjte, 08:30' },
-]
-
-type DemoClinic = { name: string; city: string; specialties: string[]; doctors: number }
-const DEMO_CLINICS: DemoClinic[] = [
-  { name: 'Spitali Amerikan', city: 'Prishtinë', specialties: ['Kardiologji', 'Pediatri', 'Neurologji'], doctors: 42 },
-  { name: 'Poliklinika Rilindja', city: 'Prishtinë', specialties: ['Ortopedi', 'Dermatologji'], doctors: 18 },
-  { name: 'Klinika Vita', city: 'Prizren', specialties: ['Gjinekologji', 'Pediatri'], doctors: 11 },
-]
-
-const STEPS = [
-  {
-    icon: Search,
-    title: 'Kërkoni',
-    text: 'Kërkoni sipas specializimit, emrit të mjekut ose klinikës. Filtroni sipas qytetit dhe disponueshmërisë.',
-  },
-  {
-    icon: CalendarDays,
-    title: 'Zgjidhni',
-    text: 'Shikoni oraret e lira në kohë reale dhe zgjidhni kohën që ju përshtatet më mirë.',
-  },
-  {
-    icon: BadgeCheck,
-    title: 'Konfirmoni',
-    text: 'Rezervimi juaj konfirmohet menjëherë. Klinika njoftohet automatikisht — pa thirrje telefonike.',
-  },
-]
-
-const STATS = [
-  { to: 120, suffix: '+', label: 'Mjekë të verifikuar' },
-  { to: 18, suffix: '', label: 'Klinika partnere' },
-  { to: 4200, suffix: '+', label: 'Termine të rezervuara' },
-  { to: 7, suffix: '', label: 'Qytete në Kosovë' },
-]
-
-const FEATURES = [
-  { icon: BadgeCheck, big: 'Verifikuar', label: 'Mjekë të licencuar e kontrolluar' },
-  { icon: Clock, big: '24/7', label: 'Rezervim online, edhe natën' },
-  { icon: HandHeart, big: 'Lehtë', label: 'Anuloni ose ricaktoni me një klik' },
-  { icon: MapPin, big: '7 qytete', label: 'Mbulim në gjithë Kosovën' },
-]
+const STEP_ICONS = [Search, CalendarDays, BadgeCheck]
 
 const MARQUEE_PARTNERS = [
   'Spitali Amerikan', 'Poliklinika Rilindja', 'Klinika Vita', 'Dental Art',
   'Medica Group', 'Bio Care', 'Klinika Sanus', 'Pediatria Lira',
 ]
 
-const TESTIMONIALS = [
-  {
-    quote:
-      'Kam rezervuar terminin te kardiologu në më pak se një minutë, në mbrëmje, pa telefonuar askënd. Konfirmimi erdhi menjëherë.',
-    name: 'Blerta Hoxha',
-    role: 'Pacient · Prishtinë',
-  },
-  {
-    quote:
-      'Si klinikë, kalendarin e kemi tani në një vend. Terminet e humbura na janë ulur ndjeshëm që kur kaluam te Termini.ks.',
-    name: 'Dr. Fatos Kelmendi',
-    role: 'Drejtor klinike · Prizren',
-  },
-]
-
 /* Hero headline punctuation — decorative, seeded so the URLs never break. */
 const INLINE_IMAGES = [
-  { seed: 'termini-clinic', alt: '' },
-  { seed: 'termini-care', alt: '' },
+  { seed: 'rezervo-clinic', alt: '' },
+  { seed: 'rezervo-care', alt: '' },
 ]
 
 const PANEL_SLOTS = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30']
-const PANEL_DAYS = [
-  { d: 'Hën', n: '12' },
-  { d: 'Mar', n: '13' },
-  { d: 'Mër', n: '14' },
-  { d: 'Enj', n: '15' },
-  { d: 'Pre', n: '16' },
-]
+// Decorative demo dates for the booking panel — Monday(1) through Friday(5)
+// in JS Date.getDay() terms, with the weekday label resolved via
+// weekdayName() at render time so it follows the active language.
+const PANEL_DAY_NUMBERS = ['12', '13', '14', '15', '16']
 
 function initialsFromName(name: string): string {
   const parts = name.trim().split(/\s+/)
@@ -152,12 +78,6 @@ function initialsFromName(name: string): string {
   const last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : ''
   return `${first}${last}`.toUpperCase()
 }
-
-const VerifiedBadge = () => (
-  <span className="lp-verified" title="I verifikuar">
-    <BadgeCheck size={15} strokeWidth={2} />
-  </span>
-)
 
 /** Splits a headline into per-word spans so the hero can cascade them in. */
 function SplitWords({ text, from = 0 }: { text: string; from?: number }) {
@@ -186,7 +106,7 @@ function Stat({ to, suffix, label }: { to: number; suffix: string; label: string
   return (
     <div className="lp-stat" data-reveal>
       <span className="lp-stat__value">
-        <span ref={ref}>{value.toLocaleString('sq')}</span>
+        <span ref={ref}>{formatNumber(value)}</span>
         {suffix}
       </span>
       <span className="lp-stat__label">{label}</span>
@@ -196,36 +116,37 @@ function Stat({ to, suffix, label }: { to: number; suffix: string; label: string
 
 /** The hero's proof object: one surface, no stacking, showing a real booking flow. */
 function BookingPanel() {
+  const { t } = useTranslation('patient')
   const activeSlot = useRotatingIndex(PANEL_SLOTS.length, 2600)
-  const activeDay = useRotatingIndex(PANEL_DAYS.length, 7800)
+  const activeDay = useRotatingIndex(PANEL_DAY_NUMBERS.length, 7800)
 
   return (
-    <aside className="lp-panel" data-reveal aria-label="Shembull i rezervimit">
+    <aside className="lp-panel" data-reveal aria-label={t('home.panel.ariaLabel')}>
       <header className="lp-panel__head">
         <span className="lp-panel__avatar">AG</span>
         <span className="lp-panel__who">
-          <strong>Dr. Arben Gashi</strong>
-          <span>Stomatologji · Prishtinë</span>
+          <strong>{t('home.panel.doctorName')}</strong>
+          <span>{t('home.panel.doctorSpecialty')}</span>
         </span>
         <span className="lp-panel__live">
-          <i className="lp-dot" aria-hidden /> I lirë
+          <i className="lp-dot" aria-hidden /> {t('home.panel.available')}
         </span>
       </header>
 
       <div className="lp-panel__days" role="presentation">
-        {PANEL_DAYS.map((day, i) => (
-          <span key={day.n} className={`lp-day ${i === activeDay ? 'is-on' : ''}`}>
-            <em>{day.d}</em>
-            <b>{day.n}</b>
+        {PANEL_DAY_NUMBERS.map((n, i) => (
+          <span key={n} className={`lp-day ${i === activeDay ? 'is-on' : ''}`}>
+            <em>{weekdayName(i + 1, 'short')}</em>
+            <b>{n}</b>
           </span>
         ))}
       </div>
 
       <div className="lp-panel__slots">
         <div className="lp-panel__row">
-          <span className="lp-panel__label">Oraret e lira</span>
+          <span className="lp-panel__label">{t('home.panel.freeSlotsLabel')}</span>
           <span className="lp-panel__count">
-            {PANEL_SLOTS.length} terme
+            {t('home.panel.slotCount', { count: PANEL_SLOTS.length })}
           </span>
         </div>
         <div className="lp-slots">
@@ -238,7 +159,7 @@ function BookingPanel() {
       </div>
 
       <Link to="/kerko" className="lp-btn lp-btn--accent lp-btn--block">
-        Konfirmo terminin
+        {t('home.panel.confirmCta')}
       </Link>
 
       <footer className="lp-panel__foot">
@@ -248,13 +169,23 @@ function BookingPanel() {
           ))}
         </span>
         <strong>4.9</strong>
-        <span className="lp-panel__reviews">nga 640 pacientë</span>
+        <span className="lp-panel__reviews">{t('home.panel.reviewCount')}</span>
       </footer>
     </aside>
   )
 }
 
+function VerifiedBadge({ title }: { title: string }) {
+  return (
+    <span className="lp-verified" title={title}>
+      <BadgeCheck size={15} strokeWidth={2} />
+    </span>
+  )
+}
+
 export default function HomePage() {
+  const { t } = useTranslation('patient')
+  const { t: tCommon } = useTranslation('common')
   const navigate = useNavigate()
   const [specialties, setSpecialties] = useState<Specialty[]>([])
   const [doctors, setDoctors] = useState<Doctor[]>([])
@@ -287,17 +218,56 @@ export default function HomePage() {
   const hasClinics = clinics.length > 0
   const hasSpecs = specialties.length > 0
 
+  const CITY_OPTIONS: CustomSelectOption[] = [
+    { value: '', label: t('home.allCities') },
+    ...KOSOVO_CITIES.map(({ key, value }) => ({ value, label: tCommon(`cities.${key}`) })),
+  ]
+
   const specialtyOptions = useMemo<CustomSelectOption[]>(
     () => [
-      { value: '', label: 'Të gjitha specialitetet' },
+      { value: '', label: t('home.allSpecialties') },
       ...specialties.map((s) => ({ value: s.id, label: specialtyLabel(s.name) })),
     ],
-    [specialties],
+    [specialties, t],
   )
 
   const shownDoctors = hasDoctors ? doctors.slice(0, 6) : []
   const shownClinics = hasClinics ? clinics.slice(0, 3) : []
   const shownSpecs = hasSpecs ? specialties.slice(0, 8) : []
+
+  const STATS = [
+    { to: 120, suffix: '+', label: t('home.stats.verifiedDoctors') },
+    { to: 18, suffix: '', label: t('home.stats.partnerClinics') },
+    { to: 4200, suffix: '+', label: t('home.stats.bookedAppointments') },
+    { to: 7, suffix: '', label: t('home.stats.citiesInKosovo') },
+  ]
+
+  const STEPS = [
+    { icon: STEP_ICONS[0], title: t('home.howItWorks.step1Title'), text: t('home.howItWorks.step1Text') },
+    { icon: STEP_ICONS[1], title: t('home.howItWorks.step2Title'), text: t('home.howItWorks.step2Text') },
+    { icon: STEP_ICONS[2], title: t('home.howItWorks.step3Title'), text: t('home.howItWorks.step3Text') },
+  ]
+
+  const FEATURES = [
+    { icon: BadgeCheck, big: t('home.features.verifiedBig'), label: t('home.features.verifiedLabel') },
+    { icon: Clock, big: t('home.features.hoursBig'), label: t('home.features.hoursLabel') },
+    { icon: HandHeart, big: t('home.features.easyBig'), label: t('home.features.easyLabel') },
+    { icon: MapPin, big: t('home.features.coverageBig'), label: t('home.features.coverageLabel') },
+  ]
+
+  const DEMO_SPECS = DEMO_SPEC_KEYS.map((key, i) => ({
+    key,
+    icon: DEMO_SPEC_ICONS[i],
+    label: t(`home.demo.specialties.${key}`),
+  }))
+
+  const demoDoctorNames = t('home.demo.doctors', { returnObjects: true }) as { name: string; specialty: string; next: string }[]
+  const DEMO_DOCTORS = demoDoctorNames.map((d, i) => ({ ...d, experience: DEMO_DOCTOR_EXPERIENCE[i] }))
+
+  const demoClinicsRaw = t('home.demo.clinics', { returnObjects: true }) as { name: string; city: string; specialties: string[] }[]
+  const DEMO_CLINICS = demoClinicsRaw.map((c, i) => ({ ...c, doctors: DEMO_CLINIC_DOCTOR_COUNTS[i] }))
+
+  const TESTIMONIALS = t('home.demo.testimonials', { returnObjects: true }) as { quote: string; name: string; role: string }[]
 
   return (
     <div className="lp" ref={pageRef}>
@@ -310,18 +280,16 @@ export default function HomePage() {
         <div className="container lp-hero__inner">
           <div className="lp-hero__content">
             <span className="lp-eyebrow" data-reveal>
-              <i className="lp-dot" aria-hidden /> 18 klinika · 120+ mjekë · Kosovë
+              <i className="lp-dot" aria-hidden /> {t('home.eyebrow')}
             </span>
 
             <h1 className="lp-hero__title">
-              <SplitWords text="Gjeni mjekun" />
-              <InlineImage {...INLINE_IMAGES[0]} index={2} />
-              <SplitWords text="e duhur." from={3} />
+              <SplitWords text={t('home.heroLine1')} />
+              <SplitWords text={t('home.heroLine2')} from={3} />
               <span className="lp-word lp-word--accent" style={{ ['--w' as string]: 5 }}>
-                Rezervoni
+                {t('home.heroAccent')}
               </span>
-              <InlineImage {...INLINE_IMAGES[1]} index={6} />
-              <SplitWords text="në sekonda." from={7} />
+              <SplitWords text={t('home.heroLine3')} from={7} />
             </h1>
 
             <div className="lp-hero__strip" aria-hidden>
@@ -336,14 +304,13 @@ export default function HomePage() {
             </div>
 
             <p className="lp-hero__lead" data-reveal>
-              Termini.ks ju lidh me mjekë dhe klinika të verifikuara në Kosovë —
-              pa pritje, pa telefonata.
+              {t('home.heroLead')}
             </p>
 
             <form className="lp-search" onSubmit={handleSearch} data-reveal>
               <div className="lp-search__field">
                 <CustomSelect
-                  label="Qyteti"
+                  label={t('home.cityLabel')}
                   options={CITY_OPTIONS}
                   value={city}
                   onChange={setCity}
@@ -354,7 +321,7 @@ export default function HomePage() {
               <span className="lp-search__divider" aria-hidden />
               <div className="lp-search__field">
                 <CustomSelect
-                  label="Specialiteti"
+                  label={t('home.specialtyLabel')}
                   options={specialtyOptions}
                   value={specialtyId}
                   onChange={setSpecialtyId}
@@ -364,14 +331,14 @@ export default function HomePage() {
                 />
               </div>
               <button type="submit" className="lp-btn lp-btn--accent lp-search__submit">
-                <Search size={16} strokeWidth={2.25} /> Kërko
+                <Search size={16} strokeWidth={2.25} /> {t('home.searchCta')}
               </button>
             </form>
 
             <ul className="lp-hero__trust" data-reveal>
-              <li><Check size={15} strokeWidth={2.5} /> Pa pagesë për pacientët</li>
-              <li><Check size={15} strokeWidth={2.5} /> Mjekë të verifikuar</li>
-              <li><Lock size={15} strokeWidth={2.5} /> Të dhëna të enkriptuara</li>
+              <li><Check size={15} strokeWidth={2.5} /> {t('home.trustFree')}</li>
+              <li><Check size={15} strokeWidth={2.5} /> {t('home.trustVerified')}</li>
+              <li><Lock size={15} strokeWidth={2.5} /> {t('home.trustEncrypted')}</li>
             </ul>
           </div>
 
@@ -402,12 +369,12 @@ export default function HomePage() {
       <section className="lp-section container">
         <div className="lp-head lp-head--row">
           <div data-reveal>
-            <span className="lp-kicker">Specialitetet</span>
-            <h2>Specializimet më të kërkuara</h2>
-            <p>Nga kardiologjia te pediatria — gjeni ekspertin që ju nevojitet.</p>
+            <span className="lp-kicker">{t('home.specialtiesSection.kicker')}</span>
+            <h2>{t('home.specialtiesSection.title')}</h2>
+            <p>{t('home.specialtiesSection.subtitle')}</p>
           </div>
           <Link to="/kerko" className="lp-link" data-reveal>
-            Shih të gjitha <ChevronRight size={16} strokeWidth={2.25} />
+            {t('home.specialtiesSection.seeAll')} <ChevronRight size={16} strokeWidth={2.25} />
           </Link>
         </div>
 
@@ -435,7 +402,7 @@ export default function HomePage() {
             >
               <span className="lp-bento__icon"><Icon size={22} strokeWidth={1.6} /></span>
               <span className="lp-bento__name">{label}</span>
-              <span className="lp-bento__meta">Orare të lira</span>
+              <span className="lp-bento__meta">{t('home.specialtiesSection.freeSlotsMeta')}</span>
               <ArrowUpRight className="lp-bento__arrow" size={16} strokeWidth={2.25} />
             </button>
           ))}
@@ -447,14 +414,11 @@ export default function HomePage() {
         <div className="container lp-how">
           <div className="lp-how__aside">
             <div className="lp-how__sticky">
-              <span className="lp-kicker" data-reveal>Procesi</span>
-              <h2 data-reveal>Si funksionon Termini.ks?</h2>
-              <p data-reveal>
-                Tre hapa të thjeshtë deri te mjeku juaj — pa telefonata, pa pritje
-                në sportel, pa letra.
-              </p>
+              <span className="lp-kicker" data-reveal>{t('home.howItWorks.kicker')}</span>
+              <h2 data-reveal>{t('home.howItWorks.title')}</h2>
+              <p data-reveal>{t('home.howItWorks.subtitle')}</p>
               <Link to="/kerko" className="lp-btn lp-btn--accent lp-how__cta" data-reveal>
-                Fillo tani <ArrowRight size={16} strokeWidth={2.25} />
+                {t('home.howItWorks.cta')} <ArrowRight size={16} strokeWidth={2.25} />
               </Link>
             </div>
           </div>
@@ -480,12 +444,12 @@ export default function HomePage() {
       <section className="lp-section">
         <div className="container lp-head lp-head--row">
           <div data-reveal>
-            <span className="lp-kicker">Mjekët</span>
-            <h2>Mjekë të Verifikuar</h2>
-            <p>Të gjithë mjekët janë të licensuar dhe të verifikuar para se të shtohen në platformë.</p>
+            <span className="lp-kicker">{t('home.doctorsSection.kicker')}</span>
+            <h2>{t('home.doctorsSection.title')}</h2>
+            <p>{t('home.doctorsSection.subtitle')}</p>
           </div>
           <Link to="/kerko?tab=mjeket" className="lp-link" data-reveal>
-            Të gjithë mjekët <ChevronRight size={16} strokeWidth={2.25} />
+            {t('home.doctorsSection.seeAll')} <ChevronRight size={16} strokeWidth={2.25} />
           </Link>
         </div>
 
@@ -496,7 +460,7 @@ export default function HomePage() {
                   <article className="lp-doc" key={d.id} data-reveal data-spotlight>
                     <span className="lp-doc__avatar">{initials(d.firstName, d.lastName)}</span>
                     <h3 className="lp-doc__name">
-                      Dr. {d.firstName} {d.lastName} <VerifiedBadge />
+                      Dr. {d.firstName} {d.lastName} <VerifiedBadge title={t('home.doctorsSection.verified')} />
                     </h3>
                     <div className="lp-tags">
                       {d.specialties.slice(0, 1).map((s) => (
@@ -505,11 +469,11 @@ export default function HomePage() {
                     </div>
                     <p className="lp-doc__exp">
                       {d.yearsOfExperience > 0
-                        ? `${d.yearsOfExperience} vjet përvojë`
-                        : 'Mjek i licencuar'}
+                        ? t('home.doctorsSection.experienceYears', { count: d.yearsOfExperience })
+                        : t('home.doctorsSection.licensedDoctor')}
                     </p>
                     <Link to="/kerko?tab=mjeket" className="lp-btn lp-btn--ghost lp-btn--block">
-                      Shfleto oraret
+                      {t('home.doctorsSection.browseSlots')}
                     </Link>
                   </article>
                 ))
@@ -517,18 +481,18 @@ export default function HomePage() {
                   <article className="lp-doc" key={d.name} data-reveal data-spotlight>
                     <span className="lp-doc__avatar">{initialsFromName(d.name)}</span>
                     <h3 className="lp-doc__name">
-                      Dr. {d.name} <VerifiedBadge />
+                      Dr. {d.name} <VerifiedBadge title={t('home.doctorsSection.verified')} />
                     </h3>
                     <div className="lp-tags">
                       <span className="lp-tag">{d.specialty}</span>
                     </div>
-                    <p className="lp-doc__exp">{d.experience} vjet përvojë</p>
+                    <p className="lp-doc__exp">{t('home.doctorsSection.experienceYears', { count: d.experience })}</p>
                     <p className="lp-doc__next">
                       <Clock size={13} strokeWidth={2} />
-                      Termini i parë: <b className="lp-num">{d.next}</b>
+                      {t('home.doctorsSection.firstAppointment')} <b className="lp-num">{d.next}</b>
                     </p>
                     <Link to="/kerko?tab=mjeket" className="lp-btn lp-btn--ghost lp-btn--block">
-                      Shfleto oraret
+                      {t('home.doctorsSection.browseSlots')}
                     </Link>
                   </article>
                 ))}
@@ -555,12 +519,12 @@ export default function HomePage() {
       <section className="lp-section container">
         <div className="lp-head lp-head--row">
           <div data-reveal>
-            <span className="lp-kicker">Klinikat</span>
-            <h2>Klinika partnere në gjithë Kosovën</h2>
-            <p>Nga qendrat spitalore te praktikat familjare të lagjes — të gjitha të verifikuara.</p>
+            <span className="lp-kicker">{t('home.clinicsSection.kicker')}</span>
+            <h2>{t('home.clinicsSection.title')}</h2>
+            <p>{t('home.clinicsSection.subtitle')}</p>
           </div>
           <Link to="/kerko?tab=klinika" className="lp-link" data-reveal>
-            Shih të gjitha <ChevronRight size={16} strokeWidth={2.25} />
+            {t('home.clinicsSection.seeAll')} <ChevronRight size={16} strokeWidth={2.25} />
           </Link>
         </div>
 
@@ -584,7 +548,7 @@ export default function HomePage() {
                       </span>
                     )}
                     <span className="lp-clinic__cta">
-                      Shiko klinikën <ArrowUpRight size={16} strokeWidth={2.25} />
+                      {t('home.clinicsSection.viewClinic')} <ArrowUpRight size={16} strokeWidth={2.25} />
                     </span>
                   </span>
                 </Link>
@@ -600,10 +564,10 @@ export default function HomePage() {
                     <Stethoscope size={i === 0 ? 34 : 24} strokeWidth={1.25} />
                   </span>
                   <span className="lp-clinic__body">
-                    <h3>{c.name} <VerifiedBadge /></h3>
+                    <h3>{c.name} <VerifiedBadge title={t('home.doctorsSection.verified')} /></h3>
                     <span className="lp-clinic__where">
                       <MapPin size={13} strokeWidth={2} /> {c.city}
-                      <em className="lp-num">{c.doctors} mjekë</em>
+                      <em className="lp-num">{t('home.clinicsSection.doctorCount', { count: c.doctors })}</em>
                     </span>
                     {i === 0 && (
                       <div className="lp-tags">
@@ -613,7 +577,7 @@ export default function HomePage() {
                       </div>
                     )}
                     <span className="lp-clinic__cta">
-                      Shiko klinikën <ArrowUpRight size={16} strokeWidth={2.25} />
+                      {t('home.clinicsSection.viewClinic')} <ArrowUpRight size={16} strokeWidth={2.25} />
                     </span>
                   </span>
                 </Link>
@@ -625,19 +589,19 @@ export default function HomePage() {
       <section className="lp-section lp-section--soft">
         <div className="container">
           <div className="lp-head">
-            <span className="lp-kicker" data-reveal>Dëshmi</span>
-            <h2 data-reveal>Të besuar nga pacientë dhe klinika</h2>
+            <span className="lp-kicker" data-reveal>{t('home.testimonials.kicker')}</span>
+            <h2 data-reveal>{t('home.testimonials.title')}</h2>
           </div>
           <div className="lp-quotes">
-            {TESTIMONIALS.map((t) => (
-              <figure className="lp-quote" key={t.name} data-reveal>
+            {TESTIMONIALS.map((tItem) => (
+              <figure className="lp-quote" key={tItem.name} data-reveal>
                 <Quote className="lp-quote__mark" size={26} strokeWidth={1.5} aria-hidden />
-                <blockquote>{t.quote}</blockquote>
+                <blockquote>{tItem.quote}</blockquote>
                 <figcaption>
-                  <span className="lp-quote__avatar">{initialsFromName(t.name)}</span>
+                  <span className="lp-quote__avatar">{initialsFromName(tItem.name)}</span>
                   <span>
-                    <strong>{t.name}</strong>
-                    <em>{t.role}</em>
+                    <strong>{tItem.name}</strong>
+                    <em>{tItem.role}</em>
                   </span>
                 </figcaption>
               </figure>
@@ -651,17 +615,14 @@ export default function HomePage() {
         <div className="lp-cta" data-reveal>
           <div className="lp-cta__rules" aria-hidden />
           <div className="lp-cta__content">
-            <span className="lp-kicker lp-kicker--invert">Falas për pacientët</span>
-            <h2>Gati të rezervoni terminin tuaj?</h2>
-            <p>
-              Bashkohuni me mijëra pacientë që tashmë i besojnë Termini.ks
-              për shëndetin e tyre.
-            </p>
+            <span className="lp-kicker lp-kicker--invert">{t('home.finalCta.kicker')}</span>
+            <h2>{t('home.finalCta.title')}</h2>
+            <p>{t('home.finalCta.subtitle')}</p>
             <Link to="/kerko" className="lp-btn lp-btn--accent lp-btn--lg">
-              Filloni Tani <ArrowRight size={17} strokeWidth={2.25} />
+              {t('home.finalCta.cta')} <ArrowRight size={17} strokeWidth={2.25} />
             </Link>
             <span className="lp-cta__fine">
-              Pa kartë krediti · Anulim i lirë · Mbështetje në shqip
+              {t('home.finalCta.fineprint')}
             </span>
           </div>
         </div>

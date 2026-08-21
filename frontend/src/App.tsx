@@ -1,4 +1,7 @@
+import { useEffect, useState } from 'react'
 import { Route, Routes } from 'react-router-dom'
+import { useOnlineStatus } from './pwa/useOnlineStatus'
+import OfflineFallback from './components/OfflineFallback'
 import Layout from './components/Layout'
 import PatientLayout from './components/PatientLayout'
 import DoctorLayout from './components/DoctorLayout'
@@ -36,9 +39,27 @@ import AuditLogsPage from './pages/AuditLogsPage'
 import ConfirmEmailPage from './pages/ConfirmEmailPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
+import TermsOfServicePage from './pages/TermsOfServicePage'
 import NotFoundPage from './pages/NotFoundPage'
 
 export default function App() {
+  const online = useOnlineStatus()
+  // The app shell is precached, so launching offline boots React rather than
+  // hitting the browser's error page — but every screen needs the API. If we
+  // have never had a connection this session there is nothing to render, so
+  // say so plainly instead of showing an app-shaped shell of failed requests.
+  // Once a connection has been seen, the persistent OfflineBanner takes over
+  // and pages keep whatever they already loaded.
+  const [everOnline, setEverOnline] = useState(online)
+  useEffect(() => {
+    if (online) setEverOnline(true)
+  }, [online])
+
+  if (!online && !everOnline) {
+    return <OfflineFallback onRetry={() => window.location.reload()} />
+  }
+
   return (
     <Routes>
       <Route path="/hyr" element={<LoginPage />} />
@@ -106,6 +127,8 @@ export default function App() {
         <Route path="/klinika/:id" element={<ClinicDetailPage />} />
         <Route path="/mjeku/:id" element={<DoctorDetailPage />} />
         <Route path="/regjistrohu" element={<RegisterPage />} />
+        <Route path="/politika-e-privatesise" element={<PrivacyPolicyPage />} />
+        <Route path="/kushtet-e-perdorimit" element={<TermsOfServicePage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

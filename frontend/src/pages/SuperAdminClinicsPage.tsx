@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Building2, MoreVertical, Plus, Search } from 'lucide-react'
-import { api, ApiError } from '../lib/api'
+import { useTranslation } from 'react-i18next'
+import { api } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
 import type { AdminClinic, AssignClinicAdminRequest, CreateClinicRequest } from '../lib/types'
 import { useToast } from '../context/ToastContext'
 import { EmptyState, ErrorBox, Modal, SkeletonRows } from '../components/ui'
@@ -15,6 +17,7 @@ function clinicStatus(c: AdminClinic): StatusFilter {
 }
 
 export default function SuperAdminClinicsPage() {
+  const { t } = useTranslation('admin')
   const { notify } = useToast()
 
   const [clinics, setClinics] = useState<AdminClinic[]>([])
@@ -35,7 +38,7 @@ export default function SuperAdminClinicsPage() {
     api
       .getAdminClinics()
       .then(setClinics)
-      .catch((e) => setError(e instanceof ApiError ? e.message : 'Ndodhi një gabim.'))
+      .catch((e) => setError(getErrorMessage(e)))
       .finally(() => setLoading(false))
   }, [])
 
@@ -57,24 +60,31 @@ export default function SuperAdminClinicsPage() {
       if (action === 'approve') await api.approveClinic(clinic.id)
       else if (action === 'activate') await api.activateClinic(clinic.id)
       else await api.deactivateClinic(clinic.id)
-      notify('Klinika u përditësua.', 'ok')
+      notify(t('saClinics.updatedToast'), 'ok')
       load()
     } catch (e) {
-      notify(e instanceof ApiError ? e.message : 'Gabim. Provoni përsëri.', 'error')
+      notify(getErrorMessage(e), 'error')
     } finally {
       setActingId(null)
     }
+  }
+
+  const tabLabels: Record<StatusFilter, string> = {
+    all: t('saClinics.tabAll'),
+    approved: t('saClinics.tabApproved'),
+    pending: t('saClinics.tabPending'),
+    inactive: t('saClinics.tabInactive'),
   }
 
   return (
     <div className="sa-clinics-page">
       <div className="admin-header">
         <div>
-          <h1>Menaxhimi i Klinikave</h1>
-          <p className="admin-header__sub">Aprovo, çaktivizo dhe cakto administratorë për klinikat e platformës.</p>
+          <h1>{t('saClinics.pageTitle')}</h1>
+          <p className="admin-header__sub">{t('saClinics.pageSubtitle')}</p>
         </div>
         <button type="button" className="btn btn--primary btn--sm" onClick={() => setCreateOpen(true)}>
-          <Plus size={15} strokeWidth={1.5} /> Krijo Klinikë
+          <Plus size={15} strokeWidth={1.5} /> {t('saClinics.createCta')}
         </button>
       </div>
 
@@ -87,33 +97,33 @@ export default function SuperAdminClinicsPage() {
               className={`status-tab ${statusFilter === s ? 'is-active' : ''}`}
               onClick={() => setStatusFilter(s)}
             >
-              {s === 'all' ? 'Të gjitha' : s === 'approved' ? 'Aprovuar' : s === 'pending' ? 'Në pritje' : 'Joaktive'}
+              {tabLabels[s]}
             </button>
           ))}
         </div>
         <div className="filters__field filters__field--grow">
-          <label>Kërko</label>
+          <label>{t('saClinics.searchLabel')}</label>
           <div className="appts-search">
             <Search size={14} strokeWidth={1.5} color="var(--muted)" />
-            <input placeholder="Kërko klinikën..." value={search} onChange={(e) => setSearch(e.target.value)} />
+            <input placeholder={t('saClinics.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
         </div>
       </div>
 
-      {error && <ErrorBox message={error} />}
-
       {loading ? (
-        <SkeletonRows count={5} label="Duke ngarkuar klinikat" />
+        <SkeletonRows count={5} label={t('saClinics.loadingLabel')} />
+      ) : error ? (
+        <ErrorBox message={error} onRetry={load} />
       ) : filtered.length === 0 ? (
-        <EmptyState icon={Building2} title="Nuk u gjet asnjë klinikë me këto filtra." />
+        <EmptyState icon={Building2} title={t('saClinics.emptyTitle')} />
       ) : (
         <div className="admin-card sa-table-card">
           <table className="sa-table">
             <thead>
               <tr>
-                <th>Klinika</th>
-                <th>Statusi</th>
-                <th>Veprimet</th>
+                <th>{t('saClinics.columnClinic')}</th>
+                <th>{t('saClinics.columnStatus')}</th>
+                <th>{t('saClinics.columnActions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -136,7 +146,7 @@ export default function SuperAdminClinicsPage() {
                         }`}
                         style={status === 'inactive' ? { background: 'var(--line)', color: 'var(--muted)' } : undefined}
                       >
-                        {status === 'approved' ? 'APROVUAR' : status === 'pending' ? 'NË PRITJE' : 'JOAKTIVE'}
+                        {status === 'approved' ? t('saClinics.statusApproved') : status === 'pending' ? t('saClinics.statusPending') : t('saClinics.statusInactive')}
                       </span>
                     </td>
                     <td>
@@ -146,7 +156,7 @@ export default function SuperAdminClinicsPage() {
                           className="admin-icon-btn"
                           disabled={actingId === c.id}
                           onClick={() => setOpenMenuId((cur) => (cur === c.id ? null : c.id))}
-                          aria-label="Veprimet"
+                          aria-label={t('saClinics.actionsAria')}
                         >
                           <MoreVertical size={15} strokeWidth={1.5} />
                         </button>
@@ -154,7 +164,7 @@ export default function SuperAdminClinicsPage() {
                           <div className="dropdown__panel sa-table__menu-panel">
                             {status === 'pending' && (
                               <button type="button" className="dropdown__option" onClick={() => runAction(c, 'approve')}>
-                                Aprovo
+                                {t('saClinics.approveMenuItem')}
                               </button>
                             )}
                             {status === 'approved' && (
@@ -167,16 +177,16 @@ export default function SuperAdminClinicsPage() {
                                     setAssignTarget(c)
                                   }}
                                 >
-                                  Cakto Admin
+                                  {t('saClinics.assignAdminMenuItem')}
                                 </button>
                                 <button type="button" className="dropdown__option" onClick={() => runAction(c, 'deactivate')}>
-                                  Çaktivizo
+                                  {t('saClinics.deactivateMenuItem')}
                                 </button>
                               </>
                             )}
                             {status === 'inactive' && (
                               <button type="button" className="dropdown__option" onClick={() => runAction(c, 'activate')}>
-                                Aktivizo
+                                {t('saClinics.activateMenuItem')}
                               </button>
                             )}
                           </div>
@@ -207,7 +217,7 @@ export default function SuperAdminClinicsPage() {
           onClose={() => setAssignTarget(null)}
           onSaved={() => {
             setAssignTarget(null)
-            notify('Administratori u caktua.', 'ok')
+            notify(t('saClinics.adminAssignedToast'), 'ok')
           }}
         />
       )}
@@ -216,6 +226,8 @@ export default function SuperAdminClinicsPage() {
 }
 
 function CreateClinicModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const { t } = useTranslation('admin')
+  const { t: tCommon } = useTranslation('common')
   const [form, setForm] = useState<CreateClinicRequest>(EMPTY_CLINIC_FORM)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
@@ -225,7 +237,7 @@ function CreateClinicModal({ onClose, onSaved }: { onClose: () => void; onSaved:
   }
 
   async function handleSubmit() {
-    if (form.name.trim().length < 2) return setFormError('Emri i klinikës është i detyrueshëm.')
+    if (form.name.trim().length < 2) return setFormError(t('saClinics.createModal.nameRequired'))
     setFormError('')
     setSaving(true)
     try {
@@ -238,43 +250,43 @@ function CreateClinicModal({ onClose, onSaved }: { onClose: () => void; onSaved:
       })
       onSaved()
     } catch (e) {
-      setFormError(e instanceof ApiError ? e.message : 'Gabim. Provoni përsëri.')
+      setFormError(getErrorMessage(e))
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <Modal title="Krijo Klinikë të Re" onClose={onClose}>
+    <Modal title={t('saClinics.createModal.title')} onClose={onClose}>
       {formError && <ErrorBox message={formError} />}
       <div className="field">
-        <label>Emri</label>
+        <label>{t('saClinics.createModal.nameLabel')}</label>
         <input type="text" value={form.name} onChange={(e) => update('name', e.target.value)} />
       </div>
       <div className="field">
-        <label>Përshkrimi</label>
+        <label>{t('saClinics.createModal.descriptionLabel')}</label>
         <textarea rows={3} value={form.description ?? ''} onChange={(e) => update('description', e.target.value)} />
       </div>
       <div className="form-row">
         <div className="field">
-          <label>Telefoni</label>
+          <label>{t('saClinics.createModal.phoneLabel')}</label>
           <input type="tel" value={form.phoneNumber ?? ''} onChange={(e) => update('phoneNumber', e.target.value)} />
         </div>
         <div className="field">
-          <label>Email</label>
+          <label>{t('saClinics.createModal.emailLabel')}</label>
           <input type="email" value={form.email ?? ''} onChange={(e) => update('email', e.target.value)} />
         </div>
       </div>
       <div className="field">
-        <label>Website</label>
+        <label>{t('saClinics.createModal.websiteLabel')}</label>
         <input type="url" value={form.website ?? ''} onChange={(e) => update('website', e.target.value)} />
       </div>
-      <span className="field__note">Klinika e re fillon e paaprovuar dhe duhet aprovuar përpara se të bëhet publike.</span>
+      <span className="field__note">{t('saClinics.createModal.note')}</span>
       <div className="clinic-settings__actions" style={{ marginTop: 16 }}>
         <button type="button" className="btn btn--primary btn--sm" disabled={saving} onClick={handleSubmit}>
-          {saving ? 'Duke krijuar…' : 'Krijo Klinikën'}
+          {saving ? t('saClinics.createModal.creatingCta') : t('saClinics.createModal.createCta')}
         </button>
-        <button type="button" className="btn btn--ghost btn--sm" onClick={onClose}>Anulo</button>
+        <button type="button" className="btn btn--ghost btn--sm" onClick={onClose}>{tCommon('buttons.cancel')}</button>
       </div>
     </Modal>
   )
@@ -289,12 +301,14 @@ function AssignAdminModal({
   onClose: () => void
   onSaved: () => void
 }) {
+  const { t } = useTranslation('admin')
+  const { t: tCommon } = useTranslation('common')
   const [email, setEmail] = useState('')
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
 
   async function handleSubmit() {
-    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setFormError('Shkruani një email adresë të vlefshme.')
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setFormError(t('saClinics.assignAdminModal.emailInvalid'))
     setFormError('')
     setSaving(true)
     try {
@@ -302,25 +316,25 @@ function AssignAdminModal({
       await api.assignClinicAdmin(clinic.id, payload)
       onSaved()
     } catch (e) {
-      setFormError(e instanceof ApiError ? e.message : 'Gabim. Provoni përsëri.')
+      setFormError(getErrorMessage(e))
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <Modal title={`Cakto Admin — ${clinic.name}`} onClose={onClose}>
+    <Modal title={t('saClinics.assignAdminModal.title', { clinicName: clinic.name })} onClose={onClose}>
       {formError && <ErrorBox message={formError} />}
       <div className="field">
-        <label>Email i Përdoruesit</label>
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@klinika.com" />
-        <span className="field__note">Përdoruesi duhet të ketë tashmë një llogari ekzistuese në sistem.</span>
+        <label>{t('saClinics.assignAdminModal.emailLabel')}</label>
+        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('saClinics.assignAdminModal.emailPlaceholder')} />
+        <span className="field__note">{t('saClinics.assignAdminModal.note')}</span>
       </div>
       <div className="clinic-settings__actions" style={{ marginTop: 16 }}>
         <button type="button" className="btn btn--primary btn--sm" disabled={saving} onClick={handleSubmit}>
-          {saving ? 'Duke caktuar…' : 'Cakto Admin'}
+          {saving ? t('saClinics.assignAdminModal.assigningCta') : t('saClinics.assignAdminModal.assignCta')}
         </button>
-        <button type="button" className="btn btn--ghost btn--sm" onClick={onClose}>Anulo</button>
+        <button type="button" className="btn btn--ghost btn--sm" onClick={onClose}>{tCommon('buttons.cancel')}</button>
       </div>
     </Modal>
   )

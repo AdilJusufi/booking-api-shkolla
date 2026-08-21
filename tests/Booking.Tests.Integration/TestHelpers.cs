@@ -1,7 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Booking.Application.Features.Auth;
 using Booking.Domain.Enums;
 
@@ -9,14 +8,11 @@ namespace Booking.Tests.Integration;
 
 public static class TestHelpers
 {
-    public static readonly JsonSerializerOptions Json = CreateJsonOptions();
-
-    private static JsonSerializerOptions CreateJsonOptions()
-    {
-        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-        options.Converters.Add(new JsonStringEnumConverter());
-        return options;
-    }
+    // No JsonStringEnumConverter: the API doesn't register one either (see
+    // Program.cs — enums serialize as numbers, and the frontend expects
+    // that), so request bodies built with this options object need to send
+    // enums as numbers too, or model binding 400s.
+    public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
     /// <summary>Data e hënës së ardhshme, së paku 7 ditë larg — brenda orarit të seed-uar (Hën–Pre) dhe jashtë cutoff-it të anulimit.</summary>
     public static DateOnly NextMonday()

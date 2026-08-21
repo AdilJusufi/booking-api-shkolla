@@ -1,8 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Booking.Application.Features.Auth;
+using Booking.Infrastructure.Auth;
 using Booking.Infrastructure.Persistence;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Booking.Tests.Integration;
@@ -74,6 +78,97 @@ public class AuthTests
             new LoginRequest(DbSeeder.PatientEmail, "PasswordIGabuar1"), TestHelpers.Json);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await AssertErrorAsync(response, "invalid_credentials", "Kredencialet janë të pavlefshme.");
+    }
+
+    [Fact]
+    public async Task Login_LockedOutAccount_Returns401WithAccountLockedCode()
+    {
+        var client = _factory.CreateClient();
+        var email = $"i-bllokuar-{Guid.NewGuid():N}@test.dev";
+        await TestHelpers.RegisterPatientAsync(client, email);
+
+        // 5 tentime të dështuara = pragu i lockout-it (shih DependencyInjection.cs).
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            var failed = await client.PostAsJsonAsync("/api/auth/login",
+                new LoginRequest(email, "PasswordIGabuar1"), TestHelpers.Json);
+            failed.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        }
+
+        // Edhe me password-in e saktë llogaria mbetet e bllokuar.
+        var response = await client.PostAsJsonAsync("/api/auth/login",
+            new LoginRequest(email, BookingApiFactory.DefaultUserPassword), TestHelpers.Json);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        await AssertErrorAsync(response, "account_locked",
+            "Llogaria është bllokuar përkohësisht nga tentimet e dështuara. Provo më vonë.");
+    }
+
+    [Fact]
+    public async Task Login_UnconfirmedEmail_Returns401WithEmailNotConfirmedCode()
+    {
+        var client = _factory.CreateClient();
+        var email = $"i-pakonfirmuar-{Guid.NewGuid():N}@test.dev";
+        await TestHelpers.RegisterPatientAsync(client, email);
+
+        // Fabrika e ngre hostin me RequireConfirmedEmail=false; e ndezim vetëm për këtë test.
+        // Testet e koleksionit "api" nuk ekzekutohen paralelisht, prandaj s'ka garë.
+        var authSettings = _factory.Services.GetRequiredService<IOptions<AuthSettings>>().Value;
+        authSettings.RequireConfirmedEmail = true;
+        try
+        {
+            var response = await client.PostAsJsonAsync("/api/auth/login",
+                new LoginRequest(email, BookingApiFactory.DefaultUserPassword), TestHelpers.Json);
+
+            response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+            await AssertErrorAsync(response, "email_not_confirmed",
+                "Email-i nuk është konfirmuar ende. Kontrollo postën tënde.");
+        }
+        finally
+        {
+            authSettings.RequireConfirmedEmail = false;
+        }
+    }
+
+    [Fact]
+    public async Task Login_DeactivatedAccount_Returns403AndWorksAgainAfterReactivation()
+    {
+        var client = _factory.CreateClient();
+        var email = $"i-caktivizuar-{Guid.NewGuid():N}@test.dev";
+        var auth = await TestHelpers.RegisterPatientAsync(client, email);
+
+        var superAdmin = _factory.CreateClient();
+        var superAdminAuth = await TestHelpers.LoginAsync(
+            superAdmin, DbSeeder.SuperAdminEmail, BookingApiFactory.SuperAdminPassword);
+        superAdmin.WithToken(superAdminAuth.AccessToken);
+
+        var deactivate = await superAdmin.PostAsync($"/api/admin/users/{auth.UserId}/deactivate", null);
+        deactivate.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // 403, jo 401: kredencialet janë të sakta — llogaria është e çaktivizuar.
+        var blocked = await client.PostAsJsonAsync("/api/auth/login",
+            new LoginRequest(email, BookingApiFactory.DefaultUserPassword), TestHelpers.Json);
+
+        blocked.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        await AssertErrorAsync(blocked, "account_deactivated",
+            "Llogaria juaj është çaktivizuar. Kontaktoni mbështetjen.");
+
+        var activate = await superAdmin.PostAsync($"/api/admin/users/{auth.UserId}/activate", null);
+        activate.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var reloggedIn = await TestHelpers.LoginAsync(client, email, BookingApiFactory.DefaultUserPassword);
+        reloggedIn.AccessToken.Should().NotBeNullOrEmpty();
+    }
+
+    /// <summary>Verifikon kontratën e gabimit: `code`, `type` dhe teksti i pandryshuar i `detail`.</summary>
+    private static async Task AssertErrorAsync(HttpResponseMessage response, string expectedCode, string expectedDetail)
+    {
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>(TestHelpers.Json);
+
+        problem.GetProperty("code").GetString().Should().Be(expectedCode);
+        problem.GetProperty("type").GetString().Should().EndWith($"/{expectedCode}");
+        problem.GetProperty("detail").GetString().Should().Be(expectedDetail);
     }
 
     [Fact]

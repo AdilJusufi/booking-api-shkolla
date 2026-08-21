@@ -330,6 +330,61 @@ export interface DoctorAppointment {
   cancellationReason?: string
 }
 
+/** Pasqyron AdminAppointmentListItemDto — GET /api/admin/appointments. Rreshti vjen i denormalizuar (pa N+1). */
+export interface AdminAppointmentListItem {
+  id: string
+  clinicId: string
+  clinicName: string
+  clinicBranchId: string
+  branchName: string
+  doctorId: string
+  doctorName: string
+  doctorSpecialty?: string
+  medicalServiceId: string
+  serviceName: string
+  patientName: string
+  isForDependent: boolean
+  dependentId?: string
+  dependentName?: string
+  startDateTime: string
+  endDateTime: string
+  status: AppointmentStatus
+  version: number
+}
+
+/** Pasqyron AdminAppointmentsQuery — parametrat e query-t për GET /api/admin/appointments. */
+export interface AdminAppointmentsQuery {
+  clinicId?: string
+  doctorId?: string
+  clinicBranchId?: string
+  status?: AppointmentStatus
+  from?: string
+  to?: string
+  search?: string
+  page?: number
+  pageSize?: number
+}
+
+/** Pasqyron AdminUserDto — GET /api/admin/users (vetëm SuperAdmin). */
+export interface AdminUser {
+  id: string
+  fullName: string
+  email: string
+  roles: string[]
+  isActive: boolean
+  emailConfirmed: boolean
+  createdAt: string
+}
+
+/** Pasqyron AdminUsersQuery. */
+export interface AdminUsersQuery {
+  role?: string
+  isActive?: boolean
+  search?: string
+  page?: number
+  pageSize?: number
+}
+
 export interface DoctorWorkingSchedule {
   id: string
   doctorId: string
@@ -385,12 +440,45 @@ export interface AdminClinic {
   createdAt: string
 }
 
+/** Pasqyron ClinicReportDto — GET /api/admin/clinics/{id}/report. */
 export interface ClinicReport {
   from: string
   to: string
   totalAppointments: number
   byStatus: Record<string, number>
-  byDoctor: { doctorId: string; doctorName: string; appointmentCount: number }[]
+  completedAppointments: number
+  cancelledAppointments: number
+  noShowAppointments: number
+  /** Vetëm terminet e përfunduara, me çmimin efektiv (CustomPrice kur ekziston). */
+  totalRevenue: number
+  currency: string
+  byDoctor: {
+    doctorId: string
+    doctorName: string
+    appointmentCount: number
+    completedCount: number
+    cancelledCount: number
+    noShowCount: number
+    revenue: number
+  }[]
+  byBranch: {
+    branchId: string
+    branchName: string
+    city: string
+    appointmentCount: number
+    completedCount: number
+    cancelledCount: number
+    revenue: number
+  }[]
+  byService: {
+    serviceId: string
+    serviceName: string
+    specialtyName: string
+    /** Çmimi bazë i shërbimit — të ardhurat mund të ndryshojnë nga override-et e doktorit. */
+    price: number
+    appointmentCount: number
+    revenue: number
+  }[]
 }
 
 /**

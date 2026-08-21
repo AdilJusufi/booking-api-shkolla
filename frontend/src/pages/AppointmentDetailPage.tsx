@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   AlertTriangle,
@@ -16,18 +16,15 @@ import {
   Phone,
   XCircle,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { api, ApiError } from '../lib/api'
+import { getErrorMessage, getSlotTakenMessage } from '../lib/errors'
 import { AppointmentStatus } from '../lib/types'
 import type { Appointment, AvailableSlot, ClinicDetails, DoctorDetails } from '../lib/types'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
-import { Badge, Pending, initials, specialtyLabel } from '../components/ui'
-import { toDateInput } from '../lib/format'
-
-const DAYS_SQ = ['E Diel', 'E Hënë', 'E Martë', 'E Mërkurë', 'E Enjte', 'E Premte', 'E Shtunë']
-const DAY_ABBR_SQ = ['DIE', 'HËN', 'MAR', 'MËR', 'ENJ', 'PRE', 'SHT']
-const MONTHS_SQ = ['Janar', 'Shkurt', 'Mars', 'Prill', 'Maj', 'Qershor', 'Korrik', 'Gusht', 'Shtator', 'Tetor', 'Nëntor', 'Dhjetor']
-const MONTHS_ABBR_SQ = ['Jan', 'Shk', 'Mar', 'Pri', 'Maj', 'Qer', 'Kor', 'Gus', 'Sht', 'Tet', 'Nën', 'Dhj']
+import { Badge, ErrorBox, Pending, initials, specialtyLabel } from '../components/ui'
+import { monthName, toDateInput, weekdayName } from '../lib/format'
 
 function parseLocal(iso: string): Date {
   const m = iso.match(/(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/)
@@ -37,66 +34,77 @@ function parseLocal(iso: string): Date {
 
 function formatDateSq(iso: string): string {
   const d = parseLocal(iso)
-  return `${DAYS_SQ[d.getDay()]}, ${d.getDate()} ${MONTHS_SQ[d.getMonth()]} ${d.getFullYear()}`
+  return `${weekdayName(d.getDay())}, ${d.getDate()} ${monthName(d.getMonth())} ${d.getFullYear()}`
 }
 
 function formatTimeSq(iso: string): string {
   const d = parseLocal(iso)
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-} 
+}
 
 function formatDayMonthTime(iso: string): string {
   const d = parseLocal(iso)
-  return `${d.getDate()} ${MONTHS_ABBR_SQ[d.getMonth()]}, ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  return `${d.getDate()} ${monthName(d.getMonth(), 'short')}, ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
 const ACTIVE_STATUSES = [AppointmentStatus.Pending, AppointmentStatus.Confirmed]
-const TIMELINE_LABELS: Partial<Record<AppointmentStatus, { text: string; color: string }>> = {
-  [AppointmentStatus.Pending]: { text: 'Në pritje', color: 'var(--warn)' },
-  [AppointmentStatus.Confirmed]: { text: 'Konfirmuar', color: 'var(--primary)' },
-  [AppointmentStatus.CheckedIn]: { text: 'Mbërritur në klinikë', color: 'var(--ok)' },
-  [AppointmentStatus.InProgress]: { text: 'Në proces', color: 'var(--ok)' },
-  [AppointmentStatus.Completed]: { text: 'Përfunduar', color: 'var(--ok)' },
-  [AppointmentStatus.CancelledByPatient]: { text: 'Anuluar nga ju', color: 'var(--danger)' },
-  [AppointmentStatus.CancelledByClinic]: { text: 'Anuluar nga klinika', color: 'var(--danger)' },
-  [AppointmentStatus.NoShow]: { text: 'Nuk u paraqit', color: 'var(--danger)' },
-  [AppointmentStatus.Rescheduled]: { text: 'Riplanifikuar', color: 'var(--warn)' },
+
+const TIMELINE_COLORS: Partial<Record<AppointmentStatus, string>> = {
+  [AppointmentStatus.Pending]: 'var(--warn)',
+  [AppointmentStatus.Confirmed]: 'var(--primary)',
+  [AppointmentStatus.CheckedIn]: 'var(--ok)',
+  [AppointmentStatus.InProgress]: 'var(--ok)',
+  [AppointmentStatus.Completed]: 'var(--ok)',
+  [AppointmentStatus.CancelledByPatient]: 'var(--danger)',
+  [AppointmentStatus.CancelledByClinic]: 'var(--danger)',
+  [AppointmentStatus.NoShow]: 'var(--danger)',
+  [AppointmentStatus.Rescheduled]: 'var(--warn)',
+}
+
+const STATUS_KEYS: Partial<Record<AppointmentStatus, string>> = {
+  [AppointmentStatus.Pending]: 'pending',
+  [AppointmentStatus.Confirmed]: 'confirmed',
+  [AppointmentStatus.CheckedIn]: 'checkedIn',
+  [AppointmentStatus.InProgress]: 'inProgress',
+  [AppointmentStatus.Completed]: 'completed',
+  [AppointmentStatus.CancelledByPatient]: 'cancelledByPatient',
+  [AppointmentStatus.CancelledByClinic]: 'cancelledByClinic',
+  [AppointmentStatus.NoShow]: 'noShow',
+  [AppointmentStatus.Rescheduled]: 'rescheduled',
 }
 
 /** One line per status for the sidebar status card. */
-const STATUS_DESCRIPTIONS: Partial<Record<AppointmentStatus, string>> = {
-  [AppointmentStatus.Pending]: 'Termini juaj është duke pritur konfirmimin nga klinika.',
-  [AppointmentStatus.Confirmed]: 'Termini juaj është konfirmuar. Ju lutem mbërrini 10 minuta para kohës.',
-  [AppointmentStatus.CheckedIn]: 'Jeni shënuar si të mbërritur në klinikë.',
-  [AppointmentStatus.InProgress]: 'Takimi juaj është duke u zhvilluar.',
-  [AppointmentStatus.Completed]: 'Ky termin është përfunduar.',
-  [AppointmentStatus.CancelledByPatient]: 'Ky termin është anuluar nga ju.',
-  [AppointmentStatus.CancelledByClinic]: 'Ky termin është anuluar nga klinika.',
-  [AppointmentStatus.NoShow]: 'Ju nuk keni mbërritur në këtë termin.',
-  [AppointmentStatus.Rescheduled]: 'Ky termin është ricaktuar.',
+function statusDescription(status: AppointmentStatus, t: (key: string) => string): string {
+  const key = STATUS_KEYS[status]
+  return key ? t(`appointmentDetail.statusDescriptions.${key}`) : t('appointmentDetail.statusDescriptionFallback')
 }
 
-function statusBadge(status: AppointmentStatus) {
+function timelineLabel(status: AppointmentStatus, t: (key: string) => string): string {
+  const key = STATUS_KEYS[status]
+  return t(`appointmentDetail.timelineLabels.${key ?? 'unknown'}`)
+}
+
+function statusBadge(status: AppointmentStatus, t: (key: string) => string) {
   switch (status) {
     case AppointmentStatus.Pending:
-      return <Badge tone="warn">NË PRITJE</Badge>
+      return <Badge tone="warn">{t('appointmentsList.badges.pending')}</Badge>
     case AppointmentStatus.Confirmed:
-      return <Badge tone="primary">KONFIRMUAR</Badge>
+      return <Badge tone="primary">{t('appointmentsList.badges.confirmed')}</Badge>
     case AppointmentStatus.CheckedIn:
-      return <Badge tone="ok">MBËRRITUR</Badge>
+      return <Badge tone="ok">{t('appointmentsList.badges.checkedIn')}</Badge>
     case AppointmentStatus.InProgress:
-      return <Badge tone="primary">NË PROGRES</Badge>
+      return <Badge tone="primary">{t('appointmentsList.badges.inProgress')}</Badge>
     case AppointmentStatus.Completed:
-      return <Badge tone="ok">PËRFUNDUAR</Badge>
+      return <Badge tone="ok">{t('appointmentsList.badges.completed')}</Badge>
     case AppointmentStatus.CancelledByPatient:
     case AppointmentStatus.CancelledByClinic:
-      return <Badge tone="danger">ANULUAR</Badge>
+      return <Badge tone="danger">{t('appointmentsList.badges.cancelledByPatient')}</Badge>
     case AppointmentStatus.NoShow:
-      return <Badge tone="muted">NUK U PARAQIT</Badge>
+      return <Badge tone="muted">{t('appointmentsList.badges.noShow')}</Badge>
     case AppointmentStatus.Rescheduled:
-      return <Badge tone="warn">RISCHEDULUAR</Badge>
+      return <Badge tone="warn">{t('appointmentsList.badges.rescheduled')}</Badge>
     default:
-      return <Badge tone="muted">I PANJOHUR</Badge>
+      return <Badge tone="muted">{t('appointmentsList.badges.unknown')}</Badge>
   }
 }
 
@@ -120,6 +128,8 @@ function DetailSkeleton() {
 }
 
 export default function AppointmentDetailPage() {
+  const { t } = useTranslation('patient')
+  const { t: tCommon } = useTranslation('common')
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -130,6 +140,7 @@ export default function AppointmentDetailPage() {
   const [clinic, setClinic] = useState<ClinicDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [loadError, setLoadError] = useState('')
 
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [cancelling, setCancelling] = useState(false)
@@ -146,11 +157,12 @@ export default function AppointmentDetailPage() {
   const [slotsLoading, setSlotsLoading] = useState(false)
   const [rescheduling, setRescheduling] = useState(false)
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (!id) return
     let active = true
     setLoading(true)
     setNotFound(false)
+    setLoadError('')
     api
       .getMyAppointment(id)
       .then((a) => {
@@ -175,13 +187,22 @@ export default function AppointmentDetailPage() {
           navigate('/hyr', { state: { from: `/terminet/${id}` } })
           return
         }
-        setNotFound(true)
+        // A genuine 404 means the appointment doesn't exist / isn't the
+        // caller's — that's a distinct state from "the request failed",
+        // which needs a retry affordance instead of a permanent dead end.
+        if (e instanceof ApiError && e.status === 404) {
+          setNotFound(true)
+        } else {
+          setLoadError(getErrorMessage(e))
+        }
       })
       .finally(() => active && setLoading(false))
     return () => {
       active = false
     }
   }, [id, navigate])
+
+  useEffect(load, [load])
 
   const service = useMemo(
     () => doctor?.services.find((s) => s.medicalServiceId === appointment?.medicalServiceId),
@@ -199,16 +220,16 @@ export default function AppointmentDetailPage() {
     if (!appointment) return
     setCancelling(true)
     try {
-      await api.cancelAppointment(appointment.id, 'Anuluar nga pacienti')
+      await api.cancelAppointment(appointment.id, t('appointmentDetail.cancelReasonDefault'))
       setAppointment((prev) => (prev ? { ...prev, status: AppointmentStatus.CancelledByPatient } : prev))
       setShowCancelConfirm(false)
-      notify('Termini u anulua.', 'error')
+      notify(t('appointmentDetail.cancelledToast'), 'ok')
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
         navigate('/hyr')
         return
       }
-      notify('Gabim. Provoni përsëri.', 'error')
+      notify(getErrorMessage(e), 'error')
     } finally {
       setCancelling(false)
     }
@@ -239,17 +260,19 @@ export default function AppointmentDetailPage() {
     try {
       const updated = await api.rescheduleAppointment(appointment.id, selectedSlot)
       setAppointment(updated)
-      notify('Termini u rischedulua me sukses.', 'ok')
+      notify(t('appointmentDetail.rescheduledToast'), 'ok')
       navigate('/terminet')
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) {
-        notify('Ky termin u mor. Zgjidhni orë tjetër.', 'error')
+        // Expected outcome, not an error state: the slot was taken between
+        // page load and submit. Toast + refetch, no ErrorBox.
+        notify(getSlotTakenMessage(), 'error')
         setSelectedSlot('')
         selectDate(selectedDate)
       } else if (e instanceof ApiError && e.status === 401) {
         navigate('/hyr')
       } else {
-        notify('Gabim. Provoni përsëri.', 'error')
+        notify(getErrorMessage(e), 'error')
       }
     } finally {
       setRescheduling(false)
@@ -258,14 +281,22 @@ export default function AppointmentDetailPage() {
 
   if (loading) return <DetailSkeleton />
 
+  if (loadError) {
+    return (
+      <div className="detail-page">
+        <ErrorBox message={loadError} onRetry={load} />
+      </div>
+    )
+  }
+
   if (notFound || !appointment) {
     return (
       <div className="apptdetail-notfound">
         <CalendarX size={64} strokeWidth={1.5} color="var(--line)" style={{ margin: '0 auto 16px' }} />
-        <h2>Termini nuk u gjet</h2>
-        <p>Ky termin nuk ekziston ose nuk keni akses.</p>
+        <h2>{t('appointmentDetail.notFoundTitle')}</h2>
+        <p>{t('appointmentDetail.notFoundHint')}</p>
         <Link to="/terminet" className="btn btn--ghost">
-          <ChevronLeft size={16} strokeWidth={1.5} /> Kthehu te terminet
+          <ChevronLeft size={16} strokeWidth={1.5} /> {t('appointmentDetail.backToAppointments')}
         </Link>
       </div>
     )
@@ -277,36 +308,36 @@ export default function AppointmentDetailPage() {
   return (
     <div className="detail-page">
       <Link to="/terminet" className="link-icon apptdetail-back">
-        <ChevronLeft size={16} strokeWidth={1.5} /> Kthehu te terminet
+        <ChevronLeft size={16} strokeWidth={1.5} /> {t('appointmentDetail.backToAppointments')}
       </Link>
 
       <div className="apptdetail-layout">
         <div>
           <div className="card apptdetail-card">
             <div className="apptdetail-top">
-              {statusBadge(appointment.status)}
-              <span className="apptdetail-ref">REF: #{appointment.id.slice(0, 7).toUpperCase()}</span>
+              {statusBadge(appointment.status, t)}
+              <span className="apptdetail-ref">{t('appointmentDetail.refLabel')}: #{appointment.id.slice(0, 7).toUpperCase()}</span>
             </div>
 
-            <p className="apptdetail-section-label">Koha &amp; Vendi</p>
+            <p className="apptdetail-section-label">{t('appointmentDetail.timeAndPlace')}</p>
             <div className="apptdetail-grid">
               <div className="apptdetail-item">
-                <span className="apptdetail-label">Data</span>
+                <span className="apptdetail-label">{t('appointmentDetail.dateLabel')}</span>
                 <span className="apptdetail-value apptdetail-value--lg">{formatDateSq(appointment.startDateTime)}</span>
               </div>
               <div className="apptdetail-item">
-                <span className="apptdetail-label">Ora</span>
+                <span className="apptdetail-label">{t('appointmentDetail.timeLabel')}</span>
                 <span className="apptdetail-value apptdetail-value--md">
                   {formatTimeSq(appointment.startDateTime)} – {formatTimeSq(appointment.endDateTime)}
                   <span className="apptdetail-duration-pill">({durationMinutes} min)</span>
                 </span>
               </div>
               <div className="apptdetail-item">
-                <span className="apptdetail-label">Klinika</span>
+                <span className="apptdetail-label">{t('appointmentDetail.clinicLabel')}</span>
                 <span className="apptdetail-value">{appointment.clinicName} — {appointment.branchName}</span>
               </div>
               <div className="apptdetail-item">
-                <span className="apptdetail-label">Dega</span>
+                <span className="apptdetail-label">{t('appointmentDetail.branchLabel')}</span>
                 <span className="apptdetail-value apptdetail-value--row">
                   <MapPin size={13} strokeWidth={1.5} color="var(--muted)" />
                   {appointment.branchAddress}{branch?.city ? `, ${branch.city}` : ''}
@@ -316,7 +347,7 @@ export default function AppointmentDetailPage() {
 
             <div className="apptdetail-divider" />
 
-            <p className="apptdetail-section-label">Mjeku &amp; Shërbimi</p>
+            <p className="apptdetail-section-label">{t('appointmentDetail.doctorAndService')}</p>
             <div className="apptdetail-doctor">
               <div className="apptdetail-avatar">{doctorInitials}</div>
               <div>
@@ -328,25 +359,25 @@ export default function AppointmentDetailPage() {
             </div>
             <div className="apptdetail-grid" style={{ marginTop: 14 }}>
               <div className="apptdetail-item">
-                <span className="apptdetail-label">Shërbimi</span>
+                <span className="apptdetail-label">{t('appointmentDetail.serviceLabel')}</span>
                 <span className="apptdetail-value">{appointment.serviceName}</span>
               </div>
               <div className="apptdetail-item">
-                <span className="apptdetail-label">Kohëzgjatja</span>
-                <span className="apptdetail-value">{durationMinutes} minuta</span>
+                <span className="apptdetail-label">{t('appointmentDetail.durationLabel')}</span>
+                <span className="apptdetail-value">{t('appointmentDetail.durationMinutes', { count: durationMinutes })}</span>
               </div>
               <div className="apptdetail-item">
-                <span className="apptdetail-label">Çmimi</span>
+                <span className="apptdetail-label">{t('appointmentDetail.priceLabel')}</span>
                 <span className="apptdetail-value">{service ? `${service.price.toFixed(2)} ${service.currency}` : '—'}</span>
               </div>
             </div>
 
             <div className="apptdetail-divider" />
 
-            <p className="apptdetail-section-label">Pacienti</p>
+            <p className="apptdetail-section-label">{t('appointmentDetail.patientSectionTitle')}</p>
             <div className="apptdetail-grid">
               <div className="apptdetail-item">
-                <span className="apptdetail-label">Rezervuar për</span>
+                <span className="apptdetail-label">{t('appointmentDetail.bookedForLabel')}</span>
                 <span className="apptdetail-value">
                   {appointment.dependentName
                     ? appointment.dependentName
@@ -354,27 +385,27 @@ export default function AppointmentDetailPage() {
                 </span>
               </div>
               <div className="apptdetail-item">
-                <span className="apptdetail-label">Tipi</span>
-                <span className="apptdetail-value">{appointment.dependentName ? 'Anëtar Familjeje' : 'Pacient Individual'}</span>
+                <span className="apptdetail-label">{t('appointmentDetail.typeLabel')}</span>
+                <span className="apptdetail-value">{appointment.dependentName ? t('appointmentDetail.typeFamilyMember') : t('appointmentDetail.typeIndividual')}</span>
               </div>
             </div>
 
             {appointment.patientNote && (
               <div className="apptdetail-note">
-                <span className="apptdetail-note__label">Keni shënim:</span>
+                <span className="apptdetail-note__label">{t('appointmentDetail.noteLabel')}</span>
                 <p className="apptdetail-note__text">{appointment.patientNote}</p>
               </div>
             )}
           </div>
 
           <div className="card apptdetail-timeline-card">
-            <h3 className="apptdetail-timeline__heading">Historiku i statusit</h3>
+            <h3 className="apptdetail-timeline__heading">{t('appointmentDetail.statusHistoryTitle')}</h3>
             <div className="apptdetail-timeline">
               <div className="apptdetail-timeline__event">
-                <span className="apptdetail-timeline__dot" style={{ background: TIMELINE_LABELS[appointment.status]?.color ?? 'var(--muted)' }} />
+                <span className="apptdetail-timeline__dot" style={{ background: TIMELINE_COLORS[appointment.status] ?? 'var(--muted)' }} />
                 <div>
-                  <div className="apptdetail-timeline__label" style={{ color: TIMELINE_LABELS[appointment.status]?.color ?? 'var(--muted)' }}>
-                    {TIMELINE_LABELS[appointment.status]?.text ?? 'I panjohur'}
+                  <div className="apptdetail-timeline__label" style={{ color: TIMELINE_COLORS[appointment.status] ?? 'var(--muted)' }}>
+                    {timelineLabel(appointment.status, t)}
                   </div>
                   <div className="apptdetail-timeline__time">{formatDayMonthTime(new Date().toISOString())}</div>
                 </div>
@@ -382,7 +413,7 @@ export default function AppointmentDetailPage() {
               <div className="apptdetail-timeline__event apptdetail-timeline__event--last">
                 <span className="apptdetail-timeline__dot" style={{ background: 'var(--ok)' }} />
                 <div>
-                  <div className="apptdetail-timeline__label" style={{ color: 'var(--ok)' }}>Rezervuar</div>
+                  <div className="apptdetail-timeline__label" style={{ color: 'var(--ok)' }}>{t('appointmentDetail.bookedEventLabel')}</div>
                   <div className="apptdetail-timeline__time">{formatDayMonthTime(appointment.createdAt)}</div>
                 </div>
               </div>
@@ -393,9 +424,9 @@ export default function AppointmentDetailPage() {
         <div className="card apptdetail-action">
           {!showReschedule && (
             <div className="apptdetail-status-card">
-              {statusBadge(appointment.status)}
+              {statusBadge(appointment.status, t)}
               <p className="apptdetail-status-desc">
-                {STATUS_DESCRIPTIONS[appointment.status] ?? 'Statusi i këtij termini nuk njihet.'}
+                {statusDescription(appointment.status, t)}
               </p>
             </div>
           )}
@@ -419,37 +450,37 @@ export default function AppointmentDetailPage() {
             <>
               <div className="apptdetail-state apptdetail-state--ok">
                 <CheckCircle size={28} strokeWidth={1.5} color="var(--ok)" style={{ margin: '0 auto 8px' }} />
-                <p>Takimi u përfundua me sukses.</p>
+                <p>{t('appointmentDetail.completedMessage')}</p>
               </div>
               <Link to={`/mjeku/${appointment.doctorId}`} className="btn btn--primary btn--block" style={{ marginTop: 12 }}>
-                Rezervoni termin tjetër <ArrowRight size={14} strokeWidth={1.5} />
+                {t('appointmentDetail.bookAnotherCta')} <ArrowRight size={14} strokeWidth={1.5} />
               </Link>
             </>
           ) : appointment.status === AppointmentStatus.CancelledByPatient || appointment.status === AppointmentStatus.CancelledByClinic ? (
             <>
               <div className="apptdetail-state apptdetail-state--danger">
                 <XCircle size={28} strokeWidth={1.5} color="var(--danger)" style={{ margin: '0 auto 8px' }} />
-                <p>Termini u anulua.</p>
+                <p>{t('appointmentDetail.cancelledMessage')}</p>
               </div>
               <Link to="/kerko" className="btn btn--ghost btn--block" style={{ marginTop: 12 }}>
-                Gjeni termin tjetër <ArrowRight size={14} strokeWidth={1.5} />
+                {t('appointmentDetail.findAnotherCta')} <ArrowRight size={14} strokeWidth={1.5} />
               </Link>
             </>
           ) : within12h ? (
             <div className="apptdetail-warning">
               <AlertTriangle size={16} strokeWidth={1.5} color="var(--warn)" />
-              <span>Anulimi nuk është i mundur — takimi fillon brenda 12 orëve.</span>
+              <span>{t('appointmentDetail.cannotCancelWithin12h')}</span>
             </div>
           ) : canCancel ? (
             <>
               <div className="apptdetail-countdown">
                 <Clock size={15} strokeWidth={1.5} color="var(--primary)" />
-                <span>{formatCountdown(hoursUntil(appointment.startDateTime))}</span>
+                <span>{formatCountdown(hoursUntil(appointment.startDateTime), t)}</span>
               </div>
 
               <button type="button" className="apptdetail-btn-primary" onClick={openReschedule}>
                 <CalendarDays size={16} strokeWidth={1.5} />
-                Rischeduloni terminin
+                {t('appointmentDetail.rescheduleCta')}
               </button>
 
               <button
@@ -458,12 +489,12 @@ export default function AppointmentDetailPage() {
                 onClick={() => setShowCancelConfirm((v) => !v)}
               >
                 <XCircle size={16} strokeWidth={1.5} />
-                Anuloni terminin
+                {t('appointmentDetail.cancelCta')}
               </button>
 
               {showCancelConfirm && (
                 <div className="apptdetail-cancel-confirm">
-                  <p>Anuloni terminin me Dr. {doctor?.lastName ?? ''}?</p>
+                  <p>{t('appointmentDetail.cancelConfirmPrompt', { lastName: doctor?.lastName ?? '' })}</p>
                   <div className="apptdetail-cancel-confirm__row">
                     <button
                       type="button"
@@ -471,7 +502,7 @@ export default function AppointmentDetailPage() {
                       style={{ flex: 1 }}
                       onClick={() => setShowCancelConfirm(false)}
                     >
-                      Anulo
+                      {tCommon('appointment.actions.cancel')}
                     </button>
                     <button
                       type="button"
@@ -480,13 +511,13 @@ export default function AppointmentDetailPage() {
                       disabled={cancelling}
                       onClick={handleConfirmCancel}
                     >
-                      {cancelling ? 'Duke anuluar…' : 'Po, anulo'}
+                      {cancelling ? t('appointmentDetail.cancelling') : t('appointmentDetail.confirmCancelYes')}
                     </button>
                   </div>
                 </div>
               )}
 
-              <p className="apptdetail-cancel-note">Mund të anuloni deri 12 orë para takimit.</p>
+              <p className="apptdetail-cancel-note">{t('appointmentDetail.cancelDeadlineNote')}</p>
             </>
           ) : null}
 
@@ -495,7 +526,7 @@ export default function AppointmentDetailPage() {
               <div className="apptdetail-infobox">
                 <Info size={15} strokeWidth={1.5} color="var(--primary)" />
                 <div>
-                  <span>Nëse keni pyetje rreth terminit tuaj, kontaktoni klinikën direkt.</span>
+                  <span>{t('appointmentDetail.questionsHint')}</span>
                   {clinic?.phoneNumber && (
                     <a href={`tel:${clinic.phoneNumber}`} className="apptdetail-infobox__phone">
                       <Phone size={13} strokeWidth={1.5} /> {clinic.phoneNumber}
@@ -505,7 +536,7 @@ export default function AppointmentDetailPage() {
               </div>
 
               <Link to="/terminet" className="apptdetail-backlink">
-                <ChevronLeft size={14} strokeWidth={1.5} style={{ display: 'inline' }} /> Kthehu te terminet
+                <ChevronLeft size={14} strokeWidth={1.5} style={{ display: 'inline' }} /> {t('appointmentDetail.backToAppointments')}
               </Link>
             </>
           )}
@@ -515,14 +546,14 @@ export default function AppointmentDetailPage() {
   )
 }
 
-function formatCountdown(hours: number): string {
+function formatCountdown(hours: number, t: (key: string, opts?: Record<string, unknown>) => string): string {
   if (hours > 24) {
     const days = Math.floor(hours / 24)
-    return `Mbetet ${days} ditë`
+    return t('appointmentDetail.countdownDays', { count: days })
   }
   const h = Math.floor(hours)
   const m = Math.round((hours - h) * 60)
-  return `Mbetet ${h} orë ${m} min`
+  return t('appointmentDetail.countdownHoursMinutes', { hours: h, minutes: m })
 }
 
 function RescheduleUi({
@@ -552,6 +583,8 @@ function RescheduleUi({
   onCancel: () => void
   onConfirm: () => void
 }) {
+  const { t } = useTranslation('patient')
+  const { t: tCommon } = useTranslation('common')
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   // Earliest selectable day is tomorrow — rescheduling onto the current day
@@ -578,9 +611,9 @@ function RescheduleUi({
   return (
     <>
       <div className="apptdetail-reschedule__header">
-        <h3>Zgjidhni datë të re</h3>
+        <h3>{t('appointmentDetail.rescheduleTitle')}</h3>
         <button type="button" className="apptdetail-reschedule__cancel" onClick={onCancel}>
-          <ArrowLeft size={14} strokeWidth={1.5} /> Anulo
+          <ArrowLeft size={14} strokeWidth={1.5} /> {tCommon('appointment.actions.cancel')}
         </button>
       </div>
 
@@ -588,7 +621,7 @@ function RescheduleUi({
         <button type="button" onClick={() => shiftWeek(-1)}>
           <ChevronLeft size={18} strokeWidth={1.5} />
         </button>
-        <span>{MONTHS_SQ[weekStart.getMonth()]} {weekStart.getFullYear()}</span>
+        <span>{monthName(weekStart.getMonth())} {weekStart.getFullYear()}</span>
         <button type="button" onClick={() => shiftWeek(1)}>
           <ChevronRight size={18} strokeWidth={1.5} />
         </button>
@@ -604,7 +637,7 @@ function RescheduleUi({
           const disabled = isPast || isFuture
           return (
             <div key={dateStr} className="apptdetail-weekstrip__col">
-              <div className="apptdetail-weekstrip__day">{DAY_ABBR_SQ[d.getDay()]}</div>
+              <div className="apptdetail-weekstrip__day">{weekdayName(d.getDay(), 'short').toUpperCase()}</div>
               <button
                 type="button"
                 className={`apptdetail-daybtn ${isSelected ? 'is-selected' : isToday ? 'is-today' : ''}`}
@@ -622,7 +655,7 @@ function RescheduleUi({
         {slotsLoading ? (
           Array.from({ length: 6 }).map((_, i) => <div key={i} className="apptdetail-slot-skeleton skeleton-shimmer" />)
         ) : !selectedDate ? null : availableSlots.length === 0 ? (
-          <p className="apptdetail-slot-empty">Nuk ka vende të lira për këtë datë.</p>
+          <p className="apptdetail-slot-empty">{t('appointmentDetail.rescheduleNoSlotsForDate')}</p>
         ) : (
           availableSlots.map((slot) => {
             const time = formatTimeSq(slot.startDateTime)
@@ -646,7 +679,7 @@ function RescheduleUi({
 
       {selectedDate && selectedSlot && (
         <div className="apptdetail-summary">
-          Data e re: {formatDateSq(selectedSlot)} ora {formatTimeSq(selectedSlot)}
+          {t('appointmentDetail.rescheduleNewDateSummary', { date: formatDateSq(selectedSlot), time: formatTimeSq(selectedSlot) })}
         </div>
       )}
 
@@ -658,11 +691,11 @@ function RescheduleUi({
       >
         {rescheduling ? (
           <>
-            <Pending /> Duke rischeduluar…
+            <Pending /> {t('appointmentDetail.reschedulingInProgress')}
           </>
         ) : (
           <>
-            <Check size={16} strokeWidth={1.5} /> Konfirmo rischedulimin
+            <Check size={16} strokeWidth={1.5} /> {t('appointmentDetail.confirmReschedule')}
           </>
         )}
       </button>

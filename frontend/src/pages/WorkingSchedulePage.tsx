@@ -1,28 +1,27 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Calendar, Clock, Info, Plus, Trash2 } from 'lucide-react'
-import { api, ApiError } from '../lib/api'
+import { Trans, useTranslation } from 'react-i18next'
+import { api } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
 import type { CreateWorkingScheduleRequest, DoctorWorkingSchedule } from '../lib/types'
 import { useToast } from '../context/ToastContext'
 import { CustomSelect, EmptyState, ErrorBox, Modal, SkeletonRows } from '../components/ui'
+import { monthName, weekdayName } from '../lib/format'
 
-const DAYS_SQ = ['E Diel', 'E Hënë', 'E Martë', 'E Mërkurë', 'E Enjte', 'E Premte', 'E Shtunë']
-const MONTHS_ABBR_SQ = ['Jan', 'Shk', 'Mar', 'Pri', 'Maj', 'Qer', 'Kor', 'Gus', 'Sht', 'Tet', 'Nën', 'Dhj']
 // Display order Monday-first while the backend's DayOfWeek stays Sunday(0)..Saturday(6).
 const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0]
-
-const DAY_OPTIONS = DAY_ORDER.map((d) => ({ value: String(d), label: DAYS_SQ[d] }))
 
 function formatDatePill(iso?: string): string {
   if (!iso) return ''
   const m = iso.match(/(\d{4})-(\d{2})-(\d{2})/)
   if (!m) return iso
-  return `${Number(m[3])} ${MONTHS_ABBR_SQ[Number(m[2]) - 1]}`
+  return `${Number(m[3])} ${monthName(Number(m[2]) - 1, 'short')}`
 }
 
-function validityLabel(s: DoctorWorkingSchedule): string {
-  if (!s.validUntil) return 'Pa skadim'
-  if (s.validFrom) return `${formatDatePill(s.validFrom)} – ${formatDatePill(s.validUntil)}`
-  return `Deri më ${formatDatePill(s.validUntil)}`
+function validityLabel(s: DoctorWorkingSchedule, t: (key: string, opts?: Record<string, unknown>) => string): string {
+  if (!s.validUntil) return t('workingSchedule.noExpiry')
+  if (s.validFrom) return t('workingSchedule.validRange', { from: formatDatePill(s.validFrom), to: formatDatePill(s.validUntil) })
+  return t('workingSchedule.validUntilOnly', { date: formatDatePill(s.validUntil) })
 }
 
 interface FormState {
@@ -46,6 +45,8 @@ const EMPTY_FORM: FormState = {
 }
 
 export default function WorkingSchedulePage() {
+  const { t } = useTranslation('doctor')
+  const { t: tCommon } = useTranslation('common')
   const { notify } = useToast()
 
   const [schedules, setSchedules] = useState<DoctorWorkingSchedule[]>([])
@@ -61,13 +62,18 @@ export default function WorkingSchedulePage() {
   const [deleteTarget, setDeleteTarget] = useState<DoctorWorkingSchedule | null>(null)
   const [actingId, setActingId] = useState('')
 
+  // Recomputed on every render (not module-level) so a language switch
+  // relabels these immediately — weekdayName() reads the active i18n
+  // language at call time.
+  const dayOptions = DAY_ORDER.map((d) => ({ value: String(d), label: weekdayName(d) }))
+
   function load() {
     setLoading(true)
     setError('')
     api
       .getWorkingSchedules()
       .then(setSchedules)
-      .catch((e) => setError(e instanceof ApiError ? e.message : 'Ndodhi një gabim.'))
+      .catch((e) => setError(getErrorMessage(e)))
       .finally(() => setLoading(false))
   }
 
@@ -105,20 +111,20 @@ export default function WorkingSchedulePage() {
   async function handleCreate() {
     setFormError('')
     if (!form.clinicBranchId) {
-      setFormError('Zgjidhni një degë.')
+      setFormError(t('workingSchedule.validation.branchRequired'))
       return
     }
     if (form.endTime <= form.startTime) {
-      setFormError('Ora e mbarimit duhet të jetë pas orës së fillimit.')
+      setFormError(t('workingSchedule.validation.endAfterStart'))
       return
     }
     const duration = Number(form.slotDurationMinutes)
     if (!duration || duration < 5 || duration > 240) {
-      setFormError('Kohëzgjatja e sllotit duhet të jetë mes 5 dhe 240 minuta.')
+      setFormError(t('workingSchedule.validation.durationRange'))
       return
     }
     if (form.validFrom && form.validUntil && form.validUntil < form.validFrom) {
-      setFormError('Data e skadimit duhet të jetë pas datës së fillimit.')
+      setFormError(t('workingSchedule.validation.validUntilAfterFrom'))
       return
     }
 
@@ -136,10 +142,10 @@ export default function WorkingSchedulePage() {
     try {
       await api.createWorkingSchedule(payload)
       setShowAddModal(false)
-      notify('Orari u shtua.', 'ok')
+      notify(t('workingSchedule.createdToast'), 'ok')
       load()
     } catch (e) {
-      setFormError(e instanceof ApiError ? e.message : 'Gabim. Provoni përsëri.')
+      setFormError(getErrorMessage(e))
     } finally {
       setSaving(false)
     }
@@ -151,10 +157,10 @@ export default function WorkingSchedulePage() {
     setSchedules((prev) => prev.map((s) => (s.id === schedule.id ? { ...s, isActive: false } : s)))
     try {
       await api.deleteWorkingSchedule(schedule.id)
-      notify('Orari u çaktivizua.', 'ok')
+      notify(t('workingSchedule.deactivatedToast'), 'ok')
     } catch (e) {
       setSchedules((prev) => prev.map((s) => (s.id === schedule.id ? { ...s, isActive: true } : s)))
-      notify(e instanceof ApiError ? e.message : 'Gabim. Provoni përsëri.', 'error')
+      notify(getErrorMessage(e), 'error')
     } finally {
       setActingId('')
     }
@@ -165,11 +171,11 @@ export default function WorkingSchedulePage() {
     setActingId(deleteTarget.id)
     try {
       await api.deleteWorkingSchedule(deleteTarget.id)
-      notify('Orari u fshi.', 'ok')
+      notify(t('workingSchedule.deletedToast'), 'ok')
       setDeleteTarget(null)
       load()
     } catch (e) {
-      notify(e instanceof ApiError ? e.message : 'Gabim. Provoni përsëri.', 'error')
+      notify(getErrorMessage(e), 'error')
     } finally {
       setActingId('')
     }
@@ -179,61 +185,61 @@ export default function WorkingSchedulePage() {
     <>
       <div className="doctor-cal-header">
         <div>
-          <h1>Orari i punës</h1>
-          <p className="doctor-cal-header__sub">Menaxhoni oraret javore të punës dhe kohën e sloteve për çdo degë.</p>
+          <h1>{t('workingSchedule.title')}</h1>
+          <p className="doctor-cal-header__sub">{t('workingSchedule.subtitle')}</p>
         </div>
         <button type="button" className="btn btn--primary" onClick={openAddModal}>
-          <Plus size={16} strokeWidth={1.5} /> Shto orar të ri
+          <Plus size={16} strokeWidth={1.5} /> {t('workingSchedule.addScheduleCta')}
         </button>
       </div>
 
       <div className="schedule-info-banner">
         <Info size={16} strokeWidth={1.5} color="var(--primary)" />
         <span>
-          Këto orare janë shabllone javore që përsëriten automatikisht. Mund të caktoni vlefshmëri specifike për periudha të caktuara kohore.
+          {t('workingSchedule.infoBanner')}
         </span>
       </div>
 
       {loading ? (
-        <SkeletonRows count={4} label="Duke ngarkuar oraret" />
+        <SkeletonRows count={4} label={t('workingSchedule.loadingLabel')} />
       ) : error ? (
-        <ErrorBox message={error} />
+        <ErrorBox message={error} onRetry={load} />
       ) : schedules.length === 0 ? (
         <div className="schedule-empty">
-          <EmptyState icon={Calendar} title="Nuk keni asnjë orar të shtuar ende." />
+          <EmptyState icon={Calendar} title={t('workingSchedule.emptyTitle')} />
           <button type="button" className="btn btn--primary" onClick={openAddModal}>
-            <Plus size={16} strokeWidth={1.5} /> Shto orar të ri
+            <Plus size={16} strokeWidth={1.5} /> {t('workingSchedule.addScheduleCta')}
           </button>
         </div>
       ) : (
         grouped.map(({ day, items }) => (
           <div key={day} className="schedule-day-group">
             <div className="schedule-day-group__head">
-              <h2>{DAYS_SQ[day]}</h2>
+              <h2>{weekdayName(day)}</h2>
               <span className="schedule-day-group__badge">
-                {items.length} {items.length === 1 ? 'Sesion' : 'Sesione'}
+                {t('workingSchedule.sessionCount', { count: items.length })}
               </span>
             </div>
 
             {items.map((s) => (
               <div className="schedule-card" key={s.id}>
                 <div className="schedule-card__time">
-                  <span className="schedule-card__time-label">KOHA</span>
+                  <span className="schedule-card__time-label">{t('workingSchedule.timeLabel')}</span>
                   <span className="schedule-card__time-start">{s.startTime.slice(0, 5)}</span>
-                  <span className="schedule-card__time-end">deri {s.endTime.slice(0, 5)}</span>
+                  <span className="schedule-card__time-end">{t('workingSchedule.until', { time: s.endTime.slice(0, 5) })}</span>
                 </div>
 
                 <div className="schedule-card__main">
                   <div className="schedule-card__branch">{s.branchName}</div>
                   <div className="schedule-card__meta">
-                    <span><Clock size={13} strokeWidth={1.5} /> {s.slotDurationMinutes} min / termin</span>
-                    <span><Calendar size={13} strokeWidth={1.5} /> {validityLabel(s)}</span>
+                    <span><Clock size={13} strokeWidth={1.5} /> {t('workingSchedule.perAppointment', { count: s.slotDurationMinutes })}</span>
+                    <span><Calendar size={13} strokeWidth={1.5} /> {validityLabel(s, t)}</span>
                   </div>
                 </div>
 
                 <div className="schedule-card__actions">
                   <span className={`schedule-card__status ${s.isActive ? 'is-active' : ''}`}>
-                    {s.isActive ? 'AKTIV' : 'JOAKTIV'}
+                    {s.isActive ? t('workingSchedule.statusActive') : t('workingSchedule.statusInactive')}
                   </span>
                   <button
                     type="button"
@@ -249,7 +255,7 @@ export default function WorkingSchedulePage() {
                     type="button"
                     className="schedule-card__delete"
                     onClick={() => setDeleteTarget(s)}
-                    aria-label="Fshi orarin"
+                    aria-label={t('workingSchedule.deleteAria')}
                   >
                     <Trash2 size={16} strokeWidth={1.5} />
                   </button>
@@ -261,20 +267,19 @@ export default function WorkingSchedulePage() {
       )}
 
       {showAddModal && (
-        <Modal title="Shto orar të ri" onClose={() => setShowAddModal(false)}>
+        <Modal title={t('workingSchedule.addModalTitle')} onClose={() => setShowAddModal(false)}>
           {formError && <ErrorBox message={formError} />}
           {branchOptions.length === 0 ? (
             <div className="field">
-              <label>Dega</label>
+              <label>{t('workingSchedule.branchLabel')}</label>
               <p className="field__note">
-                Nuk ka degë të disponueshme. Shtoni një orar për një degë me anë të stafit administrativ së pari,
-                ose kontaktoni administratorin e klinikës.
+                {t('workingSchedule.noBranchesAvailable')}
               </p>
             </div>
           ) : (
             <div className="field">
               <CustomSelect
-                label="Dega"
+                label={t('workingSchedule.branchLabel')}
                 options={branchOptions.map((b) => ({ value: b.id, label: b.name }))}
                 value={form.clinicBranchId}
                 onChange={(v) => updateField('clinicBranchId', v)}
@@ -286,8 +291,8 @@ export default function WorkingSchedulePage() {
 
           <div className="field">
             <CustomSelect
-              label="Dita e javës"
-              options={DAY_OPTIONS}
+              label={t('workingSchedule.dayOfWeekLabel')}
+              options={dayOptions}
               value={form.dayOfWeek}
               onChange={(v) => updateField('dayOfWeek', v)}
               open={openField === 'day'}
@@ -297,17 +302,17 @@ export default function WorkingSchedulePage() {
 
           <div className="form-row">
             <div className="field">
-              <label>Ora e fillimit</label>
+              <label>{t('workingSchedule.startTimeLabel')}</label>
               <input type="time" value={form.startTime} onChange={(e) => updateField('startTime', e.target.value)} />
             </div>
             <div className="field">
-              <label>Ora e mbarimit</label>
+              <label>{t('workingSchedule.endTimeLabel')}</label>
               <input type="time" value={form.endTime} onChange={(e) => updateField('endTime', e.target.value)} />
             </div>
           </div>
 
           <div className="field">
-            <label>Kohëzgjatja e sllotit (minuta)</label>
+            <label>{t('workingSchedule.slotDurationLabel')}</label>
             <input
               type="number"
               min={5}
@@ -319,11 +324,11 @@ export default function WorkingSchedulePage() {
 
           <div className="form-row">
             <div className="field">
-              <label>Vlefshëm nga <span className="muted">(opsional)</span></label>
+              <label>{t('workingSchedule.validFromLabel')} <span className="muted">{t('workingSchedule.optional')}</span></label>
               <input type="date" value={form.validFrom} onChange={(e) => updateField('validFrom', e.target.value)} />
             </div>
             <div className="field">
-              <label>Vlefshëm deri <span className="muted">(opsional)</span></label>
+              <label>{t('workingSchedule.validUntilLabel')} <span className="muted">{t('workingSchedule.optional')}</span></label>
               <input type="date" value={form.validUntil} onChange={(e) => updateField('validUntil', e.target.value)} />
             </div>
           </div>
@@ -334,20 +339,24 @@ export default function WorkingSchedulePage() {
             disabled={saving || branchOptions.length === 0}
             onClick={handleCreate}
           >
-            {saving ? 'Duke ruajtur…' : 'Shto orarin'}
+            {saving ? t('workingSchedule.saving') : t('workingSchedule.addScheduleSubmit')}
           </button>
         </Modal>
       )}
 
       {deleteTarget && (
-        <Modal title="Fshi orarin" onClose={() => setDeleteTarget(null)}>
+        <Modal title={t('workingSchedule.deleteModalTitle')} onClose={() => setDeleteTarget(null)}>
           <p className="schedule-delete__text">
-            Jeni i sigurt që dëshironi të fshini orarin për <strong>{DAYS_SQ[deleteTarget.dayOfWeek]}</strong> në{' '}
-            <strong>{deleteTarget.branchName}</strong>?
+            <Trans
+              i18nKey="workingSchedule.deleteConfirmText"
+              ns="doctor"
+              values={{ day: weekdayName(deleteTarget.dayOfWeek), branch: deleteTarget.branchName }}
+              components={[<strong key="0" />, <strong key="1" />]}
+            />
           </p>
           <div className="schedule-delete__actions">
             <button type="button" className="btn btn--ghost btn--sm" style={{ flex: 1 }} onClick={() => setDeleteTarget(null)}>
-              Anulo
+              {tCommon('buttons.cancel')}
             </button>
             <button
               type="button"
@@ -356,7 +365,7 @@ export default function WorkingSchedulePage() {
               disabled={actingId === deleteTarget.id}
               onClick={handleConfirmDelete}
             >
-              {actingId === deleteTarget.id ? 'Duke fshirë…' : 'Po, fshije'}
+              {actingId === deleteTarget.id ? t('workingSchedule.deleting') : t('workingSchedule.confirmDeleteCta')}
             </button>
           </div>
         </Modal>

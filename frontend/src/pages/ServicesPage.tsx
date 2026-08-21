@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Clock, Coins, Pencil, Plus, Stethoscope, Trash2 } from 'lucide-react'
-import { api, ApiError } from '../lib/api'
+import { Trans, useTranslation } from 'react-i18next'
+import { api } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
 import type { CreateMedicalServiceRequest, MedicalService, Specialty } from '../lib/types'
 import { useToast } from '../context/ToastContext'
 import { useClinicContext } from '../components/ClinicDetailLayout'
@@ -19,6 +21,8 @@ const EMPTY_FORM: CreateMedicalServiceRequest = {
 type StatusFilter = 'all' | 'active' | 'inactive'
 
 export default function ServicesPage() {
+  const { t } = useTranslation('admin')
+  const { t: tCommon } = useTranslation('common')
   const { clinic } = useClinicContext()
   const { notify } = useToast()
 
@@ -42,7 +46,7 @@ export default function ServicesPage() {
         setServices(serviceList)
         setSpecialties(specialtyList)
       })
-      .catch((e) => setError(e instanceof ApiError ? e.message : 'Ndodhi një gabim.'))
+      .catch((e) => setError(getErrorMessage(e)))
       .finally(() => setLoading(false))
   }, [clinic.id])
 
@@ -50,16 +54,16 @@ export default function ServicesPage() {
 
   const specialtyOptions: CustomSelectOption[] = useMemo(
     () => [
-      { value: 'all', label: 'Të gjitha specializimet' },
+      { value: 'all', label: t('services.filterAllSpecialties') },
       ...specialties.map((s) => ({ value: s.id, label: s.name })),
     ],
-    [specialties],
+    [specialties, t],
   )
 
   const statusOptions: CustomSelectOption[] = [
-    { value: 'all', label: 'Të gjitha' },
-    { value: 'active', label: 'Aktive' },
-    { value: 'inactive', label: 'Joaktive' },
+    { value: 'all', label: t('services.filterAll') },
+    { value: 'active', label: t('services.filterActive') },
+    { value: 'inactive', label: t('services.filterInactive') },
   ]
 
   // The backend has no active/inactive state on services — every service
@@ -82,11 +86,11 @@ export default function ServicesPage() {
   // No PUT /services endpoint exists yet — the icon stays visible so the UI
   // is ready for it, but for now it only surfaces that editing isn't wired up.
   function openEditModal() {
-    notify('Funksion në zhvillim.', 'info')
+    notify(t('services.featureInDevelopmentToast'), 'info')
   }
 
   function confirmDelete() {
-    notify('Funksion në zhvillim.', 'info')
+    notify(t('services.featureInDevelopmentToast'), 'info')
     setDeleteTarget(null)
   }
 
@@ -94,18 +98,18 @@ export default function ServicesPage() {
     <div className="services-page">
       <div className="admin-header">
         <div>
-          <h1>Shërbimet e Klinikës</h1>
-          <p className="admin-header__sub">Menaxhoni shërbimet mjekësore dhe çmimet.</p>
+          <h1>{t('services.pageTitle')}</h1>
+          <p className="admin-header__sub">{t('services.pageSubtitle')}</p>
         </div>
         <button type="button" className="btn btn--primary btn--sm" onClick={openAddModal}>
-          <Plus size={15} strokeWidth={1.5} /> Shto Shërbim
+          <Plus size={15} strokeWidth={1.5} /> {t('services.addCta')}
         </button>
       </div>
 
       <div className="filters">
         <div className="filters__field">
           <CustomSelect
-            label="Specializimi"
+            label={t('doctors.filterSpecialtyLabel')}
             options={specialtyOptions}
             value={specialtyFilter}
             onChange={setSpecialtyFilter}
@@ -115,7 +119,7 @@ export default function ServicesPage() {
         </div>
         <div className="filters__field">
           <CustomSelect
-            label="Statusi"
+            label={t('doctors.filterStatusLabel')}
             options={statusOptions}
             value={statusFilter}
             onChange={(v) => setStatusFilter(v as StatusFilter)}
@@ -125,22 +129,22 @@ export default function ServicesPage() {
         </div>
       </div>
 
-      {error && <ErrorBox message={error} />}
-
       {loading ? (
-        <SkeletonRows count={4} label="Duke ngarkuar shërbimet" />
+        <SkeletonRows count={4} label={t('services.loadingLabel')} />
+      ) : error ? (
+        <ErrorBox message={error} onRetry={load} />
       ) : services.length === 0 ? (
         <EmptyState
           icon={Stethoscope}
-          title="Kjo klinikë nuk ka asnjë shërbim të shtuar ende."
+          title={t('services.emptyTitle')}
           action={
             <button type="button" className="btn btn--primary btn--sm" onClick={openAddModal}>
-              <Plus size={15} strokeWidth={1.5} /> Shto Shërbimin e Parë
+              <Plus size={15} strokeWidth={1.5} /> {t('services.addFirstCta')}
             </button>
           }
         />
       ) : filtered.length === 0 ? (
-        <EmptyState icon={Stethoscope} title="Asnjë shërbim nuk përputhet me filtrat e zgjedhur." />
+        <EmptyState icon={Stethoscope} title={t('services.noMatchTitle')} />
       ) : (
         <div className="service-grid">
           {filtered.map((s) => (
@@ -167,9 +171,14 @@ export default function ServicesPage() {
       )}
 
       {deleteTarget && (
-        <Modal title="Fshi shërbimin" onClose={() => setDeleteTarget(null)}>
+        <Modal title={t('services.deleteModal.title')} onClose={() => setDeleteTarget(null)}>
           <p className="schedule-delete__text">
-            Jeni i sigurt që dëshironi të fshini shërbimin <strong>{deleteTarget.name}</strong>?
+            <Trans
+              i18nKey="services.deleteModal.confirmText"
+              ns="admin"
+              values={{ name: deleteTarget.name }}
+              components={[<strong key="0" />]}
+            />
           </p>
           <div className="schedule-delete__actions">
             <button
@@ -178,10 +187,10 @@ export default function ServicesPage() {
               style={{ flex: 1 }}
               onClick={() => setDeleteTarget(null)}
             >
-              Anulo
+              {tCommon('buttons.cancel')}
             </button>
             <button type="button" className="btn btn--primary btn--sm" style={{ flex: 1 }} onClick={confirmDelete}>
-              Fshi
+              {t('services.deleteModal.deleteCta')}
             </button>
           </div>
         </Modal>
@@ -199,29 +208,30 @@ function ServiceCard({
   onEdit: () => void
   onDelete: () => void
 }) {
+  const { t } = useTranslation('admin')
   return (
     <div className="admin-card service-card">
       <div className="service-card__top">
         <h3 className="service-card__name">{service.name}</h3>
-        <span className="admin-card__status admin-card__status--approved">AKTIVE</span>
+        <span className="admin-card__status admin-card__status--approved">{t('services.card.statusActive')}</span>
       </div>
 
       <span className="service-card__specialty">{service.specialtyName}</span>
 
       <div className="service-card__details">
-        <span><Clock size={13} strokeWidth={1.5} /> <span className="num">{service.durationMinutes}</span> min / termin</span>
+        <span><Clock size={13} strokeWidth={1.5} /> <span className="num">{service.durationMinutes}</span> {t('services.card.durationSuffix')}</span>
         <span><Coins size={13} strokeWidth={1.5} /> <span className="num">{service.price.toFixed(2)} {service.currency}</span></span>
       </div>
 
       {service.description && <p className="service-card__desc">{service.description}</p>}
 
       <div className="service-card__bottom">
-        <span className="branch-card__id">ID: {service.id}</span>
+        <span className="branch-card__id">{t('services.card.idLabel', { id: service.id })}</span>
         <div className="service-card__actions">
-          <button type="button" className="admin-icon-btn" onClick={onEdit} aria-label="Ndrysho shërbimin">
+          <button type="button" className="admin-icon-btn" onClick={onEdit} aria-label={t('services.card.editAria')}>
             <Pencil size={15} strokeWidth={1.5} />
           </button>
-          <button type="button" className="admin-icon-btn" onClick={onDelete} aria-label="Fshi shërbimin">
+          <button type="button" className="admin-icon-btn" onClick={onDelete} aria-label={t('services.card.deleteAria')}>
             <Trash2 size={15} strokeWidth={1.5} />
           </button>
         </div>
@@ -241,6 +251,8 @@ function ServiceFormModal({
   onClose: () => void
   onSaved: () => void
 }) {
+  const { t } = useTranslation('admin')
+  const { t: tCommon } = useTranslation('common')
   const { notify } = useToast()
   const [form, setForm] = useState<CreateMedicalServiceRequest>(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
@@ -248,7 +260,7 @@ function ServiceFormModal({
   const [specialtySelectOpen, setSpecialtySelectOpen] = useState(false)
 
   const specialtyOptions: CustomSelectOption[] = [
-    { value: '', label: 'Zgjidhni specializimin', disabled: true },
+    { value: '', label: t('services.formModal.selectSpecialtyPlaceholder'), disabled: true },
     ...specialties.map((s) => ({ value: s.id, label: s.name })),
   ]
 
@@ -258,19 +270,19 @@ function ServiceFormModal({
 
   async function handleSubmit() {
     if (form.name.trim().length < 2) {
-      setFormError('Emri i shërbimit është i detyrueshëm.')
+      setFormError(t('services.formModal.nameRequired'))
       return
     }
     if (!form.specialtyId) {
-      setFormError('Specializimi është i detyrueshëm.')
+      setFormError(t('services.formModal.specialtyRequired'))
       return
     }
     if (!form.durationMinutes || form.durationMinutes <= 0) {
-      setFormError('Kohëzgjatja duhet të jetë më e madhe se 0.')
+      setFormError(t('services.formModal.durationInvalid'))
       return
     }
     if (form.price == null || form.price < 0) {
-      setFormError('Çmimi është i detyrueshëm.')
+      setFormError(t('services.formModal.priceRequired'))
       return
     }
 
@@ -285,32 +297,32 @@ function ServiceFormModal({
         price: form.price,
         currency: form.currency.trim() || 'EUR',
       })
-      notify('Shërbimi u shtua.', 'ok')
+      notify(t('services.formModal.addedToast'), 'ok')
       onSaved()
     } catch (e) {
-      setFormError(e instanceof ApiError ? e.message : 'Gabim. Provoni përsëri.')
+      setFormError(getErrorMessage(e))
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <Modal title="Shto Shërbim" onClose={onClose}>
+    <Modal title={t('services.formModal.addTitle')} onClose={onClose}>
       {formError && <ErrorBox message={formError} />}
 
       <div className="field">
-        <label>Emri i Shërbimit</label>
+        <label>{t('services.formModal.nameLabel')}</label>
         <input
           type="text"
           value={form.name}
           onChange={(e) => updateField('name', e.target.value)}
-          placeholder="p.sh. Kontroll kardiologjik"
+          placeholder={t('services.formModal.namePlaceholder')}
         />
       </div>
 
       <div className="field">
         <CustomSelect
-          label="Specializimi"
+          label={t('services.formModal.specialtyLabel')}
           options={specialtyOptions}
           value={form.specialtyId}
           onChange={(v) => updateField('specialtyId', v)}
@@ -320,7 +332,7 @@ function ServiceFormModal({
       </div>
 
       <div className="field">
-        <label>Përshkrimi <span className="muted">(opsional)</span></label>
+        <label>{t('services.formModal.descriptionLabel')} <span className="muted">{t('specialties.optional')}</span></label>
         <textarea
           rows={3}
           value={form.description ?? ''}
@@ -330,7 +342,7 @@ function ServiceFormModal({
 
       <div className="form-row">
         <div className="field">
-          <label>Kohëzgjatja (minuta)</label>
+          <label>{t('services.formModal.durationLabel')}</label>
           <input
             type="number"
             min={5}
@@ -339,7 +351,7 @@ function ServiceFormModal({
           />
         </div>
         <div className="field">
-          <label>Çmimi</label>
+          <label>{t('services.formModal.priceLabel')}</label>
           <input
             type="number"
             min={0}
@@ -351,15 +363,15 @@ function ServiceFormModal({
       </div>
 
       <div className="field">
-        <label>Valuta</label>
+        <label>{t('services.formModal.currencyLabel')}</label>
         <input type="text" value={form.currency} onChange={(e) => updateField('currency', e.target.value)} />
       </div>
 
       <div className="clinic-settings__actions">
         <button type="button" className="btn btn--primary btn--sm" disabled={saving} onClick={handleSubmit}>
-          {saving ? 'Duke ruajtur…' : 'Ruaj Shërbimin'}
+          {saving ? t('services.formModal.savingCta') : t('services.formModal.saveCta')}
         </button>
-        <button type="button" className="btn btn--ghost btn--sm" onClick={onClose}>Anulo</button>
+        <button type="button" className="btn btn--ghost btn--sm" onClick={onClose}>{tCommon('buttons.cancel')}</button>
       </div>
     </Modal>
   )

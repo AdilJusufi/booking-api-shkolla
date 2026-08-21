@@ -1,0 +1,128 @@
+{
+  "brand": {
+    "name": "Rezervo ",
+    "tld": "Mjekun",
+    "tagline": "Gjeni mjekun e duhur. Rezervoni në sekonda."
+  },
+  "nav": {
+    "findDoctor": "Gjej mjekun",
+    "myAppointments": "Terminet e mia",
+    "greeting": "Përshëndetje, {{firstName}}",
+    "login": "Hyr",
+    "register": "Regjistrohu",
+    "logout": "Dil",
+    "menu": "Menyja",
+    "accountMenu": "Menuja e llogarisë"
+  },
+  "roles": {
+    "Patient": "Pacient",
+    "Doctor": "Mjek",
+    "ClinicAdmin": "Admin Klinikës",
+    "SuperAdmin": "Super Admin"
+  },
+  "theme": {
+    "switchToLight": "Kalo në temën e çelët",
+    "switchToDark": "Kalo në temën e errët"
+  },
+  "language": {
+    "label": "Gjuha",
+    "sq": "Shqip",
+    "en": "English",
+    "sr": "Srpski"
+  },
+  "footer": {
+    "tagline": "Gjeni mjekun e duhur. Rezervoni në sekonda.",
+    "servicesTitle": "Shërbimet",
+    "findDoctor": "Gjej mjekun",
+    "clinics": "Klinikat",
+    "accountTitle": "Llogaria",
+    "login": "Hyr",
+    "register": "Regjistrohu",
+    "myAppointments": "Terminet e mia",
+    "contactTitle": "Kontakt",
+    "contactCity": "Prishtinë, Kosovë",
+    "contactEmail": "info@rezervomjekun.com",
+    "legalTitle": "Ligjore",
+    "privacyPolicy": "Politika e Privatësisë",
+    "termsOfService": "Kushtet e Përdorimit",
+    "copyright": "© {{year}} Rezervo Mjekun — Projekt demonstrues."
+  },
+  "buttons": {
+    "retry": "Provo përsëri",
+    "cancel": "Anulo",
+    "save": "Ruaj",
+    "close": "Mbyll",
+    "back": "Kthehu",
+    "backHome": "Kthehu në ballinë",
+    "confirm": "Konfirmo",
+    "edit": "Ndrysho",
+    "delete": "Fshij",
+    "add": "Shto",
+    "search": "Kërko",
+    "next": "Tjetra",
+    "previous": "Mbrapa",
+    "loadMore": "Ngarko më shumë"
+  },
+  "loading": "Duke ngarkuar",
+  "emptyState": {
+    "genericTitle": "S'ka asgjë këtu ende"
+  },
+  "offline": {
+    "bannerMessage": "Jeni offline. Disa veprime nuk do të funksionojnë derisa të rikthehet lidhja.",
+    "pageTitle": "Nuk keni lidhje me internetin",
+    "pageMessage": "Rezervo Mjekun ka nevojë për lidhje interneti për të shfaqur terminet dhe mjekët. Kontrolloni lidhjen tuaj dhe provoni përsëri."
+  },
+  "notFound": {
+    "title": "Faqja nuk u gjet",
+    "message": "Ndoshta lidhja është e vjetër ose e gabuar."
+  },
+  "errors": {
+    "network": "Nuk u lidhëm me serverin. Kontrolloni internetin dhe provoni përsëri.",
+    "400": "Diçka shkoi keq me kërkesën. Provoni të rifreskoni faqen.",
+    "401": "Sesioni juaj ka skaduar. Ju lutem hyni përsëri.",
+    "403": "Nuk keni akses në këtë përmbajtje.",
+    "404": "Nuk u gjet ajo që kërkuat.",
+    "409": "Dikush tjetër i ndryshoi këto të dhëna ndërkohë. Provoni përsëri.",
+    "422": "Diçka shkoi keq me kërkesën. Provoni të rifreskoni faqen.",
+    "429": "Keni bërë shumë kërkesa. Ju lutem prisni pak dhe provoni përsëri.",
+    "500": "Ndodhi një gabim në server. Provoni përsëri pas pak.",
+    "default": "Ndodhi një gabim. Provoni përsëri pas pak.",
+    "slotTaken": "Ky termin sapo u zu nga dikush tjetër. Ju lutem zgjidhni një kohë tjetër.",
+    "staleRecord": "Dikush tjetër e ndryshoi këtë termin ndërkohë. Faqja u rifreskua me të dhënat e fundit."
+  },
+  "appointment": {
+    "status": {
+      "pending": "Në pritje",
+      "confirmed": "Konfirmuar",
+      "checkedIn": "Në pritje në klinikë",
+      "inProgress": "Në proces",
+      "completed": "Përfunduar",
+      "cancelledByPatient": "Anuluar nga ju",
+      "cancelledByClinic": "Anuluar nga klinika",
+      "noShow": "Nuk u paraqit",
+      "rescheduled": "Riplanifikuar",
+      "unknown": "I panjohur"
+    },
+    "actions": {
+      "cancel": "Anulo",
+      "reschedule": "Ricakto"
+    },
+    "sessionCount_one": "{{count}} sesion",
+    "sessionCount_other": "{{count}} sesione"
+  },
+  "modal": {
+    "close": "Mbyll"
+  },
+  "cities": {
+    "pristina": "Prishtinë",
+    "prizren": "Prizren",
+    "peja": "Pejë",
+    "gjakova": "Gjakovë",
+    "gjilan": "Gjilan",
+    "mitrovica": "Mitrovicë",
+    "ferizaj": "Ferizaj",
+    "vushtrri": "Vushtrri",
+    "podujeva": "Podujevë",
+    "suhareka": "Suharekë"
+  }
+}

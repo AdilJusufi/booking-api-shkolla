@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowRight, CheckCircle, ChevronLeft, Eye, EyeOff, Lock, Moon, RotateCcw, Sun } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useTheme } from '../context/ThemeContext'
 import { api, ApiError } from '../lib/api'
+import { getAuthTokenInvalidMessage, getErrorMessage } from '../lib/errors'
+import { useCooldown } from '../lib/useCooldown'
 import { ErrorBox, Pending } from '../components/ui'
 import Logo from '../components/Logo'
 
 // Danger -> warn -> accent -> ok, drawn from the design tokens rather than
 // an off-palette traffic-light ramp.
 const STRENGTH_COLORS = ['#a83226', '#8a6212', '#0f6e62', '#14795a']
-const STRENGTH_LABELS = ['Dobët', 'Mesatar', 'Mirë', 'Shumë mirë']
 
 function strengthScore(password: string): number {
   let score = 0
@@ -21,6 +23,9 @@ function strengthScore(password: string): number {
 }
 
 export default function ResetPasswordPage() {
+  const { t: tCommon } = useTranslation('common')
+  const { t } = useTranslation('auth')
+  const STRENGTH_LABELS = t('passwordStrength.labels', { returnObjects: true }) as string[]
   const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -42,6 +47,7 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
   const [countdown, setCountdown] = useState(3)
+  const { secondsLeft, startCooldown } = useCooldown()
 
   const score = strengthScore(newPassword)
   const mismatch = confirmPassword.length > 0 && confirmPassword !== newPassword
@@ -69,11 +75,15 @@ export default function ResetPasswordPage() {
       await api.resetPassword(token, email, newPassword)
       setDone(true)
     } catch (err) {
-      if (err instanceof ApiError && (err.status === 400 || err.status === 404)) {
+      // The backend actually throws AuthenticationFailedException (401) for
+      // an invalid/expired token — 400/404 are kept as a defensive fallback
+      // but are not what's observed from AuthService.ResetPasswordAsync.
+      if (err instanceof ApiError && (err.status === 401 || err.status === 400 || err.status === 404)) {
         setExpired(true)
-      } else {
-        setError('Gabim i serverit. Provoni përsëri.')
+        return
       }
+      if (err instanceof ApiError && err.status === 429) startCooldown()
+      setError(getErrorMessage(err, { default: t('resetPassword.genericFailure') }))
     } finally {
       setLoading(false)
     }
@@ -86,27 +96,27 @@ export default function ResetPasswordPage() {
       <div className="split-auth__brand">
         <span className="brand">
           <span className="brand__mark" aria-hidden><Logo size={22} tone="inverted" /></span>
-          <span className="brand__name">Termini<span className="brand__tld">.ks</span></span>
+          <span className="brand__name">{tCommon('brand.name')}<span className="brand__tld">{tCommon('brand.tld')}</span></span>
         </span>
-        <h1>Shëndetësia juaj, e rezervuar me lehtësi.</h1>
+        <h1>{t('brand.taglineVariant')}</h1>
         <div className="split-auth__brand-trust">
           <span className="split-auth__trust-item">
-            <CheckCircle size={16} strokeWidth={1.5} /> 500+ Mjekë të verifikuar
+            <CheckCircle size={16} strokeWidth={1.5} /> {t('brand.trustDoctors')}
           </span>
           <span className="split-auth__trust-item">
-            <CheckCircle size={16} strokeWidth={1.5} /> 80+ Klinika në Kosovë
+            <CheckCircle size={16} strokeWidth={1.5} /> {t('brand.trustClinics')}
           </span>
           <span className="split-auth__trust-item">
-            <CheckCircle size={16} strokeWidth={1.5} /> Rezervim në 60 sekonda
+            <CheckCircle size={16} strokeWidth={1.5} /> {t('brand.trustBooking')}
           </span>
         </div>
-        <div className="split-auth__brand-copyright">© 2026 Termini.ks</div>
+        <div className="split-auth__brand-copyright">{t('brand.copyright', { year: new Date().getFullYear() })}</div>
       </div>
 
       <div className="split-auth__mobile-bar">
         <Link to="/" className="brand">
           <span className="brand__mark" aria-hidden><Logo size={22} tone="inverted" /></span>
-          <span className="brand__name">Termini<span className="brand__tld">.ks</span></span>
+          <span className="brand__name">{tCommon('brand.name')}<span className="brand__tld">{tCommon('brand.tld')}</span></span>
         </Link>
       </div>
 
@@ -116,23 +126,23 @@ export default function ResetPasswordPage() {
             <button
               type="button"
               className="theme-toggle"
-              aria-label={theme === 'dark' ? 'Kalo në temën e çelët' : 'Kalo në temën e errët'}
+              aria-label={theme === 'dark' ? tCommon('theme.switchToLight') : tCommon('theme.switchToDark')}
               onClick={toggleTheme}
             >
               {theme === 'dark' ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}
             </button>
             <Link to="/hyr" className="link-icon">
-              <ChevronLeft size={16} strokeWidth={1.5} /> Kthehu te hyrja
+              <ChevronLeft size={16} strokeWidth={1.5} /> {t('common.backToLogin')}
             </Link>
           </div>
 
           {!done ? (
             <>
               <h1 style={{ fontSize: '1.7rem', fontWeight: 800, color: 'var(--ink)' }}>
-                Vendosni fjalëkalimin e ri
+                {t('resetPassword.title')}
               </h1>
               <p className="auth-sub">
-                Zgjidhni një fjalëkalim të fortë për llogarinë tuaj {email && <strong style={{ color: 'var(--ink)' }}>{email}</strong>}
+                {t('resetPassword.subtitle')} {email && <strong style={{ color: 'var(--ink)' }}>{email}</strong>}
               </p>
 
               <form onSubmit={handleSubmit} className="form">
@@ -141,9 +151,9 @@ export default function ResetPasswordPage() {
                   <ErrorBox
                     message={
                       <>
-                        Ky link ka skaduar.{' '}
+                        {getAuthTokenInvalidMessage()}{' '}
                         <Link to="/harrova-fjalekalimin" className="link-icon">
-                          Kërkoni link të ri <ArrowRight size={14} strokeWidth={1.5} />
+                          {t('resetPassword.requestNewLink')} <ArrowRight size={14} strokeWidth={1.5} />
                         </Link>
                       </>
                     }
@@ -151,19 +161,19 @@ export default function ResetPasswordPage() {
                 )}
 
                 <div className="field field--icon">
-                  <label>Fjalëkalimi i ri</label>
+                  <label>{t('fields.newPassword.label')}</label>
                   <span className="field__icon" aria-hidden><Lock size={16} strokeWidth={1.5} /></span>
                   <input
                     type={showNew ? 'text' : 'password'}
                     autoComplete="new-password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Shkruani fjalëkalimin e ri"
+                    placeholder={t('resetPassword.newPasswordPlaceholder')}
                   />
                   <button
                     type="button"
                     className="field__toggle"
-                    aria-label={showNew ? 'Fshih fjalëkalimin' : 'Shfaq fjalëkalimin'}
+                    aria-label={showNew ? t('passwordToggle.hide') : t('passwordToggle.show')}
                     onClick={() => setShowNew((v) => !v)}
                   >
                     {showNew ? <EyeOff size={16} strokeWidth={1.5} /> : <Eye size={16} strokeWidth={1.5} />}
@@ -191,7 +201,7 @@ export default function ResetPasswordPage() {
                 </div>
 
                 <div className="field field--icon">
-                  <label>Konfirmo fjalëkalimin e ri</label>
+                  <label>{t('fields.confirmPassword.label')}</label>
                   <span className="field__icon" aria-hidden><RotateCcw size={16} strokeWidth={1.5} /></span>
                   <input
                     type={showConfirm ? 'text' : 'password'}
@@ -199,29 +209,31 @@ export default function ResetPasswordPage() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     onBlur={() => setTouchedConfirm(true)}
-                    placeholder="Përsërisni fjalëkalimin"
+                    placeholder={t('resetPassword.confirmPasswordPlaceholder')}
                   />
                   <button
                     type="button"
                     className="field__toggle"
-                    aria-label={showConfirm ? 'Fshih fjalëkalimin' : 'Shfaq fjalëkalimin'}
+                    aria-label={showConfirm ? t('passwordToggle.hide') : t('passwordToggle.show')}
                     onClick={() => setShowConfirm((v) => !v)}
                   >
                     {showConfirm ? <EyeOff size={16} strokeWidth={1.5} /> : <Eye size={16} strokeWidth={1.5} />}
                   </button>
                   {touchedConfirm && mismatch && (
-                    <span className="field__error" style={{ fontSize: 12 }}>Fjalëkalimet nuk përputhen.</span>
+                    <span className="field__error" style={{ fontSize: 12 }}>{t('fields.passwordMismatch')}</span>
                   )}
                 </div>
 
-                <button className="btn btn--primary btn--block" disabled={loading || !canSubmit}>
+                <button className="btn btn--primary btn--block" disabled={loading || !canSubmit || secondsLeft > 0}>
                   {loading ? (
                     <>
-                      <Pending /> Duke rivendosur…
+                      <Pending /> {t('resetPassword.submitting')}
                     </>
+                  ) : secondsLeft > 0 ? (
+                    t('common.retryCountdown', { seconds: secondsLeft })
                   ) : (
                     <>
-                      Rivendos fjalëkalimin <ArrowRight size={16} strokeWidth={1.5} />
+                      {t('resetPassword.submit')} <ArrowRight size={16} strokeWidth={1.5} />
                     </>
                   )}
                 </button>
@@ -233,16 +245,16 @@ export default function ResetPasswordPage() {
                 <CheckCircle size={28} strokeWidth={1.5} />
               </div>
               <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--ink)', textAlign: 'center' }}>
-                Fjalëkalimi u ndryshua!
+                {t('resetPassword.successTitle')}
               </h1>
               <p className="auth-sub" style={{ textAlign: 'center' }}>
-                Fjalëkalimi juaj është përditësuar me sukses. Tani mund të hyni me fjalëkalimin e ri.
+                {t('resetPassword.successBody')}
               </p>
               <p style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', marginBottom: 16 }}>
-                Po ju ridrejtojmë te hyrja për {countdown}...
+                {t('resetPassword.redirectCountdown', { seconds: countdown })}
               </p>
               <Link to="/hyr" className="btn btn--primary btn--block">
-                Shkoni te hyrja <ArrowRight size={16} strokeWidth={1.5} />
+                {t('resetPassword.goToLogin')} <ArrowRight size={16} strokeWidth={1.5} />
               </Link>
             </>
           )}

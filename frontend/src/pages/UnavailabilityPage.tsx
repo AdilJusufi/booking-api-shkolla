@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Calendar, Info, Plus, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { api, ApiError } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
 import type { CreateUnavailabilityRequest, UnavailabilityDto } from '../lib/types'
 import { useToast } from '../context/ToastContext'
 import { CustomSelect, EmptyState, ErrorBox, Modal, SkeletonRows } from '../components/ui'
-import { toDateInput } from '../lib/format'
-
-const DAYS_SQ = ['E Diel', 'E Hënë', 'E Martë', 'E Mërkurë', 'E Enjte', 'E Premte', 'E Shtunë']
-const MONTHS_SQ = ['Janar', 'Shkurt', 'Mars', 'Prill', 'Maj', 'Qershor', 'Korrik', 'Gusht', 'Shtator', 'Tetor', 'Nëntor', 'Dhjetor']
+import { monthName, toDateInput, weekdayName } from '../lib/format'
 
 // GET /api/doctor/unavailability defaults to a 30-day forward window when no
 // from/to is passed — nowhere near enough to populate an "Aktive / të
@@ -24,37 +23,39 @@ function sameDay(a: Date, b: Date): boolean {
 }
 
 function formatDateLabel(d: Date): string {
-  return `${DAYS_SQ[d.getDay()]}, ${d.getDate()} ${MONTHS_SQ[d.getMonth()]} ${d.getFullYear()}`
+  return `${weekdayName(d.getDay())}, ${d.getDate()} ${monthName(d.getMonth())} ${d.getFullYear()}`
 }
 
 function formatTime(d: Date): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-function formatRange(u: UnavailabilityDto): string {
+function formatRange(u: UnavailabilityDto, t: (key: string, opts?: Record<string, unknown>) => string): string {
   const start = toLocalDate(u.startDateTime)
   const end = toLocalDate(u.endDateTime)
   if (sameDay(start, end)) {
     return `${formatDateLabel(start)} · ${formatTime(start)} - ${formatTime(end)}`
   }
-  const startShort = `${start.getDate()} ${MONTHS_SQ[start.getMonth()]}`
-  const endShort = `${end.getDate()} ${MONTHS_SQ[end.getMonth()]} ${end.getFullYear()}`
-  return `${startShort} – ${endShort} · Gjithë ditën`
+  const startShort = `${start.getDate()} ${monthName(start.getMonth())}`
+  const endShort = `${end.getDate()} ${monthName(end.getMonth())} ${end.getFullYear()}`
+  return `${startShort} – ${endShort} · ${t('unavailability.allDaySuffix')}`
 }
 
-function formatDuration(u: UnavailabilityDto): string {
+function formatDuration(u: UnavailabilityDto, t: (key: string, opts?: Record<string, unknown>) => string): string {
   const ms = toLocalDate(u.endDateTime).getTime() - toLocalDate(u.startDateTime).getTime()
   const minutes = Math.round(ms / 60000)
-  if (minutes < 60) return `${minutes} minuta`
+  if (minutes < 60) return t('unavailability.durationMinutes', { count: minutes })
   const hours = minutes / 60
-  if (hours < 24) return `${Number.isInteger(hours) ? hours : hours.toFixed(1)} orë`
+  if (hours < 24) return t('unavailability.durationHours', { count: Number.isInteger(hours) ? hours : Number(hours.toFixed(1)) })
   const days = Math.round(hours / 24)
-  return `${days} ditë`
+  return t('unavailability.durationDays', { count: days })
 }
 
 const EMPTY_FORM = { clinicBranchId: '', startDateTime: '', endDateTime: '', reason: '' }
 
 export default function UnavailabilityPage() {
+  const { t } = useTranslation('doctor')
+  const { t: tCommon } = useTranslation('common')
   const { notify } = useToast()
 
   const [items, setItems] = useState<UnavailabilityDto[]>([])
@@ -80,7 +81,7 @@ export default function UnavailabilityPage() {
         for (const s of schedules) names.set(s.clinicBranchId, s.branchName)
         setBranchNames(names)
       })
-      .catch((e) => setError(e instanceof ApiError ? e.message : 'Ndodhi një gabim.'))
+      .catch((e) => setError(getErrorMessage(e)))
       .finally(() => setLoading(false))
   }, [])
 
@@ -111,10 +112,10 @@ export default function UnavailabilityPage() {
         setRemovingId(null)
       }, 220)
       setDeleteTarget(null)
-      notify('Mungesa u fshi.', 'ok')
+      notify(t('unavailability.deletedToast'), 'ok')
     } catch (e) {
       setRemovingId(null)
-      notify(e instanceof ApiError ? e.message : 'Gabim. Provoni përsëri.', 'error')
+      notify(getErrorMessage(e), 'error')
     }
   }
 
@@ -122,31 +123,31 @@ export default function UnavailabilityPage() {
     <div className="unavail-page">
       <div className="admin-header">
         <div>
-          <h1>Mungesat &amp; Pushimet</h1>
-          <p className="admin-header__sub">Bllokoni periudha kur nuk jeni të disponueshëm për termine.</p>
+          <h1>{t('unavailability.title')}</h1>
+          <p className="admin-header__sub">{t('unavailability.subtitle')}</p>
         </div>
         <button type="button" className="btn btn--primary btn--sm" onClick={() => setModalOpen(true)}>
-          <Plus size={15} strokeWidth={1.5} /> Shto Mungesë
+          <Plus size={15} strokeWidth={1.5} /> {t('unavailability.addAbsenceCta')}
         </button>
       </div>
 
       <div className="schedule-info-banner">
         <Info size={16} strokeWidth={1.5} color="var(--primary)" />
-        <span>Gjatë periudhave të bllokuara, pacientët nuk do të mund të rezervojnë termine me ju.</span>
+        <span>{t('unavailability.infoBanner')}</span>
       </div>
 
-      {error && <ErrorBox message={error} />}
-
       {loading ? (
-        <SkeletonRows count={3} label="Duke ngarkuar mungesat" />
+        <SkeletonRows count={3} label={t('unavailability.loadingLabel')} />
+      ) : error ? (
+        <ErrorBox message={error} onRetry={load} />
       ) : items.length === 0 ? (
         <EmptyState
           icon={Calendar}
-          title="Nuk keni asnjë mungesë të planifikuar."
-          hint="Shtoni mungesat tuaja që pacientët të mos rezervojnë në ato periudha."
+          title={t('unavailability.emptyTitle')}
+          hint={t('unavailability.emptyHint')}
           action={
             <button type="button" className="btn btn--primary btn--sm" onClick={() => setModalOpen(true)}>
-              <Plus size={15} strokeWidth={1.5} /> Shto Mungesën e Parë
+              <Plus size={15} strokeWidth={1.5} /> {t('unavailability.addFirstAbsence')}
             </button>
           }
         />
@@ -155,7 +156,7 @@ export default function UnavailabilityPage() {
           {upcoming.length > 0 && (
             <div className="schedule-day-group">
               <div className="schedule-day-group__head">
-                <h2>Aktive / të Ardhshme</h2>
+                <h2>{t('unavailability.activeUpcomingTitle')}</h2>
                 <span className="schedule-day-group__badge">{upcoming.length}</span>
               </div>
               {upcoming.map((u) => (
@@ -174,7 +175,7 @@ export default function UnavailabilityPage() {
           {past.length > 0 && (
             <div className="schedule-day-group" style={{ opacity: 0.7 }}>
               <div className="schedule-day-group__head">
-                <h2>Të Kaluara</h2>
+                <h2>{t('unavailability.pastTitle')}</h2>
                 <span className="schedule-day-group__badge">{past.length}</span>
               </div>
               {past.map((u) => (
@@ -204,11 +205,11 @@ export default function UnavailabilityPage() {
       )}
 
       {deleteTarget && (
-        <Modal title="Fshi Mungesën" onClose={() => setDeleteTarget(null)}>
-          <p className="schedule-delete__text">A jeni të sigurt që dëshironi ta fshini këtë mungesë?</p>
+        <Modal title={t('unavailability.deleteModalTitle')} onClose={() => setDeleteTarget(null)}>
+          <p className="schedule-delete__text">{t('unavailability.deleteConfirmText')}</p>
           <div className="schedule-delete__actions">
             <button type="button" className="btn btn--ghost btn--sm" style={{ flex: 1 }} onClick={() => setDeleteTarget(null)}>
-              Anulo
+              {tCommon('buttons.cancel')}
             </button>
             <button
               type="button"
@@ -217,7 +218,7 @@ export default function UnavailabilityPage() {
               disabled={removingId === deleteTarget.id}
               onClick={confirmDelete}
             >
-              Fshi
+              {t('unavailability.deleteCta')}
             </button>
           </div>
         </Modal>
@@ -239,24 +240,25 @@ function UnavailabilityCard({
   removing: boolean
   onDelete: () => void
 }) {
+  const { t } = useTranslation('doctor')
   return (
     <div className={`schedule-card ${removing ? 'is-removing' : ''}`}>
       <div className="schedule-card__time" style={{ width: 'auto', flexShrink: 0 }}>
         <Calendar size={18} strokeWidth={1.5} color="var(--primary)" />
       </div>
       <div className="schedule-card__main">
-        <div className="schedule-card__branch">{formatRange(item)}</div>
+        <div className="schedule-card__branch">{formatRange(item, t)}</div>
         <div className="schedule-card__meta">
-          <span>{branchName ?? (item.clinicBranchId ? 'Degë e panjohur' : 'Të gjitha degët')}</span>
-          <span className={item.reason ? '' : 'muted'}>{item.reason || 'Pa arsye të specifikuar'}</span>
+          <span>{branchName ?? (item.clinicBranchId ? t('unavailability.unknownBranch') : t('unavailability.allBranches'))}</span>
+          <span className={item.reason ? '' : 'muted'}>{item.reason || t('unavailability.noReasonSpecified')}</span>
         </div>
         <span className="schedule-day-group__badge" style={{ marginTop: 8, display: 'inline-block' }}>
-          {formatDuration(item)}
+          {formatDuration(item, t)}
         </span>
       </div>
       <div className="schedule-card__actions">
-        <span className={`schedule-card__status ${!isPast ? 'is-active' : ''}`}>{isPast ? 'E KALUAR' : 'AKTIVE'}</span>
-        <button type="button" className="schedule-card__delete" onClick={onDelete} aria-label="Fshi mungesën">
+        <span className={`schedule-card__status ${!isPast ? 'is-active' : ''}`}>{isPast ? t('unavailability.statusPast') : t('unavailability.statusActive')}</span>
+        <button type="button" className="schedule-card__delete" onClick={onDelete} aria-label={t('unavailability.deleteAria')}>
           <Trash2 size={16} strokeWidth={1.5} />
         </button>
       </div>
@@ -273,6 +275,8 @@ function UnavailabilityFormModal({
   onClose: () => void
   onSaved: () => void
 }) {
+  const { t } = useTranslation('doctor')
+  const { t: tCommon } = useTranslation('common')
   const { notify } = useToast()
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
@@ -284,11 +288,11 @@ function UnavailabilityFormModal({
   }
 
   async function handleSubmit() {
-    if (!form.startDateTime || !form.endDateTime) return setFormError('Ora e fillimit dhe mbarimit janë të detyrueshme.')
+    if (!form.startDateTime || !form.endDateTime) return setFormError(t('unavailability.validation.timesRequired'))
     const start = new Date(form.startDateTime)
     const end = new Date(form.endDateTime)
-    if (end <= start) return setFormError('Koha e mbarimit duhet të jetë pas fillimit.')
-    if (start < new Date()) return setFormError('Nuk mund të shtoni mungesë në të kaluarën.')
+    if (end <= start) return setFormError(t('unavailability.validation.endAfterStart'))
+    if (start < new Date()) return setFormError(t('unavailability.validation.notInPast'))
 
     setFormError('')
     setSaving(true)
@@ -300,13 +304,13 @@ function UnavailabilityFormModal({
         reason: form.reason.trim() || undefined,
       }
       await api.createUnavailability(payload)
-      notify('Mungesa u shtua me sukses.', 'ok')
+      notify(t('unavailability.createdToast'), 'ok')
       onSaved()
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) {
-        notify('Keni termine të konfirmuara në këtë periudhë. Ju lutem ricaktoni ato fillimisht.', 'error')
+        notify(t('unavailability.conflictToast'), 'error')
       } else {
-        setFormError(e instanceof ApiError ? e.message : 'Gabim. Provoni përsëri.')
+        setFormError(getErrorMessage(e))
       }
     } finally {
       setSaving(false)
@@ -314,13 +318,13 @@ function UnavailabilityFormModal({
   }
 
   return (
-    <Modal title="Shto Mungesë" onClose={onClose}>
+    <Modal title={t('unavailability.addModalTitle')} onClose={onClose}>
       {formError && <ErrorBox message={formError} />}
 
       <div className="field">
         <CustomSelect
-          label="Dega"
-          options={[{ value: '', label: 'Të gjitha degët' }, ...branchOptions.map((b) => ({ value: b.id, label: b.name }))]}
+          label={t('unavailability.branchLabel')}
+          options={[{ value: '', label: t('unavailability.allBranches') }, ...branchOptions.map((b) => ({ value: b.id, label: b.name }))]}
           value={form.clinicBranchId}
           onChange={(v) => update('clinicBranchId', v)}
           open={branchSelectOpen}
@@ -329,29 +333,29 @@ function UnavailabilityFormModal({
       </div>
 
       <div className="field">
-        <label>Data &amp; Ora e Fillimit</label>
+        <label>{t('unavailability.startLabel')}</label>
         <input type="datetime-local" value={form.startDateTime} onChange={(e) => update('startDateTime', e.target.value)} />
       </div>
       <div className="field">
-        <label>Data &amp; Ora e Mbarimit</label>
+        <label>{t('unavailability.endLabel')}</label>
         <input type="datetime-local" value={form.endDateTime} onChange={(e) => update('endDateTime', e.target.value)} />
       </div>
 
       <div className="field">
-        <label>Arsyeja <span className="muted">(opsionale)</span></label>
+        <label>{t('unavailability.reasonLabel')} <span className="muted">{t('unavailability.optional')}</span></label>
         <input
           type="text"
           value={form.reason}
           onChange={(e) => update('reason', e.target.value)}
-          placeholder="p.sh. Pushime, Konferencë, Sëmundje..."
+          placeholder={t('unavailability.reasonPlaceholder')}
         />
       </div>
 
       <div className="clinic-settings__actions">
         <button type="button" className="btn btn--primary btn--sm" disabled={saving} onClick={handleSubmit}>
-          {saving ? 'Duke ruajtur…' : 'Shto Mungesën'}
+          {saving ? t('unavailability.saving') : t('unavailability.addAbsenceSubmit')}
         </button>
-        <button type="button" className="btn btn--ghost btn--sm" onClick={onClose}>Anulo</button>
+        <button type="button" className="btn btn--ghost btn--sm" onClick={onClose}>{tCommon('buttons.cancel')}</button>
       </div>
     </Modal>
   )

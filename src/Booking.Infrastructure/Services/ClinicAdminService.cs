@@ -371,114 +371,103 @@ public class ClinicAdminService : IClinicAdminService
         var fromUtc = _timeZoneService.ToUtc(from.ToDateTime(TimeOnly.MinValue));
         var toUtc = _timeZoneService.ToUtc(to.AddDays(1).ToDateTime(TimeOnly.MinValue));
 
-        var appointments = _dbContext.Appointments
-            .Where(a => a.ClinicId == clinicId && a.StartDateTime >= fromUtc && a.StartDateTime < toUtc);
-
-        // Të ardhurat llogariten VETËM nga terminet e përfunduara dhe me çmimin efektiv:
-        // DoctorService.CustomPrice e mbivendos MedicalService.Price. Left join sepse
-        // rreshti DoctorService mund të mos ekzistojë më për një termin historik.
-        var revenueRows =
-            from a in appointments
-            where a.Status == AppointmentStatus.Completed
-            join ds in _dbContext.DoctorServices
-                on new { a.DoctorId, a.MedicalServiceId } equals new { ds.DoctorId, ds.MedicalServiceId }
-                into doctorServices
-            from ds in doctorServices.DefaultIfEmpty()
-            select new
-            {
-                a.DoctorId,
-                a.ClinicBranchId,
-                a.MedicalServiceId,
-                Price = ds != null && ds.CustomPrice != null ? ds.CustomPrice.Value : a.MedicalService.Price,
-                a.MedicalService.Currency
-            };
-
-        // Të gjitha agregimet bëhen në SQL (GROUP BY) — asnjë rresht termini nuk
-        // tërhiqet në memorie, prandaj intervalet e gjera mbeten të lira.
-        var byStatus = await appointments
-            .GroupBy(a => a.Status)
-            .Select(g => new { Status = g.Key, Count = g.Count() })
+        // TË GJITHA agregimet vijnë nga NJË query i vetëm me GROUPING SETS: një kalim mbi
+        // fetën e termineve të intervalit, pesë grupime njëherësh (status, doktor, degë,
+        // shërbim, valutë). Është SQL i papërpunuar me qëllim — me LINQ, EF 8 e ri-rrënjos
+        // çdo GroupBy mbi projeksion te tabela dhe e nxjerr shumën e çmimit si nën-query të
+        // KORRELUAR për çdo grup, pra një skanim i të gjithë intervalit për çdo doktor/degë/
+        // shërbim. Sintaksa është specifike për PostgreSQL — si exclusion constraint-i i
+        // termineve, projekti është tashmë i lidhur me PostgreSQL.
+        //
+        // Çmimi efektiv: DoctorService.CustomPrice e mbivendos MedicalService.Price. Left join
+        // sepse rreshti DoctorService mund të mos ekzistojë më për një termin historik; çelësi
+        // i tij (DoctorId, MedicalServiceId) është PK, prandaj s'ka dyfishim rreshtash.
+        //
+        // Në rreshtat e një grupimi, kolonat e grupimeve të tjera dalin NULL — kështu dallohet
+        // se cilit dimension i përket rreshti (asnjë nga këto kolona s'është null në të dhëna).
+        var aggregates = await _dbContext.Database
+            .SqlQuery<ReportAggregateRow>($"""
+                SELECT
+                    a."DoctorId"                                                    AS "DoctorId",
+                    a."ClinicBranchId"                                              AS "BranchId",
+                    a."MedicalServiceId"                                            AS "ServiceId",
+                    a."Status"                                                      AS "Status",
+                    m."Currency"                                                    AS "Currency",
+                    COUNT(*)::int                                                   AS "Total",
+                    (COUNT(*) FILTER (WHERE a."Status" = 'Completed'))::int         AS "Completed",
+                    (COUNT(*) FILTER (WHERE a."Status" IN ('CancelledByPatient', 'CancelledByClinic')))::int
+                                                                                    AS "Cancelled",
+                    (COUNT(*) FILTER (WHERE a."Status" = 'NoShow'))::int            AS "NoShow",
+                    COALESCE(SUM(COALESCE(ds."CustomPrice", m."Price"))
+                             FILTER (WHERE a."Status" = 'Completed'), 0)            AS "Revenue"
+                FROM "Appointments" AS a
+                INNER JOIN "MedicalServices" AS m ON m."Id" = a."MedicalServiceId"
+                LEFT JOIN "DoctorServices" AS ds
+                    ON ds."DoctorId" = a."DoctorId" AND ds."MedicalServiceId" = a."MedicalServiceId"
+                WHERE a."ClinicId" = {clinicId}
+                  AND a."StartDateTime" >= {fromUtc}
+                  AND a."StartDateTime" < {toUtc}
+                GROUP BY GROUPING SETS (
+                    (a."Status"),
+                    (a."DoctorId"),
+                    (a."ClinicBranchId"),
+                    (a."MedicalServiceId"),
+                    (m."Currency")
+                )
+                """)
             .ToListAsync(cancellationToken);
 
-        var byDoctorCounts = await appointments
-            .GroupBy(a => a.DoctorId)
-            .Select(g => new
+        var byStatus = aggregates
+            .Where(r => r.Status is not null)
+            .Select(r => new { Status = Enum.Parse<AppointmentStatus>(r.Status!), Count = r.Total })
+            .ToList();
+
+        var byDoctorRows = aggregates.Where(r => r.DoctorId is not null).ToList();
+        var byBranchRows = aggregates.Where(r => r.BranchId is not null).ToList();
+        var byServiceRows = aggregates.Where(r => r.ServiceId is not null).ToList();
+        var currencyTotals = aggregates.Where(r => r.Currency is not null).ToList();
+
+        // Emrat vijnë nga tabela të vogla lookup-i, jo nga terminet — të kufizuara te
+        // çelësat që dolën nga agregimet, prandaj mbeten konstante ndaj gjerësisë së intervalit.
+        var doctorIds = byDoctorRows.Select(d => d.DoctorId!.Value).ToList();
+        var doctorNames = await _dbContext.Doctors
+            .Where(d => doctorIds.Contains(d.Id))
+            .Join(_dbContext.Users, d => d.UserId, u => u.Id, (d, u) => new
             {
-                DoctorId = g.Key,
-                Count = g.Count(),
-                Completed = g.Sum(a => a.Status == AppointmentStatus.Completed ? 1 : 0),
-                Cancelled = g.Sum(a =>
-                    a.Status == AppointmentStatus.CancelledByPatient
-                    || a.Status == AppointmentStatus.CancelledByClinic
-                        ? 1
-                        : 0),
-                NoShow = g.Sum(a => a.Status == AppointmentStatus.NoShow ? 1 : 0),
-                UserId = g.Select(a => a.Doctor.UserId).First()
+                DoctorId = d.Id,
+                FullName = u.FirstName + " " + u.LastName
             })
-            .ToListAsync(cancellationToken);
+            .ToDictionaryAsync(x => x.DoctorId, x => x.FullName, cancellationToken);
 
-        var byDoctorRevenue = await revenueRows
-            .GroupBy(r => r.DoctorId)
-            .Select(g => new { DoctorId = g.Key, Revenue = g.Sum(r => r.Price) })
-            .ToDictionaryAsync(x => x.DoctorId, x => x.Revenue, cancellationToken);
+        var branchIds = byBranchRows.Select(b => b.BranchId!.Value).ToList();
+        var branches = await _dbContext.ClinicBranches
+            .Where(b => branchIds.Contains(b.Id))
+            .Select(b => new { b.Id, b.Name, b.City })
+            .ToDictionaryAsync(b => b.Id, cancellationToken);
 
-        var byBranchCounts = await appointments
-            .GroupBy(a => a.ClinicBranchId)
-            .Select(g => new
-            {
-                BranchId = g.Key,
-                BranchName = g.Select(a => a.ClinicBranch.Name).First(),
-                City = g.Select(a => a.ClinicBranch.City).First(),
-                Count = g.Count(),
-                Completed = g.Sum(a => a.Status == AppointmentStatus.Completed ? 1 : 0),
-                Cancelled = g.Sum(a =>
-                    a.Status == AppointmentStatus.CancelledByPatient
-                    || a.Status == AppointmentStatus.CancelledByClinic
-                        ? 1
-                        : 0)
-            })
-            .ToListAsync(cancellationToken);
-
-        var byBranchRevenue = await revenueRows
-            .GroupBy(r => r.ClinicBranchId)
-            .Select(g => new { BranchId = g.Key, Revenue = g.Sum(r => r.Price) })
-            .ToDictionaryAsync(x => x.BranchId, x => x.Revenue, cancellationToken);
-
-        var byServiceCounts = await appointments
-            .GroupBy(a => a.MedicalServiceId)
-            .Select(g => new
-            {
-                ServiceId = g.Key,
-                ServiceName = g.Select(a => a.MedicalService.Name).First(),
-                SpecialtyName = g.Select(a => a.MedicalService.Specialty.Name).First(),
-                Price = g.Select(a => a.MedicalService.Price).First(),
-                Count = g.Count()
-            })
-            .ToListAsync(cancellationToken);
-
-        var byServiceRevenue = await revenueRows
-            .GroupBy(r => r.MedicalServiceId)
-            .Select(g => new { ServiceId = g.Key, Revenue = g.Sum(r => r.Price) })
-            .ToDictionaryAsync(x => x.ServiceId, x => x.Revenue, cancellationToken);
-
-        var currencyTotals = await revenueRows
-            .GroupBy(r => r.Currency)
-            .Select(g => new { Currency = g.Key, Total = g.Sum(r => r.Price), Rows = g.Count() })
-            .ToListAsync(cancellationToken);
-
-        var doctorUserIds = byDoctorCounts.Select(d => d.UserId).ToList();
-        var doctorNames = await _dbContext.Users
-            .Where(u => doctorUserIds.Contains(u.Id))
-            .Select(u => new { u.Id, u.FirstName, u.LastName })
-            .ToDictionaryAsync(u => u.Id, cancellationToken);
+        var serviceIds = byServiceRows.Select(s => s.ServiceId!.Value).ToList();
+        var services = await _dbContext.MedicalServices
+            .Where(s => serviceIds.Contains(s.Id))
+            .Select(s => new { s.Id, s.Name, SpecialtyName = s.Specialty.Name, s.Price })
+            .ToDictionaryAsync(s => s.Id, cancellationToken);
 
         var statusCounts = byStatus.ToDictionary(s => s.Status, s => s.Count);
         int StatusCount(AppointmentStatus status) => statusCounts.TryGetValue(status, out var c) ? c : 0;
 
         var dominantCurrency = currencyTotals
-            .OrderByDescending(c => c.Rows)
+            .Where(c => c.Completed > 0)
+            .OrderByDescending(c => c.Completed)
             .Select(c => c.Currency)
-            .FirstOrDefault() ?? "EUR";
+            .FirstOrDefault()
+            // Pa termine të përfunduara s'ka valutë të nxjerrë nga të ardhurat — bie te
+            // valuta mbizotëruese e listës së çmimeve të klinikës, jo te një "EUR" i ngurtë.
+            ?? await _dbContext.MedicalServices
+                .Where(s => s.ClinicId == clinicId)
+                .GroupBy(s => s.Currency)
+                .OrderByDescending(g => g.Count())
+                .Select(g => g.Key)
+                .FirstOrDefaultAsync(cancellationToken)
+            ?? "EUR";
 
         return new ClinicReportDto
         {
@@ -491,49 +480,69 @@ public class ClinicAdminService : IClinicAdminService
                 StatusCount(AppointmentStatus.CancelledByPatient)
                 + StatusCount(AppointmentStatus.CancelledByClinic),
             NoShowAppointments = StatusCount(AppointmentStatus.NoShow),
-            TotalRevenue = currencyTotals.Sum(c => c.Total),
+            // Nga ByDoctor: çdo termin ka doktor, prandaj shuma është e njëjtë me totalin
+            // dhe raporti mbetet gjithmonë konsistent me zbërthimin e vet.
+            TotalRevenue = byDoctorRows.Sum(d => d.Revenue),
             Currency = dominantCurrency,
-            ByDoctor = byDoctorCounts
+            ByDoctor = byDoctorRows
                 .Select(d => new DoctorAppointmentCountDto
                 {
-                    DoctorId = d.DoctorId,
-                    DoctorName = doctorNames.TryGetValue(d.UserId, out var name)
-                        ? $"{name.FirstName} {name.LastName}"
-                        : "?",
-                    AppointmentCount = d.Count,
+                    DoctorId = d.DoctorId!.Value,
+                    DoctorName = doctorNames.TryGetValue(d.DoctorId!.Value, out var name) ? name : "?",
+                    AppointmentCount = d.Total,
                     CompletedCount = d.Completed,
                     CancelledCount = d.Cancelled,
                     NoShowCount = d.NoShow,
-                    Revenue = byDoctorRevenue.TryGetValue(d.DoctorId, out var doctorRevenue) ? doctorRevenue : 0m
+                    Revenue = d.Revenue
                 })
                 .OrderByDescending(d => d.AppointmentCount)
                 .ToList(),
-            ByBranch = byBranchCounts
+            ByBranch = byBranchRows
                 .Select(b => new BranchReportRowDto
                 {
-                    BranchId = b.BranchId,
-                    BranchName = b.BranchName,
-                    City = b.City,
-                    AppointmentCount = b.Count,
+                    BranchId = b.BranchId!.Value,
+                    BranchName = branches.TryGetValue(b.BranchId!.Value, out var branch) ? branch.Name : "?",
+                    City = branches.TryGetValue(b.BranchId!.Value, out var branchCity) ? branchCity.City : "?",
+                    AppointmentCount = b.Total,
                     CompletedCount = b.Completed,
                     CancelledCount = b.Cancelled,
-                    Revenue = byBranchRevenue.TryGetValue(b.BranchId, out var branchRevenue) ? branchRevenue : 0m
+                    Revenue = b.Revenue
                 })
                 .OrderByDescending(b => b.AppointmentCount)
                 .ToList(),
-            ByService = byServiceCounts
+            ByService = byServiceRows
                 .Select(s => new ServiceReportRowDto
                 {
-                    ServiceId = s.ServiceId,
-                    ServiceName = s.ServiceName,
-                    SpecialtyName = s.SpecialtyName,
-                    Price = s.Price,
-                    AppointmentCount = s.Count,
-                    Revenue = byServiceRevenue.TryGetValue(s.ServiceId, out var serviceRevenue) ? serviceRevenue : 0m
+                    ServiceId = s.ServiceId!.Value,
+                    ServiceName = services.TryGetValue(s.ServiceId!.Value, out var service) ? service.Name : "?",
+                    SpecialtyName = services.TryGetValue(s.ServiceId!.Value, out var serviceSpecialty)
+                        ? serviceSpecialty.SpecialtyName
+                        : "?",
+                    Price = services.TryGetValue(s.ServiceId!.Value, out var servicePrice) ? servicePrice.Price : 0m,
+                    AppointmentCount = s.Total,
+                    Revenue = s.Revenue
                 })
                 .OrderByDescending(s => s.AppointmentCount)
                 .ToList()
         };
+    }
+
+    /// <summary>
+    /// Një rresht i query-t me GROUPING SETS të raportit. Kolonat e dimensioneve që nuk bëjnë
+    /// pjesë në grupimin e atij rreshti vijnë NULL — prandaj janë të gjitha nullable.
+    /// </summary>
+    private sealed class ReportAggregateRow
+    {
+        public Guid? DoctorId { get; set; }
+        public Guid? BranchId { get; set; }
+        public Guid? ServiceId { get; set; }
+        public string? Status { get; set; }
+        public string? Currency { get; set; }
+        public int Total { get; set; }
+        public int Completed { get; set; }
+        public int Cancelled { get; set; }
+        public int NoShow { get; set; }
+        public decimal Revenue { get; set; }
     }
 
     private static AdminClinicDto ToAdminDto(Clinic clinic, IReadOnlyList<ClinicAdministratorDto> administrators) => new()

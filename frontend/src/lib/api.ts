@@ -1,7 +1,11 @@
 import type {
+  AdminAppointmentListItem,
+  AdminAppointmentsQuery,
   AdminClinic,
   AdminClinicDetail,
   AdminDoctor,
+  AdminUser,
+  AdminUsersQuery,
   Appointment,
   AppointmentStatus,
   AssignClinicAdminRequest,
@@ -41,8 +45,8 @@ import type {
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5080'
 
-const TOKEN_KEY = 'termini.accessToken'
-const REFRESH_TOKEN_KEY = 'termini.refreshToken'
+const TOKEN_KEY = 'rezervo.accessToken'
+const REFRESH_TOKEN_KEY = 'rezervo.refreshToken'
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY)
@@ -73,9 +77,15 @@ export function registerSessionExpiredHandler(handler: () => void) {
 
 export class ApiError extends Error {
   status: number
-  constructor(message: string, status: number) {
+  /** Request path, for diagnostic logging only — never shown to users. */
+  endpoint?: string
+  /** Raw parsed response body (RFC 7807 problem details, validation `errors`, etc.), for diagnostic logging and field-error extraction. */
+  data?: unknown
+  constructor(message: string, status: number, endpoint?: string, data?: unknown) {
     super(message)
     this.status = status
+    this.endpoint = endpoint
+    this.data = data
   }
 }
 
@@ -142,11 +152,12 @@ async function request<T>(
         body: body !== undefined ? JSON.stringify(body) : undefined,
       })
     } catch {
-      throw new ApiError('Nuk u lidhëm dot me serverin. A është backend-i i ndezur?', 0)
+      throw new ApiError('Nuk u lidhëm dot me serverin. A është backend-i i ndezur?', 0, path)
     }
   }
 
   let response = await attempt()
+  let sessionExpiredInRefresh = false
 
   // Only authenticated requests get the refresh treatment — a 401 from
   // /auth/login (wrong password) is a normal error, not an expired session.
@@ -159,6 +170,7 @@ async function request<T>(
       response = await attempt()
     } catch {
       expireSession()
+      sessionExpiredInRefresh = true
       // Fall through with the original 401 response so the caller still
       // gets a normal ApiError instead of an unhandled rejection.
     }
@@ -170,8 +182,8 @@ async function request<T>(
   const data = text ? safeParse(text) : null
 
   if (!response.ok) {
-    if (response.status === 401 && auth) expireSession()
-    throw new ApiError(extractError(data, response.status), response.status)
+    if (response.status === 401 && auth && !sessionExpiredInRefresh) expireSession()
+    throw new ApiError(extractError(data, response.status), response.status, path, data)
   }
 
   return data as T
@@ -365,6 +377,23 @@ export const api = {
   // --- Klinikat e Administratorit të Klinikës ---
   getAdminClinics: () => request<AdminClinic[]>('/api/admin/clinics', { auth: true }),
 
+  // --- Terminet (Administrata) ---
+  getAdminAppointments: (params: AdminAppointmentsQuery = {}) =>
+    request<PagedResult<AdminAppointmentListItem>>('/api/admin/appointments', {
+      auth: true,
+      query: {
+        ClinicId: params.clinicId,
+        DoctorId: params.doctorId,
+        ClinicBranchId: params.clinicBranchId,
+        Status: params.status,
+        From: params.from,
+        To: params.to,
+        Search: params.search,
+        Page: params.page ?? 1,
+        PageSize: clampPageSize(params.pageSize ?? 20),
+      },
+    }),
+
   getClinicReport: (clinicId: string, dateFrom: string, dateTo: string) =>
     request<ClinicReport>(`/api/admin/clinics/${clinicId}/report`, {
       auth: true,
@@ -381,7 +410,7 @@ export const api = {
       request<ClinicDetails>(`/api/clinics/${id}`).catch(() => null),
     ])
     const clinic = clinics.find((c) => c.id === id)
-    if (!clinic) throw new ApiError('Klinika nuk u gjet ose nuk keni qasje.', 404)
+    if (!clinic) throw new ApiError('Klinika nuk u gjet ose nuk keni qasje.', 404, `/api/admin/clinics/${id}`)
     return { ...clinic, city: details?.branches[0]?.city ?? '' }
   },
 
@@ -417,7 +446,19 @@ export const api = {
   deleteSpecialty: (id: string) =>
     request<void>(`/api/admin/specialties/${id}`, { method: 'DELETE', auth: true }),
 
-  // --- SuperAdmin — përdoruesit (nuk ka GET listë, vetëm veprime by-id) ---
+  // --- SuperAdmin — përdoruesit ---
+  getAdminUsers: (params: AdminUsersQuery = {}) =>
+    request<PagedResult<AdminUser>>('/api/admin/users', {
+      auth: true,
+      query: {
+        Role: params.role,
+        IsActive: params.isActive,
+        Search: params.search,
+        Page: params.page ?? 1,
+        PageSize: clampPageSize(params.pageSize ?? 20),
+      },
+    }),
+
   deactivateUser: (id: string) =>
     request<void>(`/api/admin/users/${id}/deactivate`, { method: 'POST', auth: true }),
 

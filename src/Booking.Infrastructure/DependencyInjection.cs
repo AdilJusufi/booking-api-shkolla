@@ -80,6 +80,7 @@ public static class DependencyInjection
         services.AddScoped<IClinicAdminService, ClinicAdminService>();
         services.AddScoped<ISuperAdminService, SuperAdminService>();
         services.AddScoped<IAdminAppointmentService, AdminAppointmentService>();
+        services.AddScoped<IAdminPatientService, AdminPatientService>();
 
         services.Configure<BookingSettings>(configuration.GetSection(BookingSettings.SectionName));
         services.Configure<CloudinarySettings>(configuration.GetSection(CloudinarySettings.SectionName));
@@ -95,7 +96,13 @@ public static class DependencyInjection
         services
             .AddIdentityCore<ApplicationUser>(options =>
             {
-                options.User.RequireUniqueEmail = true;
+                // Qëllimisht false, dhe kjo NUK e heq unicitetin e email-it.
+                // Identity e trajton RequireUniqueEmail si "email i detyrueshëm DHE unik";
+                // fusha e detyrueshme e bën të pamundur krijimin e një pacienti me telefon
+                // por pa email — rasti kryesor i rezervimit me telefon. Uniciteti mbahet
+                // shprehimisht në kod te të dy vendet ku vendoset një email:
+                // AuthService.RegisterPatientAsync dhe AdminPatientService.CreateAsync.
+                options.User.RequireUniqueEmail = false;
 
                 // Password policy — pasqyrohet edhe në PasswordRuleExtensions (FluentValidation).
                 options.Password.RequiredLength = 8;

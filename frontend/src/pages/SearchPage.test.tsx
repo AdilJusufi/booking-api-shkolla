@@ -86,4 +86,19 @@ describe('SearchPage — loading / error states (3f)', () => {
     await waitFor(() => expect(screen.getByText('Recovered Klinika')).toBeInTheDocument())
     expect(calls).toBe(2)
   })
+
+  it('shows the user-facing offline copy on a network failure, not the raw ApiError text', async () => {
+    // Regression guard: this page used to render `e.message` straight through,
+    // which surfaced the developer-facing "A është backend-i i ndezur?" string
+    // to patients whenever the API was unreachable.
+    server.use(http.get(`${API_BASE_URL}/api/clinics`, () => HttpResponse.error()))
+    renderWithProviders(<SearchPage />, { route: '/kerko' })
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('Nuk u lidhëm me serverin. Kontrolloni internetin dhe provoni përsëri.'),
+      ).toBeInTheDocument(),
+    )
+    expect(screen.queryByText(/backend-i i ndezur/)).not.toBeInTheDocument()
+  })
 })

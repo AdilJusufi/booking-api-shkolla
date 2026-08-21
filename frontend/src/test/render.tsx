@@ -1,9 +1,10 @@
-import type { ReactElement, ReactNode } from 'react'
+import { Suspense, type ReactElement, type ReactNode } from 'react'
 import { render, type RenderResult } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from '../context/AuthContext'
 import { ToastProvider } from '../context/ToastContext'
 import { ThemeProvider } from '../context/ThemeContext'
+import { InstallPromptProvider } from '../context/InstallPromptContext'
 
 export interface AuthUser {
   userId: string
@@ -34,9 +35,9 @@ const ROLE_FIXTURES: Record<'Patient' | 'Doctor' | 'ClinicAdmin' | 'SuperAdmin',
 /** Seeds localStorage the same way AuthContext/api.ts read it, so AuthProvider
  * boots up already authenticated — no need to drive an actual login form. */
 export function seedAuthenticatedUser(user: AuthUser) {
-  localStorage.setItem('termini.accessToken', 'test-access-token')
-  localStorage.setItem('termini.refreshToken', 'test-refresh-token')
-  localStorage.setItem('termini.user', JSON.stringify(user))
+  localStorage.setItem('rezervo.accessToken', 'test-access-token')
+  localStorage.setItem('rezervo.refreshToken', 'test-refresh-token')
+  localStorage.setItem('rezervo.user', JSON.stringify(user))
 }
 
 export interface RenderWithProvidersOptions {
@@ -64,7 +65,14 @@ export function renderWithProviders(
       <MemoryRouter initialEntries={[route]}>
         <ThemeProvider>
           <ToastProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>
+              <InstallPromptProvider>
+                {/* Mirrors main.tsx: useTranslation() suspends on the first
+                    render that needs a namespace not yet loaded for the
+                    active language (setup.ts only preloads 'common'). */}
+                <Suspense fallback={null}>{children}</Suspense>
+              </InstallPromptProvider>
+            </AuthProvider>
           </ToastProvider>
         </ThemeProvider>
       </MemoryRouter>

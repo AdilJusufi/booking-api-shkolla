@@ -9,5 +9,7 @@
     "emitDeclarationOnly": true,
     "outDir": "./dist-tsnode"
   },
-  "include": ["vite.config.ts"]
+  // runtimeCaching.ts is shared: the app project type-checks it (and its test),
+  // while the build config imports it so the Workbox rules have one source of truth.
+  "include": ["vite.config.ts", "src/pwa/runtimeCaching.ts"]
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowRight,
@@ -10,12 +10,17 @@ import {
   Shield,
   Users,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { api, ApiError } from '../lib/api'
+import { getErrorMessage, getFieldErrors } from '../lib/errors'
 import { AppointmentStatus } from '../lib/types'
 import type { Gender, PatientProfile } from '../lib/types'
 import { useToast } from '../context/ToastContext'
-import { CustomSelect, initials } from '../components/ui'
+import { CustomSelect, ErrorBox, initials } from '../components/ui'
 import type { CustomSelectOption } from '../components/ui'
+import { monthName } from '../lib/format'
+
+const KNOWN_PROFILE_FIELDS = new Set(['firstName', 'lastName', 'phoneNumber', 'address', 'city', 'dateOfBirth', 'gender'])
 
 const ACTIVE_STATUSES = [
   AppointmentStatus.Pending,
@@ -24,33 +29,11 @@ const ACTIVE_STATUSES = [
   AppointmentStatus.InProgress,
 ]
 
-const MONTHS_SQ = ['janar', 'shkurt', 'mars', 'prill', 'maj', 'qershor', 'korrik', 'gusht', 'shtator', 'tetor', 'nëntor', 'dhjetor']
-
-function formatDob(iso?: string): string {
-  if (!iso) return '—'
+function formatDob(iso: string | undefined, unset: string): string {
+  if (!iso) return unset
   const m = iso.match(/(\d{4})-(\d{2})-(\d{2})/)
   if (!m) return iso
-  return `${Number(m[3])} ${MONTHS_SQ[Number(m[2]) - 1]} ${m[1]}`
-}
-
-const GENDER_OPTIONS: CustomSelectOption[] = [
-  { value: '', label: 'Zgjidhni...' },
-  { value: '1', label: 'Mashkull' },
-  { value: '2', label: 'Femër' },
-  { value: '3', label: 'Tjetër' },
-]
-
-function genderLabel(gender: Gender | undefined): string {
-  switch (gender) {
-    case 1:
-      return 'Mashkull'
-    case 2:
-      return 'Femër'
-    case 3:
-      return 'Tjetër'
-    default:
-      return '—'
-  }
+  return `${Number(m[3])} ${monthName(Number(m[2]) - 1).toLowerCase()} ${m[1]}`
 }
 
 interface FormData {
@@ -96,8 +79,30 @@ function ProfileSkeleton() {
 }
 
 export default function MyProfilePage() {
+  const { t } = useTranslation('patient')
+  const { t: tCommon } = useTranslation('common')
   const navigate = useNavigate()
   const { notify } = useToast()
+
+  const GENDER_OPTIONS: CustomSelectOption[] = [
+    { value: '', label: t('profile.genderPlaceholder') },
+    { value: '1', label: t('profile.genderMale') },
+    { value: '2', label: t('profile.genderFemale') },
+    { value: '3', label: t('profile.genderOther') },
+  ]
+
+  function genderLabel(gender: Gender | undefined): string {
+    switch (gender) {
+      case 1:
+        return t('profile.genderMale')
+      case 2:
+        return t('profile.genderFemale')
+      case 3:
+        return t('profile.genderOther')
+      default:
+        return t('profile.unsetValue')
+    }
+  }
 
   const [profile, setProfile] = useState<PatientProfile | null>(null)
   const [dependentsCount, setDependentsCount] = useState(0)
@@ -114,7 +119,7 @@ export default function MyProfilePage() {
 
   const formRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
+  const load = useCallback(() => {
     let active = true
     setLoading(true)
     setError('')
@@ -141,7 +146,7 @@ export default function MyProfilePage() {
           navigate('/hyr', { state: { from: '/llogaria' } })
           return
         }
-        setError(e instanceof ApiError ? e.message : 'Ndodhi një gabim.')
+        setError(getErrorMessage(e))
       })
       .finally(() => active && setLoading(false))
 
@@ -149,6 +154,8 @@ export default function MyProfilePage() {
       active = false
     }
   }, [navigate])
+
+  useEffect(load, [load])
 
   const memberSince = useMemo(() => {
     // The patient profile DTO has no createdAt; omitted rather than fabricated.
@@ -174,11 +181,11 @@ export default function MyProfilePage() {
 
   function validate(data: FormData): Record<string, string> {
     const errs: Record<string, string> = {}
-    if (data.firstName.trim().length < 2) errs.firstName = 'Emri duhet të ketë së paku 2 shkronja.'
-    if (data.lastName.trim().length < 2) errs.lastName = 'Mbiemri duhet të ketë së paku 2 shkronja.'
-    if (!data.phoneNumber.trim()) errs.phoneNumber = 'Telefoni është i detyrueshëm.'
-    if (!data.dateOfBirth) errs.dateOfBirth = 'Data e lindjes është e detyrueshme.'
-    if (!data.gender) errs.gender = 'Gjinia është e detyrueshme.'
+    if (data.firstName.trim().length < 2) errs.firstName = t('profile.validation.firstNameTooShort')
+    if (data.lastName.trim().length < 2) errs.lastName = t('profile.validation.lastNameTooShort')
+    if (!data.phoneNumber.trim()) errs.phoneNumber = t('profile.validation.phoneRequired')
+    if (!data.dateOfBirth) errs.dateOfBirth = t('profile.validation.dobRequired')
+    if (!data.gender) errs.gender = t('profile.validation.genderRequired')
     return errs
   }
 
@@ -204,17 +211,28 @@ export default function MyProfilePage() {
       setProfile(updated)
       setFormData(toForm(updated))
       setIsEditing(false)
-      notify('Profili u përditësua.', 'ok')
+      notify(t('profile.updatedToast'), 'ok')
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
         navigate('/hyr')
         return
       }
-      if (e instanceof ApiError && (e.status === 422 || e.status === 400)) {
-        notify(e.message || 'Të dhënat nuk janë të vlefshme.', 'error')
+      const backendFieldErrors = getFieldErrors(e)
+      if (backendFieldErrors) {
+        const matched: Record<string, string> = {}
+        let hasUnmatched = false
+        for (const [field, message] of Object.entries(backendFieldErrors)) {
+          if (KNOWN_PROFILE_FIELDS.has(field)) matched[field] = message
+          else hasUnmatched = true
+        }
+        if (Object.keys(matched).length > 0) setFieldErrors((prev) => ({ ...prev, ...matched }))
+        // A field name with no matching input would otherwise be silently dropped.
+        if (hasUnmatched || Object.keys(matched).length === 0) {
+          notify(getErrorMessage(e, { 400: t('profile.invalidDataToast') }), 'error')
+        }
         return
       }
-      notify(e instanceof ApiError ? e.message : 'Gabim. Provoni përsëri.', 'error')
+      notify(getErrorMessage(e), 'error')
     } finally {
       setSaving(false)
     }
@@ -224,8 +242,8 @@ export default function MyProfilePage() {
   if (error || !profile || !formData) {
     return (
       <div className="apptdetail-notfound">
-        <h2>Profili nuk u ngarkua</h2>
-        <p>{error || 'Provoni të rifreskoni faqen.'}</p>
+        <h2>{t('profile.loadFailedTitle')}</h2>
+        <ErrorBox message={error || t('profile.loadFailedFallback')} onRetry={load} />
       </div>
     )
   }
@@ -239,27 +257,27 @@ export default function MyProfilePage() {
           <button
             type="button"
             className="profile-hero__photo-link"
-            onClick={() => notify('Ngarkimi i fotografisë vjen së shpejti.', 'info')}
+            onClick={() => notify(t('profile.photoComingSoon'), 'info')}
           >
-            Ndrysho foton
+            {t('profile.changePhoto')}
           </button>
         </div>
 
         <div className="profile-hero__center">
           <div className="profile-hero__name-row">
             <span className="profile-hero__name">{profile.firstName} {profile.lastName}</span>
-            <span className="profile-hero__role">PACIENT</span>
+            <span className="profile-hero__role">{t('profile.roleBadge')}</span>
           </div>
           <div className="profile-hero__meta">
             <span><Mail size={14} strokeWidth={1.5} color="var(--muted)" /> {profile.email}</span>
             {memberSince && (
-              <span><Calendar size={14} strokeWidth={1.5} color="var(--muted)" /> Anëtar që nga {memberSince}</span>
+              <span><Calendar size={14} strokeWidth={1.5} color="var(--muted)" /> {t('profile.memberSince', { date: memberSince })}</span>
             )}
           </div>
         </div>
 
         <button type="button" className="btn btn--ghost btn--sm profile-hero__edit" onClick={startEditing}>
-          Ndrysho <ArrowRight size={14} strokeWidth={1.5} />
+          {t('profile.editCta')} <ArrowRight size={14} strokeWidth={1.5} />
         </button>
       </div>
 
@@ -271,7 +289,7 @@ export default function MyProfilePage() {
           </div>
           <div>
             <div className="stat-card__count" style={{ color: 'var(--primary)' }}>{totalAppointments}</div>
-            <div className="stat-card__label">Gjithsej Termine</div>
+            <div className="stat-card__label">{t('profile.statTotalAppointments')}</div>
           </div>
         </div>
         <div className="stat-card">
@@ -280,7 +298,7 @@ export default function MyProfilePage() {
           </div>
           <div>
             <div className="stat-card__count" style={{ color: 'var(--ok)' }}>{activeAppointments}</div>
-            <div className="stat-card__label">Termine Aktive</div>
+            <div className="stat-card__label">{t('profile.statActiveAppointments')}</div>
           </div>
         </div>
         <div className="stat-card">
@@ -289,7 +307,7 @@ export default function MyProfilePage() {
           </div>
           <div>
             <div className="stat-card__count" style={{ color: 'var(--primary)' }}>{dependentsCount}</div>
-            <div className="stat-card__label">Anëtarë të Familjes</div>
+            <div className="stat-card__label">{t('profile.statFamilyMembers')}</div>
           </div>
         </div>
       </div>
@@ -299,57 +317,57 @@ export default function MyProfilePage() {
         {/* Personal info form */}
         <div className="card profile-form" ref={formRef}>
           <div className="profile-form__header">
-            <h2 className="profile-form__title">Informatat Personale</h2>
+            <h2 className="profile-form__title">{t('profile.personalInfoTitle')}</h2>
             {isEditing ? (
               <div className="profile-form__actions">
                 <button type="button" className="btn btn--primary btn--sm" disabled={saving} onClick={handleSave}>
-                  {saving ? 'Duke ruajtur…' : 'Ruaj ndryshimet'}
+                  {saving ? t('profile.saving') : t('profile.saveChanges')}
                 </button>
-                <button type="button" className="btn btn--ghost btn--sm" onClick={cancelEditing}>Anulo</button>
+                <button type="button" className="btn btn--ghost btn--sm" onClick={cancelEditing}>{tCommon('buttons.cancel')}</button>
               </div>
             ) : (
-              <button type="button" className="btn btn--ghost btn--sm" onClick={startEditing}>Ndrysho</button>
+              <button type="button" className="btn btn--ghost btn--sm" onClick={startEditing}>{t('profile.editCta')}</button>
             )}
           </div>
 
           <div className="form-row">
-            <ProfileField label="Emri" editing={isEditing} value={profile.firstName} error={fieldErrors.firstName}>
+            <ProfileField label={t('profile.firstNameLabel')} editing={isEditing} value={profile.firstName} error={fieldErrors.firstName}>
               <input type="text" required minLength={2} value={formData.firstName} onChange={(e) => updateField('firstName', e.target.value)} />
             </ProfileField>
-            <ProfileField label="Mbiemri" editing={isEditing} value={profile.lastName} error={fieldErrors.lastName}>
+            <ProfileField label={t('profile.lastNameLabel')} editing={isEditing} value={profile.lastName} error={fieldErrors.lastName}>
               <input type="text" required minLength={2} value={formData.lastName} onChange={(e) => updateField('lastName', e.target.value)} />
             </ProfileField>
           </div>
 
           <div className="field">
-            <label>Email (nuk ndryshohet)</label>
+            <label>{t('profile.emailLabel')}</label>
             <div className="profile-field__readonly profile-field__readonly--locked">{profile.email}</div>
-            <span className="profile-field__note">Email adresa nuk mund të ndryshohet.</span>
+            <span className="profile-field__note">{t('profile.emailImmutableNote')}</span>
           </div>
 
           <div className="form-row">
-            <ProfileField label="Telefoni" editing={isEditing} value={profile.phoneNumber || '—'} error={fieldErrors.phoneNumber}>
+            <ProfileField label={t('profile.phoneLabel')} editing={isEditing} value={profile.phoneNumber || t('profile.unsetValue')} error={fieldErrors.phoneNumber}>
               <input type="tel" placeholder="+383 44 000 000" value={formData.phoneNumber} onChange={(e) => updateField('phoneNumber', e.target.value)} />
             </ProfileField>
             <div />
           </div>
 
-          <ProfileField label="Adresa" editing={isEditing} value={profile.address || '—'}>
-            <input type="text" placeholder="Rr. Nëna Terezë, nr. 10" value={formData.address} onChange={(e) => updateField('address', e.target.value)} />
+          <ProfileField label={t('profile.addressLabel')} editing={isEditing} value={profile.address || t('profile.unsetValue')}>
+            <input type="text" placeholder={t('profile.addressPlaceholder')} value={formData.address} onChange={(e) => updateField('address', e.target.value)} />
           </ProfileField>
 
           <div className="form-row">
-            <ProfileField label="Qyteti" editing={isEditing} value={profile.city || '—'}>
-              <input type="text" placeholder="Prishtinë" value={formData.city} onChange={(e) => updateField('city', e.target.value)} />
+            <ProfileField label={t('profile.cityLabel')} editing={isEditing} value={profile.city || t('profile.unsetValue')}>
+              <input type="text" placeholder={t('profile.cityPlaceholder')} value={formData.city} onChange={(e) => updateField('city', e.target.value)} />
             </ProfileField>
-            <ProfileField label="Data e lindjes" editing={isEditing} value={formatDob(profile.dateOfBirth)} error={fieldErrors.dateOfBirth}>
+            <ProfileField label={t('profile.dobLabel')} editing={isEditing} value={formatDob(profile.dateOfBirth, t('profile.unsetValue'))} error={fieldErrors.dateOfBirth}>
               <input type="date" value={formData.dateOfBirth} onChange={(e) => updateField('dateOfBirth', e.target.value)} />
             </ProfileField>
           </div>
 
-          <ProfileField label="Gjinia" editing={isEditing} value={genderLabel(profile.gender)} error={fieldErrors.gender}>
+          <ProfileField label={t('profile.genderLabel')} editing={isEditing} value={genderLabel(profile.gender)} error={fieldErrors.gender}>
             <CustomSelect
-              label="Gjinia"
+              label={t('profile.genderLabel')}
               hideLabel
               options={GENDER_OPTIONS}
               value={formData.gender}
@@ -363,22 +381,22 @@ export default function MyProfilePage() {
         {/* Right column */}
         <div className="profile-side">
           <div className="card profile-account">
-            <h3 className="profile-account__title">Detajet e Llogarisë</h3>
+            <h3 className="profile-account__title">{t('profile.accountDetailsTitle')}</h3>
             <div className="profile-account__row">
-              <span className="profile-account__label">Email</span>
+              <span className="profile-account__label">{t('profile.emailLabelBare')}</span>
               <span className="profile-account__value">{profile.email}</span>
             </div>
             <div className="profile-account__row">
-              <span className="profile-account__label">Fjalëkalimi</span>
+              <span className="profile-account__label">{t('profile.passwordLabel')}</span>
               <span className="profile-account__value profile-account__value--row">
                 ••••••••
-                <button type="button" className="profile-account__link" onClick={() => navigate('/llogaria/fjalekalimi')}>Ndrysho</button>
+                <button type="button" className="profile-account__link" onClick={() => navigate('/llogaria/fjalekalimi')}>{t('profile.editCta')}</button>
               </span>
             </div>
             <div className="profile-account__row profile-account__row--last">
-              <span className="profile-account__label">Statusi</span>
+              <span className="profile-account__label">{t('profile.statusLabel')}</span>
               <span className="profile-account__status">
-                <CheckCircle size={12} strokeWidth={1.5} /> AKTIV
+                <CheckCircle size={12} strokeWidth={1.5} /> {t('profile.statusActive')}
               </span>
             </div>
           </div>
@@ -386,13 +404,13 @@ export default function MyProfilePage() {
           <div className="card profile-security">
             <div className="profile-security__head">
               <Shield size={16} strokeWidth={1.5} color="var(--primary)" />
-              <span>Siguria e llogarisë</span>
+              <span>{t('profile.securityTitle')}</span>
             </div>
             <p className="profile-security__text">
-              Fjalëkalimi juaj është i enkriptuar dhe i mbrojtur. Rekomandojmë ta ndryshoni çdo 3 muaj.
+              {t('profile.securityText')}
             </p>
             <button type="button" className="btn btn--ghost btn--sm btn--block" onClick={() => navigate('/llogaria/fjalekalimi')}>
-              <Lock size={14} strokeWidth={1.5} /> Ndrysho fjalëkalimin
+              <Lock size={14} strokeWidth={1.5} /> {t('profile.changePasswordCta')}
             </button>
           </div>
         </div>

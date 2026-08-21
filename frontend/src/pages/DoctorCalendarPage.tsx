@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Calendar,
@@ -14,30 +14,15 @@ import {
   UserX,
   X,
 } from 'lucide-react'
-import { api, ApiError } from '../lib/api'
+import { useTranslation } from 'react-i18next'
+import { api } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
 import { AppointmentStatus } from '../lib/types'
 import type { DoctorAppointment } from '../lib/types'
 import { useToast } from '../context/ToastContext'
 import { useDoctorSearch } from '../context/DoctorSearchContext'
 import { Dropdown, EmptyState } from '../components/ui'
-import { formatTime } from '../lib/format'
-
-const DAYS_SQ = ['E Diel', 'E Hënë', 'E Martë', 'E Mërkurë', 'E Enjte', 'E Premte', 'E Shtunë']
-const MONTHS_SQ = ['Janar', 'Shkurt', 'Mars', 'Prill', 'Maj', 'Qershor', 'Korrik', 'Gusht', 'Shtator', 'Tetor', 'Nëntor', 'Dhjetor']
-
-const DATE_OPTIONS = [
-  { value: 'today', label: 'Sot' },
-  { value: 'week', label: 'Kjo javë' },
-  { value: 'month', label: 'Ky muaj' },
-  { value: '3months', label: '3 muajt e fundit' },
-]
-
-const STATUS_TABS: { value: string; label: string }[] = [
-  { value: 'all', label: 'Të gjitha' },
-  { value: String(AppointmentStatus.Pending), label: 'Në pritje' },
-  { value: String(AppointmentStatus.Confirmed), label: 'Konfirmuar' },
-  { value: String(AppointmentStatus.Completed), label: 'Përfunduar' },
-]
+import { formatTime, monthName, weekdayName } from '../lib/format'
 
 function parseLocal(iso: string): Date {
   const m = iso.match(/(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/)
@@ -53,12 +38,12 @@ function toDateInput(d: Date): string {
 }
 
 function formatDateSq(date: Date): string {
-  return `${DAYS_SQ[date.getDay()]}, ${date.getDate()} ${MONTHS_SQ[date.getMonth()]} ${date.getFullYear()}`
+  return `${weekdayName(date.getDay())}, ${date.getDate()} ${monthName(date.getMonth())} ${date.getFullYear()}`
 }
 
 function formatDateHeader(iso: string): string {
   const d = parseLocal(iso)
-  return `${DAYS_SQ[d.getDay()].toUpperCase()}, ${d.getDate()} ${MONTHS_SQ[d.getMonth()].toUpperCase()}`
+  return `${weekdayName(d.getDay()).toUpperCase()}, ${d.getDate()} ${monthName(d.getMonth()).toUpperCase()}`
 }
 
 function isSameDay(a: Date, b: Date): boolean {
@@ -105,21 +90,21 @@ function calculateDateRange(filter: string): { dateFrom: string; dateTo: string 
   }
 }
 
-function statusBadgeClass(status: AppointmentStatus): { className: string; text: string } {
+function statusBadgeClass(status: AppointmentStatus, t: (key: string) => string): { className: string; text: string } {
   switch (status) {
     case AppointmentStatus.Pending:
-      return { className: 'doctor-badge doctor-badge--warn', text: 'NË PRITJE' }
+      return { className: 'doctor-badge doctor-badge--warn', text: t('calendar.badges.pending') }
     case AppointmentStatus.Confirmed:
-      return { className: 'doctor-badge doctor-badge--primary', text: 'KONFIRMUAR' }
+      return { className: 'doctor-badge doctor-badge--primary', text: t('calendar.badges.confirmed') }
     case AppointmentStatus.Completed:
-      return { className: 'doctor-badge doctor-badge--ok', text: 'PËRFUNDUAR' }
+      return { className: 'doctor-badge doctor-badge--ok', text: t('calendar.badges.completed') }
     case AppointmentStatus.CancelledByPatient:
     case AppointmentStatus.CancelledByClinic:
-      return { className: 'doctor-badge doctor-badge--danger', text: 'ANULUAR' }
+      return { className: 'doctor-badge doctor-badge--danger', text: t('calendar.badges.cancelled') }
     case AppointmentStatus.NoShow:
-      return { className: 'doctor-badge doctor-badge--muted', text: 'NUK U PARAQIT' }
+      return { className: 'doctor-badge doctor-badge--muted', text: t('calendar.badges.noShow') }
     default:
-      return { className: 'doctor-badge doctor-badge--muted', text: 'I PANJOHUR' }
+      return { className: 'doctor-badge doctor-badge--muted', text: t('calendar.badges.unknown') }
   }
 }
 
@@ -150,6 +135,20 @@ function SkeletonRows() {
 }
 
 export default function DoctorCalendarPage() {
+  const { t } = useTranslation('doctor')
+  const { t: tCommon } = useTranslation('common')
+  const DATE_OPTIONS = [
+    { value: 'today', label: t('calendar.dateRange.today') },
+    { value: 'week', label: t('calendar.dateRange.week') },
+    { value: 'month', label: t('calendar.dateRange.month') },
+    { value: '3months', label: t('calendar.dateRange.3months') },
+  ]
+  const STATUS_TABS: { value: string; label: string }[] = [
+    { value: 'all', label: t('calendar.statusTabAll') },
+    { value: String(AppointmentStatus.Pending), label: t('calendar.statusTabPending') },
+    { value: String(AppointmentStatus.Confirmed), label: t('calendar.statusTabConfirmed') },
+    { value: String(AppointmentStatus.Completed), label: t('calendar.statusTabCompleted') },
+  ]
   const navigate = useNavigate()
   const { notify } = useToast()
 
@@ -169,7 +168,7 @@ export default function DoctorCalendarPage() {
     return () => clearTimeout(t)
   }, [searchTerm])
 
-  useEffect(() => {
+  const load = useCallback(() => {
     let active = true
     setLoading(true)
     setError('')
@@ -183,12 +182,14 @@ export default function DoctorCalendarPage() {
         status: statusFilter === 'all' ? undefined : (Number(statusFilter) as AppointmentStatus),
       })
       .then((r) => active && setAppointments(r.items))
-      .catch((e) => active && setError(e instanceof ApiError ? e.message : 'Ndodhi një gabim.'))
+      .catch((e) => active && setError(getErrorMessage(e)))
       .finally(() => active && setLoading(false))
     return () => {
       active = false
     }
   }, [statusFilter, dateFilter])
+
+  useEffect(load, [load])
 
   const filtered = useMemo(() => {
     if (!debouncedSearch.trim()) return appointments
@@ -214,9 +215,9 @@ export default function DoctorCalendarPage() {
     setAppointments((prev) => prev.map((a) => (a.id === id ? { ...a, status: AppointmentStatus.Confirmed } : a)))
     try {
       await api.confirmDoctorAppointment(id)
-      notify('Termini u konfirmua.', 'ok')
+      notify(t('calendar.confirmedToast'), 'ok')
     } catch (e) {
-      notify(e instanceof ApiError ? e.message : 'Gabim. Provoni përsëri.', 'error')
+      notify(getErrorMessage(e), 'error')
     } finally {
       setActingId('')
     }
@@ -227,9 +228,9 @@ export default function DoctorCalendarPage() {
     setAppointments((prev) => prev.map((a) => (a.id === id ? { ...a, status: AppointmentStatus.Completed } : a)))
     try {
       await api.completeDoctorAppointment(id)
-      notify('Termini u shënua si i përfunduar.', 'ok')
+      notify(t('calendar.completedToast'), 'ok')
     } catch (e) {
-      notify(e instanceof ApiError ? e.message : 'Gabim. Provoni përsëri.', 'error')
+      notify(getErrorMessage(e), 'error')
     } finally {
       setActingId('')
     }
@@ -240,9 +241,9 @@ export default function DoctorCalendarPage() {
     setAppointments((prev) => prev.map((a) => (a.id === id ? { ...a, status: AppointmentStatus.NoShow } : a)))
     try {
       await api.markDoctorAppointmentNoShow(id)
-      notify('Termini u shënua si i paraqitur.', 'ok')
+      notify(t('calendar.noShowToast'), 'ok')
     } catch (e) {
-      notify(e instanceof ApiError ? e.message : 'Gabim. Provoni përsëri.', 'error')
+      notify(getErrorMessage(e), 'error')
     } finally {
       setActingId('')
     }
@@ -269,15 +270,15 @@ export default function DoctorCalendarPage() {
     <>
       <div className="doctor-cal-header">
         <div>
-          <h1>Kalendari im</h1>
+          <h1>{t('calendar.title')}</h1>
           <p className="doctor-cal-header__sub">{formatDateSq(new Date())}</p>
         </div>
         <div className="doctor-view-toggle">
           <button type="button" className={`doctor-view-toggle__btn ${view === 'lista' ? 'is-active' : ''}`} onClick={() => setView('lista')}>
-            <List size={14} strokeWidth={1.5} /> Lista
+            <List size={14} strokeWidth={1.5} /> {t('calendar.viewList')}
           </button>
           <button type="button" className={`doctor-view-toggle__btn ${view === 'ditore' ? 'is-active' : ''}`} onClick={() => setView('ditore')}>
-            <LayoutGrid size={14} strokeWidth={1.5} /> Ditore
+            <LayoutGrid size={14} strokeWidth={1.5} /> {t('calendar.viewDay')}
           </button>
         </div>
       </div>
@@ -288,9 +289,9 @@ export default function DoctorCalendarPage() {
         <div className="stats-row">
           <div className="card doctor-stat">
             <div>
-              <div className="doctor-stat__label">Sot</div>
+              <div className="doctor-stat__label">{t('calendar.statTodayLabel')}</div>
               <div className="doctor-stat__count" style={{ color: 'var(--primary)' }}>{stats.today}</div>
-              <div className="doctor-stat__sub">{stats.todayCompleted} të përfunduara</div>
+              <div className="doctor-stat__sub">{t('calendar.statTodayCompletedSub', { count: stats.todayCompleted })}</div>
             </div>
             <div className="doctor-stat__icon" style={{ background: 'var(--primary-050)' }}>
               <Calendar size={20} strokeWidth={1.5} color="var(--primary)" />
@@ -298,9 +299,9 @@ export default function DoctorCalendarPage() {
           </div>
           <div className="card doctor-stat">
             <div>
-              <div className="doctor-stat__label">Në pritje</div>
+              <div className="doctor-stat__label">{t('calendar.statPendingLabel')}</div>
               <div className="doctor-stat__count" style={{ color: 'var(--warn)' }}>{stats.pending}</div>
-              <div className="doctor-stat__sub">Kërkojnë konfirmim</div>
+              <div className="doctor-stat__sub">{t('calendar.statPendingSub')}</div>
             </div>
             <div className="doctor-stat__icon" style={{ background: 'var(--warn-bg)' }}>
               <Clock size={20} strokeWidth={1.5} color="var(--warn)" />
@@ -308,9 +309,9 @@ export default function DoctorCalendarPage() {
           </div>
           <div className="card doctor-stat">
             <div>
-              <div className="doctor-stat__label">Konfirmuar sot</div>
+              <div className="doctor-stat__label">{t('calendar.statConfirmedTodayLabel')}</div>
               <div className="doctor-stat__count" style={{ color: 'var(--ok)' }}>{stats.confirmedToday}</div>
-              <div className="doctor-stat__sub">Gati për vizitë</div>
+              <div className="doctor-stat__sub">{t('calendar.statConfirmedTodaySub')}</div>
             </div>
             <div className="doctor-stat__icon" style={{ background: 'var(--ok-bg)' }}>
               <CheckCircle size={20} strokeWidth={1.5} color="var(--ok)" />
@@ -318,9 +319,9 @@ export default function DoctorCalendarPage() {
           </div>
           <div className="card doctor-stat">
             <div>
-              <div className="doctor-stat__label">Këtë muaj</div>
+              <div className="doctor-stat__label">{t('calendar.statMonthLabel')}</div>
               <div className="doctor-stat__count" style={{ color: 'var(--primary)' }}>{stats.thisMonth}</div>
-              <div className="doctor-stat__sub">Gjithsej termine</div>
+              <div className="doctor-stat__sub">{t('calendar.statMonthSub')}</div>
             </div>
             <div className="doctor-stat__icon" style={{ background: 'var(--primary-050)' }}>
               <TrendingUp size={20} strokeWidth={1.5} color="var(--primary)" />
@@ -345,12 +346,21 @@ export default function DoctorCalendarPage() {
       </div>
 
       {error ? (
-        <EmptyState icon={CalendarX} title="Ndodhi një gabim" hint={error} />
+        <EmptyState
+          icon={CalendarX}
+          title={t('calendar.errorTitle')}
+          hint={error}
+          action={
+            <button type="button" className="btn btn--primary btn--sm" onClick={load}>
+              {tCommon('buttons.retry')}
+            </button>
+          }
+        />
       ) : loading ? (
         <SkeletonRows />
       ) : view === 'lista' ? (
         groupedByDate.length === 0 ? (
-          <EmptyState icon={CalendarX} title="Nuk ka termine" hint="Nuk u gjetën termine për këtë periudhë." />
+          <EmptyState icon={CalendarX} title={t('calendar.noAppointmentsTitle')} hint={t('calendar.noAppointmentsHint')} />
         ) : (
           groupedByDate.map(([dateKey, items]) => (
             <div key={dateKey}>
@@ -358,20 +368,20 @@ export default function DoctorCalendarPage() {
                 <span className="doctor-date-divider__line" />
                 <span className="doctor-date-divider__text">
                   {isToday(items[0].startDateTime) && <span className="doctor-date-divider__dot" />}
-                  {isToday(items[0].startDateTime) ? `SOT · ${formatDateHeader(items[0].startDateTime)}` : formatDateHeader(items[0].startDateTime)}
+                  {isToday(items[0].startDateTime) ? `${t('calendar.todayPrefix')} · ${formatDateHeader(items[0].startDateTime)}` : formatDateHeader(items[0].startDateTime)}
                 </span>
                 <span className="doctor-date-divider__line" />
               </div>
 
               {items.map((a) => {
-                const badge = statusBadgeClass(a.status)
+                const badge = statusBadgeClass(a.status, t)
                 const durationMinutes = Math.round((parseLocal(a.endDateTime).getTime() - parseLocal(a.startDateTime).getTime()) / 60000)
                 const startInFuture = parseLocal(a.startDateTime).getTime() > Date.now()
                 return (
                   <div className="doctor-appt-row" key={a.id}>
                     <div className="doctor-appt-row__time">
                       <span className="doctor-appt-row__start">{formatTime(a.startDateTime)}</span>
-                      <span className="doctor-appt-row__duration">{durationMinutes} min</span>
+                      <span className="doctor-appt-row__duration">{durationMinutes} {t('calendar.minutesShort')}</span>
                     </div>
 
                     <span className="doctor-appt-row__sep" />
@@ -397,9 +407,9 @@ export default function DoctorCalendarPage() {
                             disabled={actingId === a.id}
                             onClick={() => handleConfirm(a.id)}
                           >
-                            Konfirmo
+                            {t('calendar.confirmCta')}
                           </button>
-                          <span title="Shënoji si anuluar" style={{ cursor: 'pointer', display: 'inline-flex' }}>
+                          <span title={t('calendar.markCancelledTitle')} style={{ cursor: 'pointer', display: 'inline-flex' }}>
                             <X size={18} strokeWidth={1.5} color="var(--muted)" />
                           </span>
                         </>
@@ -412,10 +422,10 @@ export default function DoctorCalendarPage() {
                             disabled={actingId === a.id}
                             onClick={() => handleComplete(a.id)}
                           >
-                            Përfundo
+                            {t('calendar.completeCta')}
                           </button>
                           <span
-                            title="Nuk u paraqit"
+                            title={t('calendar.markNoShowTitle')}
                             style={{ cursor: 'pointer', color: 'var(--muted)', display: 'inline-flex' }}
                             onClick={() => handleNoShow(a.id)}
                           >
@@ -464,10 +474,11 @@ function DitoreView({
   appointments: DoctorAppointment[]
   onOpen: (id: string) => void
 }) {
+  const { t } = useTranslation('doctor')
   const [, forceTick] = useState(0)
   useEffect(() => {
-    const t = setInterval(() => forceTick((n) => n + 1), 60000)
-    return () => clearInterval(t)
+    const timer = setInterval(() => forceTick((n) => n + 1), 60000)
+    return () => clearInterval(timer)
   }, [])
 
   const today = isSameDay(currentDate, new Date())
@@ -495,10 +506,14 @@ function DitoreView({
           <ChevronLeft size={20} strokeWidth={1.5} />
         </button>
         <div className="doctor-ditore-nav__center">
-          <span>{today ? `Sot, ${DAYS_SQ[currentDate.getDay()]} ${currentDate.getDate()} ${MONTHS_SQ[currentDate.getMonth()]}` : `${DAYS_SQ[currentDate.getDay()]} ${currentDate.getDate()} ${MONTHS_SQ[currentDate.getMonth()]}`}</span>
+          <span>
+            {today
+              ? t('calendar.dayView.todayLabel', { weekday: weekdayName(currentDate.getDay()), day: currentDate.getDate(), month: monthName(currentDate.getMonth()) })
+              : t('calendar.dayView.dateLabel', { weekday: weekdayName(currentDate.getDay()), day: currentDate.getDate(), month: monthName(currentDate.getMonth()) })}
+          </span>
           {!today && (
             <button type="button" className="doctor-ditore-nav__today" onClick={() => setCurrentDate(new Date())}>
-              Sot
+              {t('calendar.dayView.todayButton')}
             </button>
           )}
         </div>
@@ -510,7 +525,7 @@ function DitoreView({
       {appointments.length === 0 ? (
         <div className="doctor-ditore-empty">
           <CalendarX size={48} strokeWidth={1.5} color="var(--line)" />
-          <p>0 termine të ngulitura për këtë ditë.</p>
+          <p>{t('calendar.dayView.noAppointmentsForDay')}</p>
         </div>
       ) : (
         <div className="doctor-timeline" style={{ height: timelineHeight }}>

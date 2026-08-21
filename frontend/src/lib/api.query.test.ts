@@ -20,7 +20,7 @@ function captureRequestUrl(path: string): Promise<URL> {
 }
 
 beforeEach(() => {
-  localStorage.setItem('termini.accessToken', 'test-token')
+  localStorage.setItem('rezervo.accessToken', 'test-token')
 })
 
 describe('api.getMyAppointments — query construction (3c)', () => {

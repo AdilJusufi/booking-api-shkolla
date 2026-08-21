@@ -24,7 +24,7 @@ const PENDING_BOOKING = {
 }
 
 beforeEach(() => {
-  sessionStorage.setItem('termini_pending_booking', JSON.stringify(PENDING_BOOKING))
+  sessionStorage.setItem('rezervo_pending_booking', JSON.stringify(PENDING_BOOKING))
 })
 
 describe('ConfirmBookingPage — 409 slot-taken handling (3g)', () => {
@@ -48,7 +48,7 @@ describe('ConfirmBookingPage — 409 slot-taken handling (3g)', () => {
     const confirmButton = await screen.findByRole('button', { name: /Konfirmo rezervimin/i })
     await user.click(confirmButton)
 
-    await waitFor(() => expect(screen.getByText(/Ky orar u zu ndërkohë/i)).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText(/sapo u zu nga dikush tjetër/i)).toBeInTheDocument())
     expect(calls).toBe(1)
 
     // Retry, in the same page instance — no reload.
@@ -72,7 +72,7 @@ describe('ConfirmBookingPage — 409 slot-taken handling (3g)', () => {
     const confirmButton = await screen.findByRole('button', { name: /Konfirmo rezervimin/i })
     await user.click(confirmButton)
 
-    await waitFor(() => expect(screen.getByText(/Ky orar u zu ndërkohë/i)).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText(/sapo u zu nga dikush tjetër/i)).toBeInTheDocument())
     expect(screen.queryByText('RAW-BACKEND-DETAIL')).not.toBeInTheDocument()
   })
 })

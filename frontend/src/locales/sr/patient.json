@@ -1,0 +1,498 @@
+{
+  "home": {
+    "eyebrow": "18 klinika · 120+ lekara · Kosovo",
+    "heroLine1": "Pronađite pravog",
+    "heroLine2": "lekara.",
+    "heroAccent": "Zakažite",
+    "heroLine3": "za par sekundi.",
+    "heroLead": "Rezervo Mjekun vas povezuje sa verifikovanim lekarima i klinikama širom Kosova — bez čekanja, bez telefonskih poziva.",
+    "cityLabel": "Grad",
+    "allCities": "Svi gradovi",
+    "specialtyLabel": "Specijalnost",
+    "allSpecialties": "Sve specijalnosti",
+    "searchCta": "Pretraga",
+    "trustFree": "Besplatno za pacijente",
+    "trustVerified": "Verifikovani lekari",
+    "trustEncrypted": "Šifrovani podaci",
+    "panel": {
+      "ariaLabel": "Primer zakazivanja",
+      "doctorName": "Dr Arben Gashi",
+      "doctorSpecialty": "Stomatologija · Priština",
+      "available": "Slobodan",
+      "freeSlotsLabel": "Slobodni termini",
+      "slotCount_one": "{{count}} termin",
+      "slotCount_few": "{{count}} termina",
+      "slotCount_other": "{{count}} termina",
+      "confirmCta": "Potvrdi termin",
+      "reviewCount": "od 640 pacijenata"
+    },
+    "stats": {
+      "verifiedDoctors": "Verifikovani lekari",
+      "partnerClinics": "Partnerske klinike",
+      "bookedAppointments": "Zakazanih termina",
+      "citiesInKosovo": "Gradova na Kosovu"
+    },
+    "specialtiesSection": {
+      "kicker": "Specijalnosti",
+      "title": "Najtraženije specijalnosti",
+      "subtitle": "Od kardiologije do pedijatrije — pronađite stručnjaka koji vam je potreban.",
+      "seeAll": "Vidi sve",
+      "freeSlotsMeta": "Slobodni termini"
+    },
+    "howItWorks": {
+      "kicker": "Proces",
+      "title": "Kako funkcioniše Rezervo Mjekun?",
+      "subtitle": "Tri jednostavna koraka do vašeg lekara — bez telefonskih poziva, bez čekanja u redu, bez papirologije.",
+      "cta": "Počni sada",
+      "step1Title": "Pretraga",
+      "step1Text": "Pretražujte po specijalnosti, imenu lekara ili klinici. Filtrirajte po gradu i dostupnosti.",
+      "step2Title": "Izbor",
+      "step2Text": "Pogledajte slobodne termine u realnom vremenu i izaberite vreme koje vam najviše odgovara.",
+      "step3Title": "Potvrda",
+      "step3Text": "Vaša rezervacija se odmah potvrđuje. Klinika se automatski obaveštava — bez telefonskih poziva."
+    },
+    "doctorsSection": {
+      "kicker": "Lekari",
+      "title": "Verifikovani lekari",
+      "subtitle": "Svaki lekar je licenciran i proveren pre pridruživanja platformi.",
+      "seeAll": "Svi lekari",
+      "verified": "Verifikovan",
+      "experienceYears_one": "{{count}} godina iskustva",
+      "experienceYears_few": "{{count}} godine iskustva",
+      "experienceYears_other": "{{count}} godina iskustva",
+      "licensedDoctor": "Licenciran lekar",
+      "browseSlots": "Pregled termina",
+      "firstAppointment": "Prvi slobodan termin:"
+    },
+    "features": {
+      "verifiedBig": "Verifikovano",
+      "verifiedLabel": "Licencirani i provereni lekari",
+      "hoursBig": "24/7",
+      "hoursLabel": "Zakazivanje onlajn, čak i noću",
+      "easyBig": "Lako",
+      "easyLabel": "Otkažite ili pomerite jednim klikom",
+      "coverageBig": "7 gradova",
+      "coverageLabel": "Pokrivenost širom Kosova"
+    },
+    "clinicsSection": {
+      "kicker": "Klinike",
+      "title": "Partnerske klinike širom Kosova",
+      "subtitle": "Od bolničkih centara do porodičnih ambulanti u komšiluku — sve verifikovane.",
+      "seeAll": "Vidi sve",
+      "viewClinic": "Pogledaj kliniku",
+      "doctorCount_one": "{{count}} lekar",
+      "doctorCount_few": "{{count}} lekara",
+      "doctorCount_other": "{{count}} lekara"
+    },
+    "testimonials": {
+      "kicker": "Iskustva",
+      "title": "Poverenje pacijenata i klinika"
+    },
+    "finalCta": {
+      "kicker": "Besplatno za pacijente",
+      "title": "Spremni da zakažete svoj termin?",
+      "subtitle": "Pridružite se hiljadama pacijenata koji već veruju Rezervo Mjekun za svoje zdravlje.",
+      "cta": "Počnite odmah",
+      "fineprint": "Bez kreditne kartice · Besplatno otkazivanje · Podrška na albanskom"
+    },
+    "demo": {
+      "specialties": {
+        "cardiology": "Kardiologija",
+        "pediatrics": "Pedijatrija",
+        "neurology": "Neurologija",
+        "orthopedics": "Ortopedija",
+        "dermatology": "Dermatologija",
+        "gynecology": "Ginekologija",
+        "ophthalmology": "Oftalmologija",
+        "psychiatry": "Psihijatrija"
+      },
+      "doctors": [
+        {
+          "name": "Arben Vitia",
+          "specialty": "Kardiologija",
+          "next": "Danas, 14:30"
+        },
+        {
+          "name": "Linda Gashi",
+          "specialty": "Pedijatrija",
+          "next": "Danas, 16:00"
+        },
+        {
+          "name": "Besnik Ramadani",
+          "specialty": "Neurologija",
+          "next": "Sutra, 09:00"
+        },
+        {
+          "name": "Teuta Krasniqi",
+          "specialty": "Dermatologija",
+          "next": "Sutra, 11:30"
+        },
+        {
+          "name": "Driton Berisha",
+          "specialty": "Ortopedija",
+          "next": "Četvrtak, 08:30"
+        }
+      ],
+      "clinics": [
+        {
+          "name": "Spitali Amerikan",
+          "city": "Priština",
+          "specialties": [
+            "Kardiologija",
+            "Pedijatrija",
+            "Neurologija"
+          ]
+        },
+        {
+          "name": "Poliklinika Rilindja",
+          "city": "Priština",
+          "specialties": [
+            "Ortopedija",
+            "Dermatologija"
+          ]
+        },
+        {
+          "name": "Klinika Vita",
+          "city": "Prizren",
+          "specialties": [
+            "Ginekologija",
+            "Pedijatrija"
+          ]
+        }
+      ],
+      "testimonials": [
+        {
+          "quote": "Zakazala sam termin kod kardiologa za manje od minut, uveče, bez pozivanja bilo koga. Potvrda je stigla odmah.",
+          "name": "Blerta Hoxha",
+          "role": "Pacijent · Priština"
+        },
+        {
+          "quote": "Kao klinika, sav kalendar sada imamo na jednom mestu. Propušteni termini su znatno smanjeni otkako smo prešli na Rezervo Mjekun.",
+          "name": "Dr Fatos Kelmendi",
+          "role": "Direktor klinike · Prizren"
+        }
+      ]
+    }
+  },
+  "search": {
+    "title": "Pronađite pravog lekara ili kliniku",
+    "subtitle": "Pretražite preko 500 lekara i 80 klinika na Kosovu",
+    "searchPlaceholder": "Pretražite lekara, kliniku ili specijalnost...",
+    "allSpecialtiesChip": "Sve",
+    "tabClinics": "Klinike",
+    "tabDoctors": "Lekari",
+    "filtersToggle": "Filteri",
+    "cityLabel": "Grad",
+    "specialtyLabel": "Specijalnost",
+    "showLess": "Prikaži manje ▴",
+    "showMore": "Prikaži više ▾",
+    "minRatingLabel": "Minimalna ocena",
+    "andUp": "i više",
+    "anyRating": "Bilo koja ocena",
+    "applyFilters": "Primeni filtere",
+    "clearAllFilters": "Obriši sve",
+    "headingClinicsIn": "Klinike u gradu {{city}}",
+    "headingDoctorsIn": "Lekari u gradu {{city}}",
+    "defaultCity": "Kosovo",
+    "resultCount_one": "{{count}} rezultat pronađen",
+    "resultCount_few": "{{count}} rezultata pronađena",
+    "resultCount_other": "{{count}} rezultata pronađeno",
+    "sortRelevance": "Sortiraj po: Relevantnosti",
+    "sortName": "Ime (A-Š)",
+    "sortRating": "Najbolje ocenjeni",
+    "errorTitle": "Došlo je do greške",
+    "noResultsTitle": "Nema pronađenih rezultata",
+    "noResultsHint": "Pokušajte da promenite filtere ili pojam pretrage.",
+    "prevPage": "Nazad",
+    "nextPage": "Sledeće"
+  },
+  "clinicDetail": {
+    "backToSearch": "Nazad na pretragu",
+    "loadingLabel": "Učitavanje klinike",
+    "branchesTitle": "Ogranci",
+    "servicesTitle": "Usluge i cene",
+    "minutesShort": "min",
+    "doctorsTitle": "Lekari",
+    "noDoctorsListed": "Nema navedenih lekara"
+  },
+  "cards": {
+    "bookCta": "Zakaži",
+    "viewClinicCta": "Pogledaj kliniku"
+  },
+  "doctorDetail": {
+    "backToSearch": "Nazad na pretragu",
+    "loadingLabel": "Učitavanje profila",
+    "experienceYears_one": "{{count}} godina iskustva",
+    "experienceYears_few": "{{count}} godine iskustva",
+    "experienceYears_other": "{{count}} godina iskustva",
+    "aboutTitle": "O lekaru",
+    "whereTitle": "Gde ordinira",
+    "servicesTitle": "Usluge",
+    "minutesShort": "min",
+    "bookingTitle": "Zakažite termin",
+    "bookingSubtitle": "Popunite korake da biste zakazali.",
+    "steps": {
+      "service": "Usluga",
+      "branch": "Ogranak",
+      "date": "Datum",
+      "time": "Vreme"
+    },
+    "chooseService": "Izaberite uslugu",
+    "changeService": "Promeni uslugu",
+    "chooseBranch": "Izaberite ogranak",
+    "changeBranch": "Promeni ogranak",
+    "chooseDate": "Izaberite datum",
+    "changeDate": "Promeni datum",
+    "chooseTime": "Izaberite vreme",
+    "noSlotsForDate": "Nema slobodnih termina za ovaj datum.",
+    "tryAnotherDate": "Probajte drugi datum",
+    "confirmBooking": "Potvrdi zakazivanje",
+    "continueCta": "Nastavi",
+    "loginRequiredHint": "Morate biti prijavljeni da biste zakazali termin.",
+    "loginCta": "Prijavite se"
+  },
+  "appointmentsList": {
+    "title": "Moji termini",
+    "subtitle": "Pregledajte i upravljajte svim svojim terminima na jednom mestu.",
+    "newAppointmentCta": "Zakaži novi termin",
+    "statsActive": "Aktivni",
+    "statsCompleted": "Završeni",
+    "statsPending": "Na čekanju",
+    "statsCancelled": "Otkazani",
+    "filterAll": "Svi",
+    "filterActive": "Aktivni",
+    "filterCompleted": "Završeni",
+    "filterCancelled": "Otkazani",
+    "searchPlaceholder": "Pretraga po lekaru...",
+    "dateRange": {
+      "all": "Svi datumi",
+      "today": "Danas",
+      "week": "Ove nedelje",
+      "month": "Ovog meseca",
+      "last3months": "Poslednja 3 meseca",
+      "year": "Ove godine"
+    },
+    "badges": {
+      "pending": "NA ČEKANJU",
+      "confirmed": "POTVRĐENO",
+      "checkedIn": "PRIJAVLJEN",
+      "inProgress": "U TOKU",
+      "completed": "ZAVRŠENO",
+      "cancelledByPatient": "OTKAZANO",
+      "cancelledByClinic": "OTKAZANO (KLINIKA)",
+      "noShow": "NIJE SE POJAVIO/LA",
+      "rescheduled": "POMERENO",
+      "unknown": "NEPOZNATO"
+    },
+    "errorTitle": "Došlo je do greške",
+    "noAppointmentsTitle": "Nemate termina",
+    "noAppointmentsHint": "Zakažite svoj prvi termin sada.",
+    "confirmCancelPrompt": "Jeste li sigurni?",
+    "cancelling": "Otkazivanje…",
+    "confirmCancelYes": "Da, otkaži",
+    "viewDetails": "Pogledaj detalje",
+    "cancelWindowNote": "Otkazivanje nije moguće (< 12 sati)",
+    "cancelledToast": "Termin je otkazan.",
+    "cancelFailedToast": "Otkazivanje nije uspelo.",
+    "cancelReasonDefault": "Otkazao pacijent"
+  },
+  "appointmentDetail": {
+    "backToAppointments": "Nazad na termine",
+    "notFoundTitle": "Termin nije pronađen",
+    "notFoundHint": "Ovaj termin ne postoji ili nemate pristup njemu.",
+    "refLabel": "REF",
+    "timeAndPlace": "Vreme i mesto",
+    "dateLabel": "Datum",
+    "timeLabel": "Vreme",
+    "clinicLabel": "Klinika",
+    "branchLabel": "Ogranak",
+    "doctorAndService": "Lekar i usluga",
+    "serviceLabel": "Usluga",
+    "durationLabel": "Trajanje",
+    "durationMinutes": "{{count}} minuta",
+    "priceLabel": "Cena",
+    "patientSectionTitle": "Pacijent",
+    "bookedForLabel": "Zakazano za",
+    "typeLabel": "Tip",
+    "typeFamilyMember": "Član porodice",
+    "typeIndividual": "Individualni pacijent",
+    "noteLabel": "Imate napomenu:",
+    "statusHistoryTitle": "Istorija statusa",
+    "bookedEventLabel": "Zakazano",
+    "statusDescriptionFallback": "Status ovog termina nije prepoznat.",
+    "statusDescriptions": {
+      "pending": "Vaš termin čeka potvrdu klinike.",
+      "confirmed": "Vaš termin je potvrđen. Molimo dođite 10 minuta ranije.",
+      "checkedIn": "Označeni ste kao prijavljeni u klinici.",
+      "inProgress": "Vaš termin je u toku.",
+      "completed": "Ovaj termin je završen.",
+      "cancelledByPatient": "Ovaj termin ste otkazali vi.",
+      "cancelledByClinic": "Ovaj termin je otkazala klinika.",
+      "noShow": "Niste se pojavili na ovaj termin.",
+      "rescheduled": "Ovaj termin je pomeren."
+    },
+    "timelineLabels": {
+      "pending": "Na čekanju",
+      "confirmed": "Potvrđeno",
+      "checkedIn": "Prijavljen u klinici",
+      "inProgress": "U toku",
+      "completed": "Završeno",
+      "cancelledByPatient": "Otkazali ste",
+      "cancelledByClinic": "Otkazala klinika",
+      "noShow": "Nije se pojavio/la",
+      "rescheduled": "Pomereno",
+      "unknown": "Nepoznato"
+    },
+    "completedMessage": "Termin je uspešno završen.",
+    "bookAnotherCta": "Zakažite novi termin",
+    "cancelledMessage": "Termin je otkazan.",
+    "findAnotherCta": "Pronađite drugi termin",
+    "cannotCancelWithin12h": "Otkazivanje nije moguće — termin počinje za manje od 12 sati.",
+    "countdownDays": "Preostalo {{count}} dana",
+    "countdownHoursMinutes": "Preostalo {{hours}}č {{minutes}}min",
+    "rescheduleCta": "Pomerite termin",
+    "cancelCta": "Otkažite termin",
+    "cancelConfirmPrompt": "Otkazati termin kod Dr {{lastName}}?",
+    "cancelling": "Otkazivanje…",
+    "confirmCancelYes": "Da, otkaži",
+    "cancelDeadlineNote": "Možete otkazati do 12 sati pre termina.",
+    "questionsHint": "Ako imate pitanja o svom terminu, kontaktirajte kliniku direktno.",
+    "cancelledToast": "Termin je otkazan.",
+    "rescheduledToast": "Termin je uspešno pomeren.",
+    "rescheduleTitle": "Izaberite novi datum",
+    "rescheduleNoSlotsForDate": "Nema slobodnih termina za ovaj datum.",
+    "rescheduleNewDateSummary": "Novi datum: {{date}} u {{time}}",
+    "confirmReschedule": "Potvrdi pomeranje",
+    "reschedulingInProgress": "Pomeranje…",
+    "cancelReasonDefault": "Otkazao pacijent"
+  },
+  "confirmBooking": {
+    "backToDoctor": "Nazad na lekara",
+    "title": "Potvrdite zakazivanje",
+    "timeAndPlace": "Vreme i mesto",
+    "dateLabel": "Datum",
+    "timeLabel": "Vreme",
+    "branchLabel": "Ogranak",
+    "priceLabel": "Cena",
+    "noteLabel": "Napomena (opciono)",
+    "notePlaceholder": "Nešto što klinika treba da zna pre vaše posete...",
+    "confirmNotice": "Klikom na \"Potvrdi zakazivanje\" prihvatate gore navedeni termin. Klinika će biti automatski obaveštena.",
+    "confirmCta": "Potvrdi zakazivanje",
+    "submitting": "Zakazivanje…",
+    "changeSelection": "Promeni izbor",
+    "bookedToast": "Termin je uspešno zakazan."
+  },
+  "profile": {
+    "loadFailedTitle": "Profil nije učitan",
+    "loadFailedFallback": "Pokušajte da osvežite stranicu.",
+    "changePhoto": "Promeni fotografiju",
+    "photoComingSoon": "Otpremanje fotografije uskoro stiže.",
+    "roleBadge": "PACIJENT",
+    "memberSince": "Član od {{date}}",
+    "editCta": "Izmeni",
+    "statTotalAppointments": "Ukupno termina",
+    "statActiveAppointments": "Aktivni termini",
+    "statFamilyMembers": "Članovi porodice",
+    "personalInfoTitle": "Lični podaci",
+    "saving": "Čuvanje…",
+    "saveChanges": "Sačuvaj izmene",
+    "firstNameLabel": "Ime",
+    "lastNameLabel": "Prezime",
+    "emailLabel": "Email (ne može se promeniti)",
+    "emailImmutableNote": "Email adresa se ne može promeniti.",
+    "phoneLabel": "Telefon",
+    "addressLabel": "Adresa",
+    "addressPlaceholder": "Ul. Majke Tereze, br. 10",
+    "cityLabel": "Grad",
+    "cityPlaceholder": "Priština",
+    "dobLabel": "Datum rođenja",
+    "genderLabel": "Pol",
+    "genderPlaceholder": "Izaberite...",
+    "genderMale": "Muški",
+    "genderFemale": "Ženski",
+    "genderOther": "Drugo",
+    "accountDetailsTitle": "Detalji naloga",
+    "passwordLabel": "Lozinka",
+    "statusLabel": "Status",
+    "statusActive": "AKTIVAN",
+    "securityTitle": "Bezbednost naloga",
+    "securityText": "Vaša lozinka je šifrovana i zaštićena. Preporučujemo da je menjate na svaka 3 meseca.",
+    "changePasswordCta": "Promeni lozinku",
+    "validation": {
+      "firstNameTooShort": "Ime mora imati najmanje 2 slova.",
+      "lastNameTooShort": "Prezime mora imati najmanje 2 slova.",
+      "phoneRequired": "Telefon je obavezan.",
+      "dobRequired": "Datum rođenja je obavezan.",
+      "genderRequired": "Pol je obavezan."
+    },
+    "updatedToast": "Profil je ažuriran.",
+    "invalidDataToast": "Podaci nisu validni.",
+    "emailLabelBare": "Email",
+    "unsetValue": "—"
+  },
+  "dependents": {
+    "title": "Članovi Porodice",
+    "subtitle": "Upravljajte članovima porodice za koje možete zakazivati termine.",
+    "addMember": "Dodaj Člana",
+    "loadingLabel": "Učitavanje članova",
+    "emptyTitle": "Još niste dodali nijednog člana porodice.",
+    "emptyHint": "Dodajte članove porodice da biste zakazivali termine u njihovo ime.",
+    "addFirstMember": "Dodaj Prvog Člana",
+    "relationships": {
+      "1": "Dete",
+      "2": "Supružnik/ca",
+      "3": "Roditelj",
+      "4": "Drugo"
+    },
+    "genders": {
+      "1": "Muški",
+      "2": "Ženski",
+      "3": "Drugo"
+    },
+    "editAria": "Izmeni člana",
+    "deleteAria": "Obriši člana",
+    "ageYears": "{{age}} godina",
+    "statusActive": "AKTIVAN",
+    "statusInactive": "NEAKTIVAN",
+    "canBookNote": "Možete zakazivati termine za ovog člana.",
+    "inactiveNote": "Neaktivan — kontaktirajte podršku za ponovnu aktivaciju.",
+    "deleteModalTitle": "Obriši Člana",
+    "deleteConfirmText": "Da li ste sigurni da želite da obrišete <0>{{name}}</0>? Ova radnja se ne može poništiti.",
+    "deleteCta": "Obriši",
+    "deletedToast": "Član je uspešno obrisan.",
+    "editModalTitle": "Izmeni Člana",
+    "addModalTitle": "Dodaj Člana",
+    "firstNameLabel": "Ime",
+    "lastNameLabel": "Prezime",
+    "dobLabel": "Datum Rođenja",
+    "genderLabel": "Pol",
+    "relationshipLabel": "Odnos",
+    "saving": "Čuvanje…",
+    "saveCta": "Sačuvaj",
+    "updatedToast": "Član je ažuriran.",
+    "createdToast": "Član je dodat.",
+    "validation": {
+      "firstNameRequired": "Ime je obavezno.",
+      "lastNameRequired": "Prezime je obavezno.",
+      "dobRequired": "Datum rođenja je obavezan.",
+      "dobMustBePast": "Datum rođenja mora biti u prošlosti."
+    }
+  },
+  "layout": {
+    "navAppointments": "Termini",
+    "navProfile": "Profil",
+    "navFamily": "Porodica",
+    "navSecurity": "Bezbednost",
+    "breadcrumbAccount": "Nalog",
+    "breadcrumbMyProfile": "Moj profil",
+    "breadcrumbFamilyMembers": "Članovi Porodice",
+    "breadcrumbSecurity": "Bezbednost",
+    "breadcrumbAppointments": "Termini",
+    "breadcrumbDetails": "Detalji"
+  },
+  "userMenu": {
+    "myProfile": "Moj profil",
+    "familyMembers": "Članovi porodice",
+    "changePassword": "Promeni lozinku"
+  }
+}

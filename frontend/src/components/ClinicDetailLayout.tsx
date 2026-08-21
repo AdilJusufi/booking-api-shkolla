@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useOutletContext, useParams } from 'react-router-dom'
 import { ArrowLeft, BarChart3, Building2, Globe, MapPin, Phone, Settings, Stethoscope, User } from 'lucide-react'
-import { api, ApiError } from '../lib/api'
+import { useTranslation } from 'react-i18next'
+import { api } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
 import type { AdminClinicDetail } from '../lib/types'
 import { useAdminBreadcrumb } from '../context/AdminBreadcrumbContext'
 import { ErrorBox, SkeletonDetail } from './ui'
@@ -17,6 +19,7 @@ export function useClinicContext(): ClinicOutletContext {
 }
 
 export default function ClinicDetailLayout() {
+  const { t } = useTranslation('admin')
   const { id } = useParams<{ id: string }>()
   const { setTrail } = useAdminBreadcrumb()
 
@@ -31,34 +34,34 @@ export default function ClinicDetailLayout() {
     api
       .getAdminClinicDetail(id)
       .then(setClinic)
-      .catch((e) => setError(e instanceof ApiError ? e.message : 'Ndodhi një gabim.'))
+      .catch((e) => setError(getErrorMessage(e)))
       .finally(() => setLoading(false))
   }, [id])
 
   useEffect(load, [load])
 
   useEffect(() => {
-    setTrail(clinic ? ['Klinikat', `Klinika "${clinic.name}"`] : ['Klinikat'])
-    return () => setTrail([])
+    setTrail(clinic ? [t('clinicDetail.breadcrumbClinics'), t('clinicDetail.breadcrumbClinicName', { name: clinic.name })] : [t('clinicDetail.breadcrumbClinics')])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clinic, setTrail])
 
-  if (loading) return <SkeletonDetail label="Duke ngarkuar klinikën" />
+  if (loading) return <SkeletonDetail label={t('clinicDetail.loadingLabel')} />
 
   if (error || !clinic) {
     return (
       <>
-        <ErrorBox message={error || 'Klinika nuk u gjet.'} />
-        <Link to="/admin-panel/klinikat" className="admin-back-link"><ArrowLeft size={14} strokeWidth={1.5} /> Kthehu te klinikat</Link>
+        <ErrorBox message={error || t('clinicDetail.notFound')} onRetry={load} />
+        <Link to="/admin-panel/klinikat" className="admin-back-link"><ArrowLeft size={14} strokeWidth={1.5} /> {t('clinicDetail.backToClinicsLink')}</Link>
       </>
     )
   }
 
   const tabs = [
-    { to: `/admin-panel/klinikat/${clinic.id}`, end: true, icon: Settings, label: 'Cilësimet' },
-    { to: `/admin-panel/klinikat/${clinic.id}/deget`, end: false, icon: Building2, label: 'Degët' },
-    { to: `/admin-panel/klinikat/${clinic.id}/sherbimet`, end: false, icon: Stethoscope, label: 'Shërbimet' },
-    { to: `/admin-panel/klinikat/${clinic.id}/mjeket`, end: false, icon: User, label: 'Mjekët' },
-    { to: `/admin-panel/klinikat/${clinic.id}/raporti`, end: false, icon: BarChart3, label: 'Raporti' },
+    { to: `/admin-panel/klinikat/${clinic.id}`, end: true, icon: Settings, label: t('clinicDetail.tabSettings') },
+    { to: `/admin-panel/klinikat/${clinic.id}/deget`, end: false, icon: Building2, label: t('clinicDetail.tabBranches') },
+    { to: `/admin-panel/klinikat/${clinic.id}/sherbimet`, end: false, icon: Stethoscope, label: t('clinicDetail.tabServices') },
+    { to: `/admin-panel/klinikat/${clinic.id}/mjeket`, end: false, icon: User, label: t('clinicDetail.tabDoctors') },
+    { to: `/admin-panel/klinikat/${clinic.id}/raporti`, end: false, icon: BarChart3, label: t('clinicDetail.tabReport') },
   ]
 
   return (
@@ -70,32 +73,32 @@ export default function ClinicDetailLayout() {
 
         <div className="clinic-header__main">
           <div className="clinic-header__title-row">
-            <h1>Klinika "{clinic.name}"</h1>
+            <h1>{t('clinicDetail.titlePrefix', { name: clinic.name })}</h1>
             <span className={`clinic-header__status ${clinic.isApproved ? 'is-approved' : 'is-pending'}`}>
-              {clinic.isApproved ? 'PUBLIKUAR' : 'NË PRITJE'}
+              {clinic.isApproved ? t('clinicDetail.statusPublished') : t('clinicDetail.statusPending')}
             </span>
           </div>
           <div className="clinic-header__meta">
-            {clinic.city && <span><MapPin size={13} strokeWidth={1.5} /> {clinic.city}, Kosovë</span>}
+            {clinic.city && <span><MapPin size={13} strokeWidth={1.5} /> {clinic.city}, {t('clinicDetail.countrySuffix')}</span>}
             {clinic.phoneNumber && <span><Phone size={13} strokeWidth={1.5} /> {clinic.phoneNumber}</span>}
             {clinic.website && <span><Globe size={13} strokeWidth={1.5} /> {clinic.website}</span>}
           </div>
         </div>
 
         <div className="clinic-header__actions">
-          <Link to={`/klinika/${clinic.id}`} className="btn btn--ghost btn--sm">Shiko Profilin</Link>
+          <Link to={`/klinika/${clinic.id}`} className="btn btn--ghost btn--sm">{t('clinicDetail.viewProfileCta')}</Link>
         </div>
       </div>
 
       <nav className="clinic-tabs">
-        {tabs.map((t) => (
+        {tabs.map((tab) => (
           <NavLink
-            key={t.to}
-            to={t.to}
-            end={t.end}
+            key={tab.to}
+            to={tab.to}
+            end={tab.end}
             className={({ isActive }) => `clinic-tab ${isActive ? 'is-active' : ''}`}
           >
-            <t.icon size={16} strokeWidth={1.5} /> {t.label}
+            <tab.icon size={16} strokeWidth={1.5} /> {tab.label}
           </NavLink>
         ))}
       </nav>
