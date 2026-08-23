@@ -285,10 +285,12 @@ export default function HomePage() {
 
             <h1 className="lp-hero__title">
               <SplitWords text={t('home.heroLine1')} />
+              <InlineImage {...INLINE_IMAGES[0]} index={2} />
               <SplitWords text={t('home.heroLine2')} from={3} />
               <span className="lp-word lp-word--accent" style={{ ['--w' as string]: 5 }}>
                 {t('home.heroAccent')}
               </span>
+              <InlineImage {...INLINE_IMAGES[1]} index={6} />
               <SplitWords text={t('home.heroLine3')} from={7} />
             </h1>
 
