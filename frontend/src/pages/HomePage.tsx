@@ -60,12 +60,6 @@ const MARQUEE_PARTNERS = [
   'Medica Group', 'Bio Care', 'Klinika Sanus', 'Pediatria Lira',
 ]
 
-/* Hero headline punctuation — decorative, seeded so the URLs never break. */
-const INLINE_IMAGES = [
-  { seed: 'rezervo-clinic', alt: '' },
-  { seed: 'rezervo-care', alt: '' },
-]
-
 const PANEL_SLOTS = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30']
 // Decorative demo dates for the booking panel — Monday(1) through Friday(5)
 // in JS Date.getDay() terms, with the weekday label resolved via
@@ -89,15 +83,6 @@ function SplitWords({ text, from = 0 }: { text: string; from?: number }) {
         </span>
       ))}
     </>
-  )
-}
-
-/** Small contextual photo set inline with the headline, at type height. */
-function InlineImage({ seed, alt, index }: { seed: string; alt: string; index: number }) {
-  return (
-    <span className="lp-word lp-inline-img" style={{ ['--w' as string]: index }} aria-hidden={!alt}>
-      <img src={`https://picsum.photos/seed/${seed}/240/160`} alt={alt} loading="lazy" />
-    </span>
   )
 }
 
@@ -285,25 +270,12 @@ export default function HomePage() {
 
             <h1 className="lp-hero__title">
               <SplitWords text={t('home.heroLine1')} />
-              <InlineImage {...INLINE_IMAGES[0]} index={2} />
               <SplitWords text={t('home.heroLine2')} from={3} />
               <span className="lp-word lp-word--accent" style={{ ['--w' as string]: 5 }}>
                 {t('home.heroAccent')}
               </span>
-              <InlineImage {...INLINE_IMAGES[1]} index={6} />
               <SplitWords text={t('home.heroLine3')} from={7} />
             </h1>
-
-            <div className="lp-hero__strip" aria-hidden>
-              {INLINE_IMAGES.map((img) => (
-                <img
-                  key={img.seed}
-                  src={`https://picsum.photos/seed/${img.seed}/240/160`}
-                  alt=""
-                  loading="lazy"
-                />
-              ))}
-            </div>
 
             <p className="lp-hero__lead" data-reveal>
               {t('home.heroLead')}
