@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 222 56" width="222" height="56" role="img" aria-label="Rezervo Mjekun">
+  <g transform="translate(0,4) scale(1.0)"><rect x="14.75" y="6" width="4.5" height="8" rx="2.25" fill="#ffffff"></rect>
+  <rect x="28.75" y="6" width="4.5" height="8" rx="2.25" fill="#ffffff"></rect>
+  <rect x="10.5" y="11.5" width="27" height="29" rx="5" fill="none" stroke="#ffffff" stroke-width="3"></rect>
+  <rect x="10.5" y="18" width="27" height="2.4" fill="#ffffff"></rect>
+  <circle cx="16" cy="26.5" r="2.2" fill="#ffffff"></circle>
+  <circle cx="24" cy="26.5" r="2.2" fill="#ffffff"></circle>
+  <circle cx="32" cy="26.5" r="2.2" fill="#ffffff"></circle>
+  <circle cx="16" cy="34.5" r="2.2" fill="#ffffff"></circle>
+  <circle cx="32" cy="34.5" r="2.2" fill="#ffffff"></circle>
+  <rect x="20.6" y="31.1" width="6.8" height="6.8" rx="2.3" fill="#ffffff"></rect></g>
+  <text x="62" y="26" font-family="Plus Jakarta Sans, Segoe UI, Helvetica, Arial, sans-serif" font-size="22" font-weight="800" letter-spacing="-0.8" fill="#ffffff">Rezervo</text>
+  <text x="62" y="49" font-family="Plus Jakarta Sans, Segoe UI, Helvetica, Arial, sans-serif" font-size="22" font-weight="800" letter-spacing="-0.8" fill="#ffffff">Mjekun</text>
+</svg>

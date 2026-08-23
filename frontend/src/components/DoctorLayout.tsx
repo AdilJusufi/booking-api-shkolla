@@ -35,8 +35,7 @@ function DoctorLayoutInner() {
     <div className="patient-shell">
       <header className="patient-topbar">
         <Link to="/" className="brand">
-          <span className="brand__mark" aria-hidden><Logo size={22} /></span>
-          <span className="brand__name">{tCommon('brand.name')}<span className="brand__tld">{tCommon('brand.tld')}</span></span>
+          <Logo variant="horizontal" size={26} />
         </Link>
 
         <div className="doctor-topbar__search">
