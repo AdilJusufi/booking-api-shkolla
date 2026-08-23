@@ -87,8 +87,7 @@ export default function ForgotPasswordPage() {
     <div className="split-auth">
       <div className="split-auth__brand">
         <span className="split-auth__brand-mark">
-          <span className="split-auth__brand-icon" aria-hidden><Logo size={20} tone="inverted" /></span>
-          {tCommon('brand.name')}{tCommon('brand.tld')}
+          <Logo variant="stacked" tone="inverted" size={56} />
         </span>
         <h1>{t('brand.taglineVariant')}</h1>
         <div className="split-auth__brand-trust">
@@ -107,8 +106,7 @@ export default function ForgotPasswordPage() {
 
       <div className="split-auth__mobile-bar">
         <Link to="/" className="brand">
-          <span className="brand__mark" aria-hidden><Logo size={22} tone="inverted" /></span>
-          <span className="brand__name">{tCommon('brand.name')}<span className="brand__tld">{tCommon('brand.tld')}</span></span>
+          <Logo variant="horizontal" tone="inverted" size={24} />
         </Link>
       </div>
 

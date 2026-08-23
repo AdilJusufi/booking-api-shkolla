@@ -23,8 +23,7 @@ export default function Navbar() {
     <header className="navbar">
       <div className="navbar__inner container">
         <Link to="/" className="brand" onClick={() => setOpen(false)}>
-          <span className="brand__mark" aria-hidden><Logo size={22} /></span>
-          <span className="brand__name">{t('brand.name')}<span className="brand__tld">{t('brand.tld')}</span></span>
+          <Logo variant="horizontal" size={28} />
         </Link>
 
         <button

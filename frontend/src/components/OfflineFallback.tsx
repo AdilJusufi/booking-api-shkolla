@@ -18,9 +18,8 @@ export default function OfflineFallback({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation('common')
   return (
     <div className="offline-page">
-      <span className="brand offline-page__brand">
-        <span className="brand__mark" aria-hidden><Logo size={22} /></span>
-        <span className="brand__name">{t('brand.name')}<span className="brand__tld">{t('brand.tld')}</span></span>
+      <span className="offline-page__brand">
+        <Logo variant="stacked" size={48} />
       </span>
 
       <div className="icon-circle icon-circle--danger">

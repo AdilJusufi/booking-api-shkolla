@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { Bell, Building2, ClipboardList, Moon, Stethoscope, Sun, User } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '../context/ThemeContext'
+import Logo from './Logo'
 import UserMenu from './UserMenu'
 
 export default function SuperAdminLayout() {
@@ -20,8 +21,8 @@ export default function SuperAdminLayout() {
     <div className="admin-layout">
       <header className="admin-topbar">
         <div className="admin-topbar__left">
+          <Logo variant="horizontal" size={20} />
           <span className="admin-breadcrumb">{t('layout.superAdminBreadcrumb')}</span>
-          <span className="admin-brand">{tCommon('brand.name')}<span className="admin-brand__tld">{tCommon('brand.tld')}</span></span>
         </div>
 
         <div className="admin-topbar__right">

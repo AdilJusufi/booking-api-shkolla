@@ -44,8 +44,7 @@ export default function ConfirmEmailPage() {
     <div className="confirm-email-page">
       <div className="auth-card">
         <span className="brand">
-          <span className="brand__mark" aria-hidden><Logo size={22} /></span>
-          <span className="brand__name">{tCommon('brand.name')}<span className="brand__tld">{tCommon('brand.tld')}</span></span>
+          <Logo variant="stacked" size={44} />
         </span>
 
         {state === 'loading' && (

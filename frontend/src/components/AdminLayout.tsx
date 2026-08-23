@@ -3,6 +3,7 @@ import { Bell, Moon, Sun } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '../context/ThemeContext'
 import { AdminBreadcrumbProvider, useAdminBreadcrumb } from '../context/AdminBreadcrumbContext'
+import Logo from './Logo'
 import UserMenu from './UserMenu'
 
 export default function AdminLayout() {
@@ -24,8 +25,8 @@ function AdminLayoutInner() {
     <div className="admin-layout">
       <header className="admin-topbar">
         <div className="admin-topbar__left">
+          <Logo variant="horizontal" size={20} />
           <span className="admin-breadcrumb">{[t('layout.panelBreadcrumb'), ...crumbs].join(' / ')}</span>
-          <span className="admin-brand">{tCommon('brand.name')}<span className="admin-brand__tld">{tCommon('brand.tld')}</span></span>
         </div>
 
         <div className="admin-topbar__right">
