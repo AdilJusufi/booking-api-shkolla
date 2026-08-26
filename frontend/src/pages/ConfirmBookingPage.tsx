@@ -6,7 +6,6 @@ import { api, ApiError } from '../lib/api'
 import { getErrorMessage, getSlotTakenMessage } from '../lib/errors'
 import type { CreateAppointmentRequest } from '../lib/types'
 import { useToast } from '../context/ToastContext'
-import { useInstallPrompt } from '../context/InstallPromptContext'
 import { Pending } from '../components/ui'
 import { formatDateLong, formatMoney } from '../lib/format'
 
@@ -43,7 +42,6 @@ export default function ConfirmBookingPage() {
   const { t } = useTranslation('patient')
   const navigate = useNavigate()
   const { notify } = useToast()
-  const { requestInstallOffer } = useInstallPrompt()
 
   const [booking] = useState<PendingBooking | null>(() => readPendingBooking())
   const [note, setNote] = useState('')
@@ -71,9 +69,6 @@ export default function ConfirmBookingPage() {
       const appointment = await api.createAppointment(payload)
       sessionStorage.removeItem(STORAGE_KEY)
       notify(t('confirmBooking.bookedToast'), 'ok')
-      // The app has just done the thing it exists for — the one moment where
-      // asking about installing is welcome rather than an interruption.
-      requestInstallOffer()
       navigate(`/terminet/${appointment.id}`)
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) {

@@ -19,6 +19,7 @@ using Booking.Infrastructure.Notifications;
 using Booking.Infrastructure.Persistence;
 using Booking.Infrastructure.Persistence.Interceptors;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -49,6 +50,8 @@ public static class DependencyInjection
             options.AddInterceptors(serviceProvider.GetRequiredService<AuditableEntityInterceptor>());
         });
 
+        services.AddDataProtectionWithPersistedKeys();
+
         services.AddIdentityAndAuth(configuration);
 
         services.AddScoped<IEmailService, LoggingEmailService>();
@@ -74,6 +77,7 @@ public static class DependencyInjection
         services.AddScoped<IAppointmentService, AppointmentService>();
         services.AddScoped<IDoctorAppointmentService, DoctorAppointmentService>();
         services.AddScoped<IAppointmentNotificationService, LoggingAppointmentNotificationService>();
+        services.AddScoped<IClinicNotificationService, LoggingClinicNotificationService>();
         services.AddScoped<IPatientService, PatientService>();
         services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<TenantAccessService>();
@@ -83,9 +87,47 @@ public static class DependencyInjection
         services.AddScoped<IAdminPatientService, AdminPatientService>();
 
         services.Configure<BookingSettings>(configuration.GetSection(BookingSettings.SectionName));
+        services.Configure<FrontendSettings>(configuration.GetSection(FrontendSettings.SectionName));
         services.Configure<CloudinarySettings>(configuration.GetSection(CloudinarySettings.SectionName));
 
         return services;
+    }
+
+    /// <summary>
+    /// Emri i aplikacionit për Data Protection. Fiks dhe i shkruar shprehimisht: pa të,
+    /// ASP.NET Core e nxjerr nga ContentRootPath, i cili ndryshon mes container-it
+    /// (/app) dhe host-it të testeve — dhe një emër tjetër do të thotë purpose chain
+    /// tjetër, pra token-a që nuk deshifrohen dot edhe kur çelësi është i njëjti.
+    /// Mos e ndrysho: çdo ndryshim i shpall të pavlefshëm token-at ekzistues.
+    /// </summary>
+    private const string DataProtectionApplicationName = "Booking.Api";
+
+    /// <summary>
+    /// Ruan key ring-un e Data Protection në databazë (tabela "DataProtectionKeys").
+    /// </summary>
+    /// <remarks>
+    /// Pa këtë, çelësat shkojnë te ~/.aspnet/DataProtection-Keys brenda container-it dhe
+    /// humbin në çdo rinisje — Render (free tier) rindez në deploy, në idle spin-down dhe
+    /// në mirëmbajtje. Token-at e AddDefaultTokenProviders() (konfirmim email-i, rivendosje
+    /// fjalëkalimi) nënshkruhen me këtë key ring, pra do të refuzoheshin si "invalid" edhe
+    /// kur janë krejt legjitimë dhe pa skaduar.
+    ///
+    /// Rrotullimi mbetet me default-et e framework-ut: çelës i ri çdo 90 ditë, kurse
+    /// çelësat e vjetër NUK fshihen — mbeten të lexueshëm, kështu që token-at e lëshuar
+    /// para rrotullimit vazhdojnë të validohen deri sa të skadojnë vetë.
+    ///
+    /// XML encryptor nuk konfigurohet me qëllim — shih raportin/README: çdo opsion i
+    /// disponueshëm (certifikatë, DPAPI) do ta zhvendoste problemin te ruajtja e një
+    /// çelësi tjetër, që në këtë mjedis do të përfundonte sërish në disk efemer ose në
+    /// config. Mbrojtja aktuale është vetë databaza: Neon i mban të dhënat të enkriptuara
+    /// at-rest dhe qasja kërkon connection string-un.
+    /// </remarks>
+    private static void AddDataProtectionWithPersistedKeys(this IServiceCollection services)
+    {
+        services
+            .AddDataProtection()
+            .SetApplicationName(DataProtectionApplicationName)
+            .PersistKeysToDbContext<BookingDbContext>();
     }
 
     private static void AddIdentityAndAuth(this IServiceCollection services, IConfiguration configuration)

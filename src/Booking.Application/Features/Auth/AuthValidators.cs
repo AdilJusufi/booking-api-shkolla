@@ -25,6 +25,50 @@ public sealed class RegisterRequestValidator : AbstractValidator<RegisterRequest
     }
 }
 
+public sealed class RegisterClinicRequestValidator : AbstractValidator<RegisterClinicRequest>
+{
+    public RegisterClinicRequestValidator()
+    {
+        // Mbajtësi i llogarisë — të njëjtat rregulla si te regjistrimi i pacientit.
+        RuleFor(x => x.FirstName).NotEmpty().MaximumLength(100);
+        RuleFor(x => x.LastName).NotEmpty().MaximumLength(100);
+        RuleFor(x => x.Email).NotEmpty().EmailAddress().MaximumLength(256);
+        RuleFor(x => x.PhoneNumber)
+            .NotEmpty()
+            .Matches(@"^\+?[0-9][0-9 \-]{5,19}$")
+            .WithMessage("Numri i telefonit duhet të përmbajë 6–20 shifra, opsionalisht me prefiks +.");
+        RuleFor(x => x.Password).ValidPassword();
+
+        // Klinika — kufijtë pasqyrojnë ClinicConfiguration.
+        RuleFor(x => x.ClinicName).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.Description).MaximumLength(2000);
+        RuleFor(x => x.ClinicPhoneNumber).NotEmpty().MaximumLength(30);
+        RuleFor(x => x.ClinicEmail)
+            .EmailAddress().MaximumLength(256)
+            .When(x => !string.IsNullOrWhiteSpace(x.ClinicEmail));
+        RuleFor(x => x.Website).MaximumLength(300);
+
+        RuleFor(x => x.Branches)
+            .NotEmpty().WithMessage("Duhet të shtoni së paku një degë.");
+
+        // FluentValidationFilter validon vetëm argumentin e nivelit të parë —
+        // degët e ndërfutura duhen lidhur shprehimisht këtu.
+        RuleForEach(x => x.Branches).SetValidator(new RegisterClinicBranchRequestValidator());
+    }
+}
+
+public sealed class RegisterClinicBranchRequestValidator : AbstractValidator<RegisterClinicBranchRequest>
+{
+    public RegisterClinicBranchRequestValidator()
+    {
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.Address).NotEmpty().MaximumLength(300);
+        RuleFor(x => x.City).NotEmpty().MaximumLength(100);
+        RuleFor(x => x.Municipality).MaximumLength(100);
+        RuleFor(x => x.PhoneNumber).MaximumLength(30);
+    }
+}
+
 public sealed class LoginRequestValidator : AbstractValidator<LoginRequest>
 {
     public LoginRequestValidator()

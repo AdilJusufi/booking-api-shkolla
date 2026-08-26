@@ -19,6 +19,90 @@ public class ValidatorTests
         Address: null,
         City: "Prishtinë");
 
+    private static RegisterClinicRequest ValidRegisterClinicRequest() => new()
+    {
+        FirstName = "Drilon",
+        LastName = "Krasniqi",
+        Email = "admin@klinika.dev",
+        PhoneNumber = "+383 44 123 456",
+        Password = "Fjalekalim1",
+        ClinicName = "Poliklinika Dardania",
+        Description = null,
+        ClinicPhoneNumber = "+383 38 123 456",
+        ClinicEmail = null,
+        Website = null,
+        Branches = [ValidBranch()]
+    };
+
+    private static RegisterClinicBranchRequest ValidBranch() => new()
+    {
+        Name = "Dega Qendër",
+        Address = "Rr. UÇK 1",
+        City = "Prishtinë"
+    };
+
+    [Fact]
+    public void RegisterClinicRequest_Valid_Passes()
+    {
+        new RegisterClinicRequestValidator().Validate(ValidRegisterClinicRequest()).IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public void RegisterClinicRequest_WithoutBranches_Fails()
+    {
+        var request = ValidRegisterClinicRequest() with { Branches = [] };
+
+        var result = new RegisterClinicRequestValidator().Validate(request);
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == nameof(RegisterClinicRequest.Branches));
+    }
+
+    [Fact]
+    public void RegisterClinicRequest_ValidatesNestedBranches()
+    {
+        // Filtri i API-t validon vetëm argumentin e nivelit të parë — nëse RuleForEach
+        // hiqet, një degë pa qytet do të kalonte deri te databaza.
+        var request = ValidRegisterClinicRequest() with
+        {
+            Branches = [ValidBranch() with { City = string.Empty }]
+        };
+
+        var result = new RegisterClinicRequestValidator().Validate(request);
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName.Contains(nameof(RegisterClinicBranchRequest.City)));
+    }
+
+    [Fact]
+    public void RegisterClinicRequest_ClinicPhoneIsRequired()
+    {
+        var request = ValidRegisterClinicRequest() with { ClinicPhoneNumber = string.Empty };
+
+        new RegisterClinicRequestValidator().Validate(request).IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void RegisterClinicRequest_OptionalClinicFieldsMayBeOmitted()
+    {
+        var request = ValidRegisterClinicRequest() with
+        {
+            Description = null,
+            ClinicEmail = null,
+            Website = null
+        };
+
+        new RegisterClinicRequestValidator().Validate(request).IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public void RegisterClinicRequest_InvalidClinicEmail_Fails()
+    {
+        var request = ValidRegisterClinicRequest() with { ClinicEmail = "jo-email" };
+
+        new RegisterClinicRequestValidator().Validate(request).IsValid.Should().BeFalse();
+    }
+
     [Fact]
     public void RegisterRequest_Valid_Passes()
     {

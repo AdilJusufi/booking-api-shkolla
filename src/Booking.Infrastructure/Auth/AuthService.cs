@@ -2,6 +2,7 @@ using Booking.Application.Common.Exceptions;
 using Booking.Application.Common.Interfaces;
 using Booking.Application.Common.Security;
 using Booking.Application.Features.Auth;
+using Booking.Application.Features.Clinics;
 using Booking.Domain.Entities;
 using Booking.Infrastructure.Identity;
 using Booking.Infrastructure.Persistence;
@@ -11,6 +12,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Npgsql;
 
 namespace Booking.Infrastructure.Auth;
 
@@ -22,6 +24,8 @@ public class AuthService : IAuthService
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ICurrentUserService _currentUser;
     private readonly IEmailService _emailService;
+    private readonly IClinicNotificationService _clinicNotifications;
+    private readonly IAuditService _auditService;
     private readonly AuthSettings _authSettings;
     private readonly ILogger<AuthService> _logger;
 
@@ -32,6 +36,8 @@ public class AuthService : IAuthService
         IDateTimeProvider dateTimeProvider,
         ICurrentUserService currentUser,
         IEmailService emailService,
+        IClinicNotificationService clinicNotifications,
+        IAuditService auditService,
         IOptions<AuthSettings> authSettings,
         ILogger<AuthService> logger)
     {
@@ -41,6 +47,8 @@ public class AuthService : IAuthService
         _dateTimeProvider = dateTimeProvider;
         _currentUser = currentUser;
         _emailService = emailService;
+        _clinicNotifications = clinicNotifications;
+        _auditService = auditService;
         _authSettings = authSettings.Value;
         _logger = logger;
     }
@@ -88,6 +96,143 @@ public class AuthService : IAuthService
         _logger.LogInformation("Pacient i ri u regjistrua: {UserId}", user.Id);
 
         return await IssueTokensAsync(user, cancellationToken);
+    }
+
+    public async Task<RegisterClinicResponse> RegisterClinicAsync(
+        RegisterClinicRequest request, CancellationToken cancellationToken = default)
+    {
+        var existing = await _userManager.FindByEmailAsync(request.Email);
+        if (existing is not null)
+        {
+            throw new ConflictException("email-exists", "Ekziston tashmë një llogari me këtë email.");
+        }
+
+        // Emri i klinikës qëllimisht NUK bllokohet: "Poliklinika Medica" në Prishtinë dhe
+        // një tjetër në Prizren janë dy biznese të ligjshme, dhe një bllokim i tillë s'ka
+        // rrugë anashkalimi për aplikuesin. Homonimet numërohen dhe i shkojnë SuperAdmin-it
+        // te njoftimi — vendimi mbetet te rishikimi njerëzor, që gjithsesi është porta reale.
+        var clinicsWithSameName = await _dbContext.Clinics
+            .CountAsync(c => EF.Functions.ILike(c.Name, request.ClinicName), cancellationToken);
+
+        // Katër entitete në një veprim të vetëm: user, klinikë, lidhja admin dhe degët.
+        // Një klinikë pa administrator ose një administrator pa klinikë s'do të kishin
+        // asnjë rrugë vetëriparimi, prandaj ose ruhen të gjitha, ose asnjë.
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+        var user = new ApplicationUser
+        {
+            UserName = request.Email,
+            Email = request.Email,
+            PhoneNumber = request.PhoneNumber,
+            FirstName = request.FirstName,
+            LastName = request.LastName,
+            CreatedAt = _dateTimeProvider.UtcNow
+        };
+
+        IdentityResult createResult;
+        try
+        {
+            createResult = await _userManager.CreateAsync(user, request.Password);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: "23505" })
+        {
+            // Indeksi unik mbi NormalizedEmail — dy kërkesa paralele me të njëjtin email.
+            // Kontrolli më lart është "lexo pastaj shkruaj" dhe s'e kap dot garën.
+            throw new ConflictException("email-exists", "Ekziston tashmë një llogari me këtë email.");
+        }
+
+        ThrowIfFailed(createResult);
+
+        await _userManager.AddToRoleAsync(user, Roles.ClinicAdmin);
+
+        var clinic = new Clinic
+        {
+            Name = request.ClinicName,
+            Description = request.Description,
+            PhoneNumber = request.ClinicPhoneNumber,
+            Email = request.ClinicEmail,
+            Website = request.Website,
+            IsApproved = false,
+            IsActive = true
+        };
+        _dbContext.Clinics.Add(clinic);
+
+        _dbContext.ClinicAdministrators.Add(new ClinicAdministrator { UserId = user.Id, ClinicId = clinic.Id });
+
+        foreach (var branch in request.Branches)
+        {
+            _dbContext.ClinicBranches.Add(new ClinicBranch
+            {
+                ClinicId = clinic.Id,
+                Name = branch.Name,
+                Address = branch.Address,
+                City = branch.City,
+                Municipality = branch.Municipality,
+                PhoneNumber = branch.PhoneNumber
+            });
+        }
+
+        _auditService.Record("CLINIC_SELF_REGISTERED", nameof(Clinic), clinic.Id.ToString(), null,
+            new { clinic.Name, AdminUserId = user.Id, BranchCount = request.Branches.Count });
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var (auth, _) = await IssueTokensCoreAsync(user, saveChanges: true, cancellationToken);
+
+        await transaction.CommitAsync(cancellationToken);
+
+        _logger.LogInformation(
+            "Klinikë e re u vetë-regjistrua: {ClinicId} nga useri {UserId}", clinic.Id, user.Id);
+
+        // Njoftimet dërgohen VETËM pas commit-it — një email për një klinikë që s'u ruajt
+        // do të ishte më keq se asnjë. Dhe dështimi i tyre nuk e rrëzon regjistrimin:
+        // llogaria ekziston, ndaj një 500 do ta çonte aplikuesin drejt një 409 në provën
+        // e dytë. Rishikimi mbetet i gjurmueshëm përmes audit log-ut dhe listës së klinikave.
+        var notificationContext = new ClinicRegistrationNotificationContext
+        {
+            ClinicId = clinic.Id,
+            ClinicName = clinic.Name,
+            ClinicPhoneNumber = clinic.PhoneNumber,
+            ClinicEmail = clinic.Email,
+            Website = clinic.Website,
+            AdminFullName = $"{user.FirstName} {user.LastName}",
+            AdminEmail = user.Email!,
+            AdminPhoneNumber = user.PhoneNumber,
+            BranchCities = request.Branches.Select(b => b.City).Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
+            SubmittedAtUtc = clinic.CreatedAt,
+            ClinicsWithSameName = clinicsWithSameName
+        };
+
+        // Njësoj si te pacienti: pa këtë token llogaria s'konfirmohet dot kurrë, dhe në
+        // production (Auth:RequireConfirmedEmail=true) mbajtësi s'do të rikyçej dot pasi
+        // t'i skadonte sesioni i parë.
+        await NotifyAsync(
+            async () =>
+            {
+                var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                await _emailService.SendAsync(
+                    user.Email!,
+                    "Konfirmo llogarinë tënde",
+                    $"Tokeni i konfirmimit: {confirmationToken}",
+                    cancellationToken);
+            },
+            clinic.Id, "email-i i konfirmimit të llogarisë");
+
+        await NotifyAsync(
+            () => _clinicNotifications.ClinicRegisteredAsync(notificationContext, cancellationToken),
+            clinic.Id, "njoftimi i SuperAdmin-ëve");
+
+        await NotifyAsync(
+            () => _clinicNotifications.ClinicRegistrationReceivedAsync(notificationContext, cancellationToken),
+            clinic.Id, "konfirmimi te mbajtësi i llogarisë");
+
+        return new RegisterClinicResponse
+        {
+            Auth = auth,
+            ClinicId = clinic.Id,
+            ClinicName = clinic.Name,
+            IsApproved = clinic.IsApproved
+        };
     }
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
@@ -308,6 +453,20 @@ public class AuthService : IAuthService
         await _dbContext.RefreshTokens
             .Where(t => t.UserId == userId && t.RevokedAt == null && t.ExpiresAt > utcNow)
             .ExecuteUpdateAsync(setters => setters.SetProperty(t => t.RevokedAt, utcNow), cancellationToken);
+    }
+
+    private async Task NotifyAsync(Func<Task> send, Guid clinicId, string description)
+    {
+        try
+        {
+            await send();
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception,
+                "Dështoi {Description} për klinikën {ClinicId} — regjistrimi mbetet i vlefshëm.",
+                description, clinicId);
+        }
     }
 
     /// <summary>Gabimet e Identity (password policy etj.) → ValidationException → HTTP 422.</summary>

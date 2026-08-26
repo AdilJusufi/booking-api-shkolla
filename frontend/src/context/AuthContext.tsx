@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import i18n from '../i18n'
 import { api, getRefreshToken, registerSessionExpiredHandler, setRefreshToken, setToken } from '../lib/api'
-import type { AuthResponse, RegisterRequest } from '../lib/types'
+import type { AuthResponse, RegisterClinicRequest, RegisterRequest } from '../lib/types'
 import { useToast } from './ToastContext'
 
 interface AuthUser {
@@ -12,6 +12,14 @@ interface AuthUser {
   roles: string[]
 }
 
+/** Result of a clinic self-registration — the auth user plus the pending clinic it created. */
+export interface RegisterClinicResult {
+  user: AuthUser
+  clinicId: string
+  clinicName: string
+  isApproved: boolean
+}
+
 interface AuthContextValue {
   user: AuthUser | null
   isAuthenticated: boolean
@@ -20,6 +28,7 @@ interface AuthContextValue {
   // post-login redirect needs the role immediately, in the same tick.
   login: (email: string, password: string) => Promise<AuthUser>
   register: (payload: RegisterRequest) => Promise<AuthUser>
+  registerClinic: (payload: RegisterClinicRequest) => Promise<RegisterClinicResult>
   logout: () => void
 }
 
@@ -91,6 +100,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: !!user,
       login: async (email, password) => applyAuth(await api.login(email, password)),
       register: async (payload) => applyAuth(await api.register(payload)),
+      registerClinic: async (payload) => {
+        const res = await api.registerClinic(payload)
+        return {
+          user: applyAuth(res.auth),
+          clinicId: res.clinicId,
+          clinicName: res.clinicName,
+          isApproved: res.isApproved,
+        }
+      },
       logout: () => {
         const refreshToken = getRefreshToken()
         clearSession()

@@ -5,7 +5,6 @@ import { Trans, useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import type { AdminClinic, ClinicBranch, Doctor, MedicalService } from '../lib/types'
-import { useToast } from '../context/ToastContext'
 import { ErrorBox, initials } from '../components/ui'
 import { toDateInput } from '../lib/format'
 import { useReveal } from '../lib/motion'
@@ -27,7 +26,6 @@ function ClinicCardSkeleton() {
 export default function MyClinicsPage() {
   const { t } = useTranslation('admin')
   const revealRef = useReveal()
-  const { notify } = useToast()
 
   const [clinics, setClinics] = useState<AdminClinic[]>([])
   const [cardData, setCardData] = useState<Record<string, ClinicCardData>>({})
@@ -79,10 +77,6 @@ export default function MyClinicsPage() {
 
   const pendingClinics = useMemo(() => clinics.filter((c) => !c.isApproved), [clinics])
 
-  function handleAddClinic() {
-    notify(t('myClinics.registerInfoToast'), 'info')
-  }
-
   if (loading) {
     return (
       <>
@@ -120,9 +114,9 @@ export default function MyClinicsPage() {
           <h1>{t('myClinics.pageTitle')}</h1>
           <p className="admin-header__sub">{t('myClinics.pageSubtitle')}</p>
         </div>
-        <button type="button" className="btn btn--primary" onClick={handleAddClinic}>
+        <Link to="/regjistrohu" className="btn btn--primary">
           <Plus size={16} strokeWidth={1.5} /> {t('myClinics.registerNewCta')}
-        </button>
+        </Link>
       </div>
 
       {pendingClinics.map((c) => (
@@ -142,6 +136,9 @@ export default function MyClinicsPage() {
           <Building2 size={48} strokeWidth={1.5} color="var(--line)" />
           <h3>{t('myClinics.emptyTitle')}</h3>
           <p>{t('myClinics.emptyText')}</p>
+          <Link to="/regjistrohu" className="btn btn--primary btn--sm" style={{ marginTop: 16 }}>
+            <Plus size={15} strokeWidth={1.5} /> {t('myClinics.emptyActionCta')}
+          </Link>
         </div>
       ) : (
         <div className="admin-grid" ref={revealRef} data-reveal-root>
@@ -151,11 +148,11 @@ export default function MyClinicsPage() {
             return <ClinicCard key={c.id} data={data} />
           })}
 
-          <button type="button" className="admin-add-card" onClick={handleAddClinic} data-reveal>
+          <Link to="/regjistrohu" className="admin-add-card" data-reveal>
             <Building2 size={28} strokeWidth={1.5} />
             <span className="admin-add-card__title">{t('myClinics.addAnotherTitle')}</span>
             <span className="admin-add-card__sub">{t('myClinics.addAnotherSub')}</span>
-          </button>
+          </Link>
         </div>
       )}
     </>

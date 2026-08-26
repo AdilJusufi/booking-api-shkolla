@@ -35,6 +35,8 @@ import type {
   MedicalService,
   PagedResult,
   PatientProfile,
+  RegisterClinicRequest,
+  RegisterClinicResponse,
   RegisterRequest,
   Specialty,
   UnavailabilityDto,
@@ -227,6 +229,8 @@ export const api = {
     request<AuthResponse>('/api/auth/login', { method: 'POST', body: { email, password } }),
   register: (payload: RegisterRequest) =>
     request<AuthResponse>('/api/auth/register', { method: 'POST', body: payload }),
+  registerClinic: (payload: RegisterClinicRequest) =>
+    request<RegisterClinicResponse>('/api/auth/register-clinic', { method: 'POST', body: payload }),
   confirmEmail: (token: string, email: string) =>
     request<void>('/api/auth/confirm-email', { method: 'POST', body: { token, email } }),
   forgotPassword: (email: string) =>

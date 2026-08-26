@@ -30,6 +30,24 @@ public class AuthController : ControllerBase
         return StatusCode(StatusCodes.Status201Created, response);
     }
 
+    /// <summary>
+    /// Regjistrim vetëshërbyes i një klinike. Endpoint më vete dhe jo një diskriminator
+    /// te <c>register</c>: trupi i kërkesës nuk mbivendoset thuajse fare me atë të pacientit
+    /// (degë të ndërfutura nga njëra anë, datëlindje/gjini nga tjetra), kështu që një DTO
+    /// i vetëm do ta shpërndante validimin nëpër kushte <c>When(...)</c> dhe do të bënte
+    /// të domosdoshëm nullimin e fushave që janë të detyrueshme për njërën rrugë.
+    /// </summary>
+    [HttpPost("register-clinic")]
+    [AllowAnonymous]
+    [EnableRateLimiting("auth")]
+    [ProducesResponseType(typeof(RegisterClinicResponse), StatusCodes.Status201Created)]
+    public async Task<ActionResult<RegisterClinicResponse>> RegisterClinic(
+        RegisterClinicRequest request, CancellationToken cancellationToken)
+    {
+        var response = await _authService.RegisterClinicAsync(request, cancellationToken);
+        return StatusCode(StatusCodes.Status201Created, response);
+    }
+
     [HttpPost("login")]
     [AllowAnonymous]
     [EnableRateLimiting("auth")]

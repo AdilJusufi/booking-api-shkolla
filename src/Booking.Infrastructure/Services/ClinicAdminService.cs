@@ -152,7 +152,7 @@ public class ClinicAdminService : IClinicAdminService
     public async Task<ClinicBranchDto> AddBranchAsync(
         Guid clinicId, CreateBranchRequest request, CancellationToken cancellationToken = default)
     {
-        await _tenantAccess.EnsureCanManageClinicAsync(clinicId, cancellationToken);
+        await _tenantAccess.EnsureCanManageApprovedClinicAsync(clinicId, cancellationToken);
 
         var clinicExists = await _dbContext.Clinics.AnyAsync(c => c.Id == clinicId, cancellationToken);
         if (!clinicExists)
@@ -194,7 +194,7 @@ public class ClinicAdminService : IClinicAdminService
     public async Task<MedicalServiceDto> AddServiceAsync(
         Guid clinicId, CreateMedicalServiceRequest request, CancellationToken cancellationToken = default)
     {
-        await _tenantAccess.EnsureCanManageClinicAsync(clinicId, cancellationToken);
+        await _tenantAccess.EnsureCanManageApprovedClinicAsync(clinicId, cancellationToken);
 
         var specialty = await _dbContext.Specialties
             .FirstOrDefaultAsync(s => s.Id == request.SpecialtyId && s.IsActive, cancellationToken)
@@ -233,7 +233,7 @@ public class ClinicAdminService : IClinicAdminService
     public async Task<AdminDoctorDto> CreateDoctorAsync(
         Guid clinicId, CreateDoctorRequest request, CancellationToken cancellationToken = default)
     {
-        await _tenantAccess.EnsureCanManageClinicAsync(clinicId, cancellationToken);
+        await _tenantAccess.EnsureCanManageApprovedClinicAsync(clinicId, cancellationToken);
 
         // Degët dhe shërbimet duhet t'i përkasin klinikës së URL-së — kundër "mass assignment" mes klinikave.
         var clinicBranchIds = await _dbContext.ClinicBranches

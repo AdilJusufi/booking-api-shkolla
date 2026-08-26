@@ -9,6 +9,13 @@ public interface IAuthService
     /// <summary>Regjistron pacient të ri + PatientProfile, dërgon email konfirmimi dhe e kyç direkt.</summary>
     Task<AuthResponse> RegisterPatientAsync(RegisterRequest request, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Vetë-regjistrimi i një klinike. Krijon atomikisht user-in ClinicAdmin, klinikën
+    /// e paaprovuar, lidhjen ClinicAdministrator dhe degët — ose asgjë. Njofton
+    /// SuperAdmin-ët dhe mbajtësin e llogarisë, dhe e kyç mbajtësin menjëherë.
+    /// </summary>
+    Task<RegisterClinicResponse> RegisterClinicAsync(RegisterClinicRequest request, CancellationToken cancellationToken = default);
+
     Task<AuthResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>Refresh token rotation: token-i i vjetër revokohet, lëshohet çift i ri (access + refresh).</summary>
