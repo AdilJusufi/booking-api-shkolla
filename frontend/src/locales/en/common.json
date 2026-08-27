@@ -72,6 +72,19 @@
     "pageTitle": "No internet connection",
     "pageMessage": "Rezervo Mjekun needs an internet connection to show appointments and doctors. Check your connection and try again."
   },
+  "pwaInstall": {
+    "dismissAria": "Dismiss the install notice",
+    "text": "Install Rezervo Mjekun for faster access",
+    "installCta": "Install",
+    "modal": {
+      "iosTitle": "Install on iPhone",
+      "iosStep1": "Tap the Share icon",
+      "iosStep2": "Select \"Add to Home Screen\"",
+      "iosStep3": "Tap \"Add\"",
+      "genericTitle": "Install the app",
+      "genericText": "Open your browser's menu and look for \"Install app\" or \"Add to Home screen\"."
+    }
+  },
   "notFound": {
     "title": "Page not found",
     "message": "The link may be old or mistyped."

@@ -43,6 +43,34 @@ public class TenantAccessService
         }
     }
 
+    /// <summary>
+    /// Si <see cref="EnsureCanManageClinicAsync"/>, por kërkon edhe që klinika të jetë
+    /// aprovuar. Përdoret për degët, shërbimet dhe mjekët: një klinikë në pritje nuk
+    /// duhet të ndërtojë inventarin që kërkimi publik do ta shpallte pas aprovimit.
+    /// Profili i vetë klinikës mbetet i redaktueshëm — aplikuesi duhet të mund ta
+    /// korrigjojë atë që rishikuesi i vë në dukje.
+    /// SuperAdmin-i e anashkalon: rruga ekzistuese "krijo klinikën → shto degët → aprovo"
+    /// punon pikërisht mbi një klinikë ende të paaprovuar.
+    /// </summary>
+    public async Task EnsureCanManageApprovedClinicAsync(Guid clinicId, CancellationToken cancellationToken = default)
+    {
+        if (IsSuperAdmin)
+        {
+            return;
+        }
+
+        await EnsureCanManageClinicAsync(clinicId, cancellationToken);
+
+        var isApproved = await _dbContext.Clinics
+            .AnyAsync(c => c.Id == clinicId && c.IsApproved, cancellationToken);
+
+        if (!isApproved)
+        {
+            throw new ForbiddenAccessException(
+                "Klinika është në pritje të aprovimit — degët, shërbimet dhe mjekët mund t'i menaxhoni pas tij.");
+        }
+    }
+
     /// <summary>Admini menaxhon doktorin nëse doktori punon në një degë të një klinike që ai e menaxhon.</summary>
     public async Task EnsureCanManageDoctorAsync(Guid doctorId, CancellationToken cancellationToken = default)
     {

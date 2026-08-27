@@ -39,6 +39,42 @@ export interface RegisterRequest {
   city?: string
 }
 
+/** Pasqyron RegisterClinicBranchRequest — POST /api/auth/register-clinic. */
+export interface RegisterClinicBranchRequest {
+  name: string
+  address: string
+  city: string
+  municipality?: string
+  phoneNumber?: string
+}
+
+/**
+ * Pasqyron RegisterClinicRequest — POST /api/auth/register-clinic. Vetë-regjistrimi
+ * i një klinike: mbajtësi i llogarisë (fushat pa prefiks) bëhet ClinicAdmin, klinika
+ * (fushat me prefiks Clinic*) krijohet e paaprovuar.
+ */
+export interface RegisterClinicRequest {
+  firstName: string
+  lastName: string
+  email: string
+  phoneNumber: string
+  password: string
+  clinicName: string
+  description?: string
+  clinicPhoneNumber: string
+  clinicEmail?: string
+  website?: string
+  branches: RegisterClinicBranchRequest[]
+}
+
+/** Pasqyron RegisterClinicResponse — mbajtësi kyçet menjëherë, klinika mbetet e paaprovuar. */
+export interface RegisterClinicResponse {
+  auth: AuthResponse
+  clinicId: string
+  clinicName: string
+  isApproved: boolean
+}
+
 export interface PagedResult<T> {
   items: T[]
   page: number

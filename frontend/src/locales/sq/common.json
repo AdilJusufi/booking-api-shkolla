@@ -72,6 +72,19 @@
     "pageTitle": "Nuk keni lidhje me internetin",
     "pageMessage": "Rezervo Mjekun ka nevojë për lidhje interneti për të shfaqur terminet dhe mjekët. Kontrolloni lidhjen tuaj dhe provoni përsëri."
   },
+  "pwaInstall": {
+    "dismissAria": "Mbyll njoftimin e instalimit",
+    "text": "Instaloni Rezervo Mjekun për qasje më të shpejtë",
+    "installCta": "Instalo",
+    "modal": {
+      "iosTitle": "Instaloni në iPhone",
+      "iosStep1": "Prekni ikonën e ndarjes",
+      "iosStep2": "Zgjidhni \"Shto në Ekranin Kryesor\"",
+      "iosStep3": "Prekni \"Shto\"",
+      "genericTitle": "Instaloni aplikacionin",
+      "genericText": "Hapni menynë e shfletuesit tuaj dhe kërkoni \"Instalo aplikacionin\" ose \"Shto në ekranin bazë\"."
+    }
+  },
   "notFound": {
     "title": "Faqja nuk u gjet",
     "message": "Ndoshta lidhja është e vjetër ose e gabuar."

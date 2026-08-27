@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Building2, MapPin, Navigation, Pencil, Phone, Plus } from 'lucide-react'
+import { ArrowRight, Building2, Lock, MapPin, Navigation, Pencil, Phone, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
@@ -33,6 +33,15 @@ export default function BranchesPage() {
   const [modalOpen, setModalOpen] = useState(false)
 
   const load = useCallback(() => {
+    // GET /api/clinics/{id}/* is the public route (there's no admin list
+    // endpoint) — it 404s for a clinic that isn't approved yet, which would
+    // otherwise surface as a confusing "not found" error on a page the
+    // ClinicAdmin is allowed to be on. Skip the fetch entirely and let the
+    // pending branch below explain why there's nothing to manage yet.
+    if (!clinic.isApproved) {
+      setLoading(false)
+      return
+    }
     setLoading(true)
     setError('')
     Promise.all([
@@ -47,7 +56,7 @@ export default function BranchesPage() {
       })
       .catch((e) => setError(getErrorMessage(e)))
       .finally(() => setLoading(false))
-  }, [clinic.id])
+  }, [clinic.id, clinic.isApproved])
 
   useEffect(load, [load])
 
@@ -68,12 +77,16 @@ export default function BranchesPage() {
           <h1>{t('branches.pageTitle')}</h1>
           <p className="admin-header__sub">{t('branches.pageSubtitle')}</p>
         </div>
-        <button type="button" className="btn btn--primary btn--sm" onClick={openAddModal}>
-          <Plus size={15} strokeWidth={1.5} /> {t('branches.addCta')}
-        </button>
+        {clinic.isApproved && (
+          <button type="button" className="btn btn--primary btn--sm" onClick={openAddModal}>
+            <Plus size={15} strokeWidth={1.5} /> {t('branches.addCta')}
+          </button>
+        )}
       </div>
 
-      {loading ? (
+      {!clinic.isApproved ? (
+        <EmptyState icon={Lock} title={t('branches.pendingTitle')} hint={t('branches.pendingHint')} />
+      ) : loading ? (
         <SkeletonRows count={3} label={t('branches.loadingLabel')} />
       ) : error ? (
         <ErrorBox message={error} onRetry={load} />

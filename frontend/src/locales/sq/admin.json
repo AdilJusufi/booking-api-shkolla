@@ -214,7 +214,9 @@
       "timeRequired": "Ora e fillimit dhe mbarimit janë të detyrueshme.",
       "slotDurationInvalid": "Kohëzgjatja e sllotit duhet të jetë më e madhe se 0.",
       "addedToast": "Orari u shtua."
-    }
+    },
+    "pendingTitle": "Klinika është ende në pritje të aprovimit",
+    "pendingHint": "Menaxhimi i mjekëve hapet sapo SuperAdmin ta aprovojë klinikën."
   },
   "services": {
     "pageTitle": "Shërbimet e Klinikës",
@@ -258,7 +260,9 @@
       "durationInvalid": "Kohëzgjatja duhet të jetë më e madhe se 0.",
       "priceRequired": "Çmimi është i detyrueshëm.",
       "addedToast": "Shërbimi u shtua."
-    }
+    },
+    "pendingTitle": "Klinika është ende në pritje të aprovimit",
+    "pendingHint": "Menaxhimi i shërbimeve hapet sapo SuperAdmin ta aprovojë klinikën."
   },
   "branches": {
     "pageTitle": "Degët e Klinikës",
@@ -295,7 +299,9 @@
       "addressRequired": "Adresa është e detyrueshme.",
       "cityRequired": "Qyteti është i detyrueshëm.",
       "addedToast": "Dega u shtua."
-    }
+    },
+    "pendingTitle": "Klinika është ende në pritje të aprovimit",
+    "pendingHint": "Menaxhimi i degëve hapet sapo SuperAdmin ta aprovojë klinikën."
   },
   "saClinics": {
     "pageTitle": "Menaxhimi i Klinikave",
@@ -379,13 +385,13 @@
     "pageTitle": "Klinikat e mia",
     "pageSubtitle": "Zgjidhni klinikën për të menaxhuar stafin, oraret dhe pacientët.",
     "registerNewCta": "Regjistro Klinikë të Re",
-    "registerInfoToast": "Regjistrimi i klinikave të reja bëhet nga stafi i Rezervo Mjekun. Kontaktoni administratorin qendror.",
     "pendingBanner": {
       "title": "Kërkesë në pritje",
       "body": "Klinika \"{{name}}\" është duke u verifikuar nga stafi ynë. Disa funksione mund të jenë të kufizuara derisa të aprovohet."
     },
     "emptyTitle": "Nuk keni asnjë klinikë të caktuar ende.",
-    "emptyText": "Kontaktoni administratorin qendror të Rezervo Mjekun për t'ju caktuar një klinikë.",
+    "emptyText": "Regjistro klinikën tënde më poshtë, ose kontakto administratorin qendror nëse pret të të caktohet një klinikë ekzistuese.",
+    "emptyActionCta": "Regjistro klinikë të re",
     "addAnotherTitle": "Shto një klinikë tjetër",
     "addAnotherSub": "Zgjero rrjetin tënd duke shtuar një lokacion të ri.",
     "card": {

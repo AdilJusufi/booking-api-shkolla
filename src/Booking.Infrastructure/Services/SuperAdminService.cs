@@ -9,6 +9,7 @@ using Booking.Infrastructure.Identity;
 using Booking.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Booking.Infrastructure.Services;
 
@@ -18,24 +19,31 @@ public class SuperAdminService : ISuperAdminService
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IAuditService _auditService;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IClinicNotificationService _clinicNotifications;
+    private readonly ILogger<SuperAdminService> _logger;
 
     public SuperAdminService(
         BookingDbContext dbContext,
         UserManager<ApplicationUser> userManager,
         IAuditService auditService,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IClinicNotificationService clinicNotifications,
+        ILogger<SuperAdminService> logger)
     {
         _dbContext = dbContext;
         _userManager = userManager;
         _auditService = auditService;
         _dateTimeProvider = dateTimeProvider;
+        _clinicNotifications = clinicNotifications;
+        _logger = logger;
     }
 
     public async Task<AdminClinicDto> ApproveClinicAsync(Guid clinicId, CancellationToken cancellationToken = default)
     {
         var clinic = await GetClinicAsync(clinicId, cancellationToken);
+        var wasApproved = clinic.IsApproved;
 
-        if (!clinic.IsApproved)
+        if (!wasApproved)
         {
             clinic.IsApproved = true;
             _auditService.Record("CLINIC_APPROVED", nameof(Clinic), clinicId.ToString(),
@@ -43,7 +51,30 @@ public class SuperAdminService : ISuperAdminService
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
 
-        return ToAdminDto(clinic, await ClinicAdministratorLookup.LoadForClinicAsync(_dbContext, clinicId, cancellationToken));
+        var administrators = await ClinicAdministratorLookup.LoadForClinicAsync(_dbContext, clinicId, cancellationToken);
+
+        // Vetëm në kalimin e vërtetë paaprovuar → aprovuar: një thirrje e dytë e
+        // endpoint-it s'duhet ta rinjoftojë klinikën. Dështimi i email-it nuk e prish
+        // aprovimin — ai tashmë është ruajtur.
+        if (!wasApproved)
+        {
+            try
+            {
+                await _clinicNotifications.ClinicApprovedAsync(new ClinicApprovedNotificationContext
+                {
+                    ClinicId = clinic.Id,
+                    ClinicName = clinic.Name,
+                    AdminEmails = administrators.Select(a => a.Email).ToList()
+                }, cancellationToken);
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(exception,
+                    "Dështoi njoftimi i aprovimit për klinikën {ClinicId} — aprovimi mbetet i vlefshëm.", clinicId);
+            }
+        }
+
+        return ToAdminDto(clinic, administrators);
     }
 
     public async Task<AdminClinicDto> SetClinicActiveAsync(

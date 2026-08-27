@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Clock, Coins, Pencil, Plus, Stethoscope, Trash2 } from 'lucide-react'
+import { Clock, Coins, Lock, Pencil, Plus, Stethoscope, Trash2 } from 'lucide-react'
 import { Trans, useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
@@ -39,6 +39,14 @@ export default function ServicesPage() {
   const [deleteTarget, setDeleteTarget] = useState<MedicalService | null>(null)
 
   const load = useCallback(() => {
+    // GET /api/clinics/{id}/services is the public route (there's no admin
+    // list endpoint) — it 404s for a clinic that isn't approved yet. Skip
+    // the fetch and let the pending branch below explain why the page is
+    // empty, rather than surfacing a confusing "not found" error.
+    if (!clinic.isApproved) {
+      setLoading(false)
+      return
+    }
     setLoading(true)
     setError('')
     Promise.all([api.getClinicServices(clinic.id), api.getSpecialties()])
@@ -48,7 +56,7 @@ export default function ServicesPage() {
       })
       .catch((e) => setError(getErrorMessage(e)))
       .finally(() => setLoading(false))
-  }, [clinic.id])
+  }, [clinic.id, clinic.isApproved])
 
   useEffect(load, [load])
 
@@ -101,11 +109,17 @@ export default function ServicesPage() {
           <h1>{t('services.pageTitle')}</h1>
           <p className="admin-header__sub">{t('services.pageSubtitle')}</p>
         </div>
-        <button type="button" className="btn btn--primary btn--sm" onClick={openAddModal}>
-          <Plus size={15} strokeWidth={1.5} /> {t('services.addCta')}
-        </button>
+        {clinic.isApproved && (
+          <button type="button" className="btn btn--primary btn--sm" onClick={openAddModal}>
+            <Plus size={15} strokeWidth={1.5} /> {t('services.addCta')}
+          </button>
+        )}
       </div>
 
+      {!clinic.isApproved ? (
+        <EmptyState icon={Lock} title={t('services.pendingTitle')} hint={t('services.pendingHint')} />
+      ) : (
+      <>
       <div className="filters">
         <div className="filters__field">
           <CustomSelect
@@ -194,6 +208,8 @@ export default function ServicesPage() {
             </button>
           </div>
         </Modal>
+      )}
+      </>
       )}
     </div>
   )

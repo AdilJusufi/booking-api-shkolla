@@ -23,7 +23,9 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
-  const { secondsLeft: cooldown, startCooldown } = useCooldown()
+  // "email-send" policy (forgot-password/resend-confirmation), jo "auth" — dritarja
+  // është 5 minuta, jo 1, shih Program.cs.
+  const { secondsLeft: cooldown, startCooldown } = useCooldown(300)
 
   // The endpoint returns 204 regardless of whether the email exists (by
   // design, so the response never reveals which). Only a genuine failure —

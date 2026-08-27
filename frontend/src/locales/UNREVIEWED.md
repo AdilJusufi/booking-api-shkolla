@@ -26,6 +26,27 @@ before it has been reviewed.
   plural rules, not confirmed against real usage per string. Get a native
   speaker to check every `_few` / `_many` pair, not just spot-check.
 
+## Review export
+
+Reviewing this directly in the JSON files means opening twelve files and
+cross-referencing keys by hand, so a spreadsheet export exists instead:
+
+- `review/translation-review-en.xlsx`
+- `review/translation-review-sr.xlsx`
+
+One row per string, grouped by namespace then by feature area, with the
+Albanian source next to the machine translation and a blank Notes column for
+corrections. Plural forms (`_one`/`_few`/`_other`) are grouped together as one
+row so all forms of a count are reviewed side by side, and rows using
+`{{placeholders}}` or `<0>…</0>` tags are flagged so those aren't edited by
+accident. `legal` is excluded (see above — not applicable yet), as is the
+brand name and a handful of keys that are identical by design (language
+autonyms, the contact email address, non-linguistic templates).
+
+As each namespace comes back from review, mark it off the checklist below —
+that's what tracks progress, not the spreadsheet itself. The spreadsheet can
+be regenerated after `sq/*.json` changes; it isn't a second source of truth.
+
 ## How this file is kept up to date
 
 As each namespace is extracted (see the sequence in the i18n project plan),

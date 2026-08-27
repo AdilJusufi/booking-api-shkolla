@@ -4,7 +4,6 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from '../context/AuthContext'
 import { ToastProvider } from '../context/ToastContext'
 import { ThemeProvider } from '../context/ThemeContext'
-import { InstallPromptProvider } from '../context/InstallPromptContext'
 
 export interface AuthUser {
   userId: string
@@ -66,12 +65,10 @@ export function renderWithProviders(
         <ThemeProvider>
           <ToastProvider>
             <AuthProvider>
-              <InstallPromptProvider>
-                {/* Mirrors main.tsx: useTranslation() suspends on the first
-                    render that needs a namespace not yet loaded for the
-                    active language (setup.ts only preloads 'common'). */}
-                <Suspense fallback={null}>{children}</Suspense>
-              </InstallPromptProvider>
+              {/* Mirrors main.tsx: useTranslation() suspends on the first
+                  render that needs a namespace not yet loaded for the
+                  active language (setup.ts only preloads 'common'). */}
+              <Suspense fallback={null}>{children}</Suspense>
             </AuthProvider>
           </ToastProvider>
         </ThemeProvider>

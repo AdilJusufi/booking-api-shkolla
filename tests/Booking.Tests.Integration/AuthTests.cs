@@ -1,11 +1,15 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Booking.Application.Common.Interfaces;
 using Booking.Application.Features.Auth;
 using Booking.Infrastructure.Auth;
+using Booking.Infrastructure.Notifications;
 using Booking.Infrastructure.Persistence;
 using FluentAssertions;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Xunit;
 
@@ -197,4 +201,94 @@ public class AuthTests
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
+
+    // ---------- Email: rivendosje password-i, konfirmim, dhe dështime jo-bllokuese ----------
+
+    [Fact]
+    public async Task ForgotPassword_SendsEmailWithResetLink()
+    {
+        var client = _factory.CreateClient();
+        var email = $"rivendos-{Guid.NewGuid():N}@test.dev";
+        await TestHelpers.RegisterPatientAsync(client, email);
+
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/forgot-password", new ForgotPasswordRequest(email), TestHelpers.Json);
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var inbox = await DevEmailsAsync(client, email);
+        inbox.Should().Contain(e =>
+            e.Subject.Contains("Rivendos") && e.Body.Contains("/rivendos-fjalekalimin?") && e.Body.Contains("token="));
+    }
+
+    [Fact]
+    public async Task ForgotPassword_UnknownEmail_StillReturns204()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/forgot-password",
+            new ForgotPasswordRequest($"s'ekziston-{Guid.NewGuid():N}@test.dev"),
+            TestHelpers.Json);
+
+        // Mos zbulo ekzistencën e llogarisë — 204 identike me rastin kur email-i ekziston.
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task Register_SendsConfirmationEmailWithLink()
+    {
+        var client = _factory.CreateClient();
+        var email = $"konfirmo-{Guid.NewGuid():N}@test.dev";
+        await TestHelpers.RegisterPatientAsync(client, email);
+
+        var inbox = await DevEmailsAsync(client, email);
+        inbox.Should().Contain(e =>
+            e.Subject.Contains("Konfirmo") && e.Body.Contains("/konfirmo-email?") && e.Body.Contains("token="));
+    }
+
+    [Fact]
+    public async Task ForgotPassword_Returns204_EvenWhenEmailSendingFails()
+    {
+        await using var throwingFactory = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureTestServices(services =>
+            {
+                services.RemoveAll<IEmailService>();
+                services.AddScoped<IEmailService, AlwaysThrowingEmailService>();
+            }));
+
+        // Regjistrimi vetë ka nevojë për email-in "e vërtetë" (jo-hedhës) të fabrikës bazë,
+        // ndryshe do të dështonte edhe ai — vetëm forgot-password thirret kundër email-it që hedh.
+        var email = $"deshtim-{Guid.NewGuid():N}@test.dev";
+        await TestHelpers.RegisterPatientAsync(_factory.CreateClient(), email);
+
+        var throwingClient = throwingFactory.CreateClient();
+        var response = await throwingClient.PostAsJsonAsync(
+            "/api/auth/forgot-password", new ForgotPasswordRequest(email), TestHelpers.Json);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent,
+            "dështimi i dërgimit s'duhet ta zbulojë ekzistencën e llogarisë përmes një 500-je");
+    }
+
+    [Fact]
+    public async Task RegisterPatient_StillSucceeds_WhenConfirmationEmailFails()
+    {
+        await using var throwingFactory = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureTestServices(services =>
+            {
+                services.RemoveAll<IEmailService>();
+                services.AddScoped<IEmailService, AlwaysThrowingEmailService>();
+            }));
+
+        var client = throwingFactory.CreateClient();
+        var email = $"regjistrim-pa-email-{Guid.NewGuid():N}@test.dev";
+
+        var auth = await TestHelpers.RegisterPatientAsync(client, email);
+
+        auth.AccessToken.Should().NotBeNullOrEmpty(
+            "regjistrimi tashmë e ka ruajtur userin në DB — një email i dështuar s'duhet ta rrëzojë kërkesën me 500");
+    }
+
+    private static async Task<IReadOnlyList<DevEmail>> DevEmailsAsync(HttpClient client, string toEmail) =>
+        (await client.GetFromJsonAsync<List<DevEmail>>(
+            $"/api/dev/emails?toEmail={Uri.EscapeDataString(toEmail)}", TestHelpers.Json))!;
 }

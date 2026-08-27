@@ -10,6 +10,7 @@ import {
   Copy,
   Eye,
   EyeOff,
+  Lock,
   MoreVertical,
   Pencil,
   Plus,
@@ -123,6 +124,15 @@ export default function ClinicDoctorsPage() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
 
   const load = useCallback(() => {
+    // GET /api/clinics/{id}/doctors (and branches/services, fetched here too
+    // for the add-doctor modal) are public routes — they 404 for a clinic
+    // that isn't approved yet. Skip the fetch and let the pending branch
+    // below explain why the page is empty, rather than a confusing "not
+    // found" error.
+    if (!clinic.isApproved) {
+      setLoading(false)
+      return
+    }
     setLoading(true)
     setError('')
     Promise.all([
@@ -151,7 +161,7 @@ export default function ClinicDoctorsPage() {
       })
       .catch((e) => setError(getErrorMessage(e)))
       .finally(() => setLoading(false))
-  }, [clinic.id])
+  }, [clinic.id, clinic.isApproved])
 
   useEffect(load, [load])
 
@@ -211,11 +221,17 @@ export default function ClinicDoctorsPage() {
           <h1>{t('doctors.pageTitle')}</h1>
           <p className="admin-header__sub">{t('doctors.pageSubtitle')}</p>
         </div>
-        <button type="button" className="btn btn--primary btn--sm" onClick={() => setAddModalOpen(true)}>
-          <Plus size={15} strokeWidth={1.5} /> {t('doctors.addCta')}
-        </button>
+        {clinic.isApproved && (
+          <button type="button" className="btn btn--primary btn--sm" onClick={() => setAddModalOpen(true)}>
+            <Plus size={15} strokeWidth={1.5} /> {t('doctors.addCta')}
+          </button>
+        )}
       </div>
 
+      {!clinic.isApproved ? (
+        <EmptyState icon={Lock} title={t('doctors.pendingTitle')} hint={t('doctors.pendingHint')} />
+      ) : (
+      <>
       <div className="filters">
         <div className="filters__field">
           <CustomSelect
@@ -311,6 +327,8 @@ export default function ClinicDoctorsPage() {
           detail={details[scheduleTarget.id]}
           onClose={() => setScheduleTarget(null)}
         />
+      )}
+      </>
       )}
     </div>
   )

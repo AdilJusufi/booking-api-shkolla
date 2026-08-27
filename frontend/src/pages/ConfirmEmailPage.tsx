@@ -74,8 +74,11 @@ export default function ConfirmEmailPage() {
             </div>
             <h1>{t('confirmEmail.invalidTitle')}</h1>
             <p className="auth-sub">{getAuthTokenInvalidMessage()}</p>
-            <Link to="/" className="btn btn--ghost btn--block">
-              {tCommon('buttons.backHome')} <ArrowRight size={16} strokeWidth={1.5} />
+            <Link to="/konfirmo-email/ridergo" className="btn btn--primary btn--block">
+              {t('confirmEmail.resendLink')} <ArrowRight size={16} strokeWidth={1.5} />
+            </Link>
+            <Link to="/" className="btn btn--ghost btn--block" style={{ marginTop: 8 }}>
+              {tCommon('buttons.backHome')}
             </Link>
           </>
         )}

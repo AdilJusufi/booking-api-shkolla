@@ -4,10 +4,15 @@ import { useEffect, useRef, useState } from 'react'
 // (10 requests/min, no Retry-After header) — 60s is the worst-case wait,
 // not an exact one, since a fixed window can reset sooner than a full minute
 // after the limiting request.
-const COOLDOWN_SECONDS = 60
+const DEFAULT_COOLDOWN_SECONDS = 60
 
-/** Disables an action for a fixed window after a 429, with a visible countdown. */
-export function useCooldown() {
+/**
+ * Disables an action for a fixed window after a 429, with a visible countdown.
+ * `seconds` overrides the default 60s — forgot-password/resend-confirmation sit
+ * behind the stricter "email-send" IP policy (5-minute window, see Program.cs),
+ * not "auth", so those call sites pass a longer value.
+ */
+export function useCooldown(seconds: number = DEFAULT_COOLDOWN_SECONDS) {
   const [secondsLeft, setSecondsLeft] = useState(0)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -18,7 +23,7 @@ export function useCooldown() {
   }, [])
 
   function start() {
-    setSecondsLeft(COOLDOWN_SECONDS)
+    setSecondsLeft(seconds)
     if (intervalRef.current) clearInterval(intervalRef.current)
     intervalRef.current = setInterval(() => {
       setSecondsLeft((prev) => {

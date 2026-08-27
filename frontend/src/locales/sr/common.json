@@ -72,6 +72,19 @@
     "pageTitle": "Nema internet veze",
     "pageMessage": "Rezervo Mjekun zahteva internet vezu za prikaz termina i lekara. Proverite vezu i pokušajte ponovo."
   },
+  "pwaInstall": {
+    "dismissAria": "Zatvori obaveštenje o instalaciji",
+    "text": "Instalirajte Rezervo Mjekun za brži pristup",
+    "installCta": "Instaliraj",
+    "modal": {
+      "iosTitle": "Instalirajte na iPhone",
+      "iosStep1": "Dodirnite ikonu deljenja",
+      "iosStep2": "Izaberite \"Dodaj na početni ekran\"",
+      "iosStep3": "Dodirnite \"Dodaj\"",
+      "genericTitle": "Instalirajte aplikaciju",
+      "genericText": "Otvorite meni vašeg pregledača i potražite \"Instaliraj aplikaciju\" ili \"Dodaj na početni ekran\"."
+    }
+  },
   "notFound": {
     "title": "Stranica nije pronađena",
     "message": "Link je možda zastareo ili pogrešno unet."

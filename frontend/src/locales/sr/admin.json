@@ -215,7 +215,9 @@
       "timeRequired": "Vreme početka i završetka su obavezni.",
       "slotDurationInvalid": "Trajanje termina mora biti veće od 0.",
       "addedToast": "Raspored je dodat."
-    }
+    },
+    "pendingTitle": "Klinika još uvek čeka odobrenje",
+    "pendingHint": "Upravljanje lekarima se otvara čim SuperAdmin odobri kliniku."
   },
   "services": {
     "pageTitle": "Usluge klinike",
@@ -259,7 +261,9 @@
       "durationInvalid": "Trajanje mora biti veće od 0.",
       "priceRequired": "Cena je obavezna.",
       "addedToast": "Usluga je dodata."
-    }
+    },
+    "pendingTitle": "Klinika još uvek čeka odobrenje",
+    "pendingHint": "Upravljanje uslugama se otvara čim SuperAdmin odobri kliniku."
   },
   "branches": {
     "pageTitle": "Ogranci klinike",
@@ -296,7 +300,9 @@
       "addressRequired": "Adresa je obavezna.",
       "cityRequired": "Grad je obavezan.",
       "addedToast": "Ogranak je dodat."
-    }
+    },
+    "pendingTitle": "Klinika još uvek čeka odobrenje",
+    "pendingHint": "Upravljanje ograncima se otvara čim SuperAdmin odobri kliniku."
   },
   "saClinics": {
     "pageTitle": "Upravljanje klinikama",
@@ -380,13 +386,13 @@
     "pageTitle": "Moje klinike",
     "pageSubtitle": "Izaberite kliniku da biste upravljali osobljem, rasporedima i pacijentima.",
     "registerNewCta": "Registruj novu kliniku",
-    "registerInfoToast": "Registraciju novih klinika vrši osoblje Rezervo Mjekun. Kontaktirajte centralnog administratora.",
     "pendingBanner": {
       "title": "Zahtev na čekanju",
       "body": "Klinika \"{{name}}\" se trenutno verifikuje od strane našeg osoblja. Neke funkcije mogu biti ograničene dok ne bude odobrena."
     },
     "emptyTitle": "Još uvek nemate dodeljenu kliniku.",
-    "emptyText": "Kontaktirajte centralnog administratora Rezervo Mjekun da vam dodeli kliniku.",
+    "emptyText": "Registrujte svoju kliniku ispod, ili kontaktirajte centralnog administratora ako očekujete da vam bude dodeljena postojeća.",
+    "emptyActionCta": "Registruj novu kliniku",
     "addAnotherTitle": "Dodaj još jednu kliniku",
     "addAnotherSub": "Proširite svoju mrežu dodavanjem nove lokacije.",
     "card": {

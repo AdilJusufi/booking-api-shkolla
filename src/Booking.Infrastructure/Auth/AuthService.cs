@@ -1,8 +1,11 @@
 using Booking.Application.Common.Exceptions;
 using Booking.Application.Common.Interfaces;
+using Booking.Application.Common.Models;
 using Booking.Application.Common.Security;
 using Booking.Application.Features.Auth;
+using Booking.Application.Features.Clinics;
 using Booking.Domain.Entities;
+using Booking.Domain.Enums;
 using Booking.Infrastructure.Identity;
 using Booking.Infrastructure.Persistence;
 using FluentValidation;
@@ -11,6 +14,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Npgsql;
 
 namespace Booking.Infrastructure.Auth;
 
@@ -22,7 +26,11 @@ public class AuthService : IAuthService
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ICurrentUserService _currentUser;
     private readonly IEmailService _emailService;
+    private readonly IEmailAbuseGuard _emailAbuseGuard;
+    private readonly IClinicNotificationService _clinicNotifications;
+    private readonly IAuditService _auditService;
     private readonly AuthSettings _authSettings;
+    private readonly FrontendSettings _frontendSettings;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
@@ -32,7 +40,11 @@ public class AuthService : IAuthService
         IDateTimeProvider dateTimeProvider,
         ICurrentUserService currentUser,
         IEmailService emailService,
+        IEmailAbuseGuard emailAbuseGuard,
+        IClinicNotificationService clinicNotifications,
+        IAuditService auditService,
         IOptions<AuthSettings> authSettings,
+        IOptions<FrontendSettings> frontendSettings,
         ILogger<AuthService> logger)
     {
         _userManager = userManager;
@@ -41,7 +53,11 @@ public class AuthService : IAuthService
         _dateTimeProvider = dateTimeProvider;
         _currentUser = currentUser;
         _emailService = emailService;
+        _emailAbuseGuard = emailAbuseGuard;
+        _clinicNotifications = clinicNotifications;
+        _auditService = auditService;
         _authSettings = authSettings.Value;
+        _frontendSettings = frontendSettings.Value;
         _logger = logger;
     }
 
@@ -78,16 +94,156 @@ public class AuthService : IAuthService
         });
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-        await _emailService.SendAsync(
-            user.Email!,
-            "Konfirmo llogarinë tënde",
-            $"Tokeni i konfirmimit: {confirmationToken}",
-            cancellationToken);
+        // Jashtë NotifyAsync do të thotë: dështimi i dërgimit e rrëzon gjithë kërkesën me 500,
+        // ndërkohë që llogaria tashmë ekziston në DB (SaveChangesAsync sipër ka kaluar) —
+        // një gjendje gjysmake dhe konfuze për userin. Njësoj si te RegisterClinicAsync:
+        // regjistrimi i vlefshëm s'duhet të dështojë vetëm pse email-i s'u dërgua.
+        await NotifyAsync(
+            async () =>
+            {
+                var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                var (subject, body) = BuildEmailConfirmationEmail(user, confirmationToken);
+                await _emailService.SendAsync(user.Email!, subject, body, cancellationToken);
+            },
+            user.Id.ToString(), "email-i i konfirmimit të llogarisë (pacient)");
 
         _logger.LogInformation("Pacient i ri u regjistrua: {UserId}", user.Id);
 
         return await IssueTokensAsync(user, cancellationToken);
+    }
+
+    public async Task<RegisterClinicResponse> RegisterClinicAsync(
+        RegisterClinicRequest request, CancellationToken cancellationToken = default)
+    {
+        var existing = await _userManager.FindByEmailAsync(request.Email);
+        if (existing is not null)
+        {
+            throw new ConflictException("email-exists", "Ekziston tashmë një llogari me këtë email.");
+        }
+
+        // Emri i klinikës qëllimisht NUK bllokohet: "Poliklinika Medica" në Prishtinë dhe
+        // një tjetër në Prizren janë dy biznese të ligjshme, dhe një bllokim i tillë s'ka
+        // rrugë anashkalimi për aplikuesin. Homonimet numërohen dhe i shkojnë SuperAdmin-it
+        // te njoftimi — vendimi mbetet te rishikimi njerëzor, që gjithsesi është porta reale.
+        var clinicsWithSameName = await _dbContext.Clinics
+            .CountAsync(c => EF.Functions.ILike(c.Name, request.ClinicName), cancellationToken);
+
+        // Katër entitete në një veprim të vetëm: user, klinikë, lidhja admin dhe degët.
+        // Një klinikë pa administrator ose një administrator pa klinikë s'do të kishin
+        // asnjë rrugë vetëriparimi, prandaj ose ruhen të gjitha, ose asnjë.
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+        var user = new ApplicationUser
+        {
+            UserName = request.Email,
+            Email = request.Email,
+            PhoneNumber = request.PhoneNumber,
+            FirstName = request.FirstName,
+            LastName = request.LastName,
+            CreatedAt = _dateTimeProvider.UtcNow
+        };
+
+        IdentityResult createResult;
+        try
+        {
+            createResult = await _userManager.CreateAsync(user, request.Password);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: "23505" })
+        {
+            // Indeksi unik mbi NormalizedEmail — dy kërkesa paralele me të njëjtin email.
+            // Kontrolli më lart është "lexo pastaj shkruaj" dhe s'e kap dot garën.
+            throw new ConflictException("email-exists", "Ekziston tashmë një llogari me këtë email.");
+        }
+
+        ThrowIfFailed(createResult);
+
+        await _userManager.AddToRoleAsync(user, Roles.ClinicAdmin);
+
+        var clinic = new Clinic
+        {
+            Name = request.ClinicName,
+            Description = request.Description,
+            PhoneNumber = request.ClinicPhoneNumber,
+            Email = request.ClinicEmail,
+            Website = request.Website,
+            IsApproved = false,
+            IsActive = true
+        };
+        _dbContext.Clinics.Add(clinic);
+
+        _dbContext.ClinicAdministrators.Add(new ClinicAdministrator { UserId = user.Id, ClinicId = clinic.Id });
+
+        foreach (var branch in request.Branches)
+        {
+            _dbContext.ClinicBranches.Add(new ClinicBranch
+            {
+                ClinicId = clinic.Id,
+                Name = branch.Name,
+                Address = branch.Address,
+                City = branch.City,
+                Municipality = branch.Municipality,
+                PhoneNumber = branch.PhoneNumber
+            });
+        }
+
+        _auditService.Record("CLINIC_SELF_REGISTERED", nameof(Clinic), clinic.Id.ToString(), null,
+            new { clinic.Name, AdminUserId = user.Id, BranchCount = request.Branches.Count });
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var (auth, _) = await IssueTokensCoreAsync(user, saveChanges: true, cancellationToken);
+
+        await transaction.CommitAsync(cancellationToken);
+
+        _logger.LogInformation(
+            "Klinikë e re u vetë-regjistrua: {ClinicId} nga useri {UserId}", clinic.Id, user.Id);
+
+        // Njoftimet dërgohen VETËM pas commit-it — një email për një klinikë që s'u ruajt
+        // do të ishte më keq se asnjë. Dhe dështimi i tyre nuk e rrëzon regjistrimin:
+        // llogaria ekziston, ndaj një 500 do ta çonte aplikuesin drejt një 409 në provën
+        // e dytë. Rishikimi mbetet i gjurmueshëm përmes audit log-ut dhe listës së klinikave.
+        var notificationContext = new ClinicRegistrationNotificationContext
+        {
+            ClinicId = clinic.Id,
+            ClinicName = clinic.Name,
+            ClinicPhoneNumber = clinic.PhoneNumber,
+            ClinicEmail = clinic.Email,
+            Website = clinic.Website,
+            AdminFullName = $"{user.FirstName} {user.LastName}",
+            AdminEmail = user.Email!,
+            AdminPhoneNumber = user.PhoneNumber,
+            BranchCities = request.Branches.Select(b => b.City).Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
+            SubmittedAtUtc = clinic.CreatedAt,
+            ClinicsWithSameName = clinicsWithSameName
+        };
+
+        // Njësoj si te pacienti: pa këtë token llogaria s'konfirmohet dot kurrë, dhe në
+        // production (Auth:RequireConfirmedEmail=true) mbajtësi s'do të rikyçej dot pasi
+        // t'i skadonte sesioni i parë.
+        await NotifyAsync(
+            async () =>
+            {
+                var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                var (subject, body) = BuildEmailConfirmationEmail(user, confirmationToken);
+                await _emailService.SendAsync(user.Email!, subject, body, cancellationToken);
+            },
+            clinic.Id.ToString(), "email-i i konfirmimit të llogarisë");
+
+        await NotifyAsync(
+            () => _clinicNotifications.ClinicRegisteredAsync(notificationContext, cancellationToken),
+            clinic.Id.ToString(), "njoftimi i SuperAdmin-ëve");
+
+        await NotifyAsync(
+            () => _clinicNotifications.ClinicRegistrationReceivedAsync(notificationContext, cancellationToken),
+            clinic.Id.ToString(), "konfirmimi te mbajtësi i llogarisë");
+
+        return new RegisterClinicResponse
+        {
+            Auth = auth,
+            ClinicId = clinic.Id,
+            ClinicName = clinic.Name,
+            IsApproved = clinic.IsApproved
+        };
     }
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
@@ -203,15 +359,36 @@ public class AuthService : IAuthService
         if (user is null || !user.IsActive)
         {
             // Mos zbulo nëse email-i ekziston — përgjigje identike në të dy rastet.
+            // Logohet VETËM për diagnostikim (p.sh. dallimi i një skanimi enumerimi) —
+            // asgjë nga kjo s'del kurrë në përgjigjen HTTP.
+            _logger.LogInformation(
+                "Rivendosje password-i kërkuar për një adresë që s'ekziston ose s'është aktive: {Email}.", request.Email);
             return;
         }
 
-        var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
-        await _emailService.SendAsync(
-            user.Email!,
-            "Rivendos password-in",
-            $"Tokeni për rivendosje: {resetToken}",
-            cancellationToken);
+        // Kontrolli i abuzimit ndodh PARA se të dihet çfarëdo tjetër dhe përgjigja mbetet
+        // identike nëse refuzohet — shih koment mbi IEmailAbuseGuard. Nuk hidhet asnjë
+        // përjashtim dhe s'ka asnjë degëzim të dukshëm nga jashtë; vetëm log-u dallon.
+        var decision = await _emailAbuseGuard.TryRecordSendAsync(
+            user.Email!, EmailSendPurpose.PasswordReset, _currentUser.IpAddress, cancellationToken);
+        if (decision != EmailSendDecision.Allowed)
+        {
+            return;
+        }
+
+        // I mbështjellë në NotifyAsync qëllimisht: kjo rrugë duhet të përgjigjet njësoj
+        // pavarësisht nëse email-i ekziston, dhe TANI edhe pavarësisht nëse dërgimi i
+        // vërtetë (Resend) dështon. Një 500 këtu do të zbulonte, në rastet kur dërgimi
+        // dështon vetëm për disa marrës (p.sh. adresë e pavlefshme), se llogaria EKZISTON —
+        // exakt anashkalimi që kontrolli "mos zbulo ekzistencën" sipër synon ta parandalojë.
+        await NotifyAsync(
+            async () =>
+            {
+                var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+                var (subject, body) = BuildPasswordResetEmail(user, resetToken);
+                await _emailService.SendAsync(user.Email!, subject, body, cancellationToken);
+            },
+            user.Id.ToString(), "email-i i rivendosjes së password-it");
     }
 
     public async Task ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken = default)
@@ -256,6 +433,46 @@ public class AuthService : IAuthService
         {
             throw new AuthenticationFailedException(AuthErrorCodes.InvalidConfirmationToken, "Tokeni i konfirmimit është i pavlefshëm.");
         }
+    }
+
+    public async Task ResendConfirmationEmailAsync(ResendConfirmationRequest request, CancellationToken cancellationToken = default)
+    {
+        var user = await _userManager.FindByEmailAsync(request.Email);
+        if (user is null || !user.IsActive)
+        {
+            // Njësoj si ForgotPasswordAsync: përgjigje identike, mos zbulo ekzistencën.
+            _logger.LogInformation(
+                "Ridërgim konfirmimi kërkuar për një adresë që s'ekziston ose s'është aktive: {Email}.", request.Email);
+            return;
+        }
+
+        if (user.EmailConfirmed)
+        {
+            // Përgjigje identike edhe këtu — përndryshe "s'ndodhi asgjë" vs "u dërgua"
+            // do të tregonte nëse llogaria është tashmë e konfirmuar.
+            _logger.LogInformation(
+                "Ridërgim konfirmimi kërkuar për {UserId} — email-i është tashmë i konfirmuar.", user.Id);
+            return;
+        }
+
+        var decision = await _emailAbuseGuard.TryRecordSendAsync(
+            user.Email!, EmailSendPurpose.EmailConfirmation, _currentUser.IpAddress, cancellationToken);
+        if (decision != EmailSendDecision.Allowed)
+        {
+            return;
+        }
+
+        // Rigjenerohet një token i ri (jo ai i lëshuar në regjistrim — ai mund të ketë
+        // skaduar, arsyeja pse useri po e kërkon ridërgimin) dhe ripërdoret i njëjti
+        // ndërtues përmbajtjeje si te regjistrimi, jo një kopje e dytë e së njëjtës logjikë.
+        await NotifyAsync(
+            async () =>
+            {
+                var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                var (subject, body) = BuildEmailConfirmationEmail(user, confirmationToken);
+                await _emailService.SendAsync(user.Email!, subject, body, cancellationToken);
+            },
+            user.Id.ToString(), "ridërgimi i email-it të konfirmimit");
     }
 
     private async Task<AuthResponse> IssueTokensAsync(ApplicationUser user, CancellationToken cancellationToken)
@@ -308,6 +525,89 @@ public class AuthService : IAuthService
         await _dbContext.RefreshTokens
             .Where(t => t.UserId == userId && t.RevokedAt == null && t.ExpiresAt > utcNow)
             .ExecuteUpdateAsync(setters => setters.SetProperty(t => t.RevokedAt, utcNow), cancellationToken);
+    }
+
+    /// <summary>
+    /// Ekzekuton një dërgim email-i jo-bllokues: dështimi logohet me hollësi (mjaftueshëm
+    /// për diagnostikim — kush, çfarë, dhe rezultati) por nuk e rrëzon operacionin që e
+    /// thirri. <paramref name="subjectId"/> është ID-ja e entitetit përkatës (user ose
+    /// klinikë), jo domosdoshmërisht ID-ja e vetë email-it.
+    /// </summary>
+    private async Task NotifyAsync(Func<Task> send, string subjectId, string description)
+    {
+        try
+        {
+            await send();
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception,
+                "Dështoi {Description} për {SubjectId} — operacioni mbetet i vlefshëm.",
+                description, subjectId);
+        }
+    }
+
+    /// <summary>
+    /// KUJDES: gjuha e email-it është e fiksuar në shqip. Sistemi mbështet en/sr për UI-në,
+    /// por ApplicationUser s'ka fushë për preferencën e gjuhës dhe IEmailService.SendAsync
+    /// nuk merr kontekst gjuhe — pra backend-i sot NUK ka mënyrë ta dijë gjuhën e marrësit.
+    /// Për ta zgjidhur do të duhej: (1) një kolonë PreferredLanguage te ApplicationUser,
+    /// e mbushur p.sh. nga header-i Accept-Language në regjistrim ose nga zgjedhja e
+    /// userit në UI, dhe (2) shabllone email-i për secilën gjuhë këtu.
+    /// </summary>
+    private (string Subject, string Body) BuildEmailConfirmationEmail(ApplicationUser user, string confirmationToken)
+    {
+        var link = BuildAuthLink(_frontendSettings.ConfirmEmailPath, user.Email!, confirmationToken);
+        var body =
+            $"""
+             Përshëndetje {user.FirstName},
+
+             Faleminderit që u regjistruat në Rezervo Mjekun! Për të përfunduar regjistrimin
+             dhe për t'u kyçur, konfirmoni email-in tuaj:
+
+             {link ?? $"Tokeni i konfirmimit: {confirmationToken}"}
+
+             Nëse s'e keni krijuar ju këtë llogari, thjesht injoroni këtë email.
+             """;
+
+        return ("Konfirmo llogarinë tënde", body);
+    }
+
+    private (string Subject, string Body) BuildPasswordResetEmail(ApplicationUser user, string resetToken)
+    {
+        var link = BuildAuthLink(_frontendSettings.ResetPasswordPath, user.Email!, resetToken);
+        var body =
+            $"""
+             Përshëndetje {user.FirstName},
+
+             Keni kërkuar rivendosjen e fjalëkalimit për llogarinë tuaj në Rezervo Mjekun.
+             Për të vendosur një fjalëkalim të ri, hapni:
+
+             {link ?? $"Tokeni për rivendosje: {resetToken}"}
+
+             Nëse s'e keni kërkuar ju këtë, injorojeni këtë email — fjalëkalimi juaj mbetet
+             i pandryshuar.
+             """;
+
+        return ("Rivendos fjalëkalimin", body);
+    }
+
+    /// <summary>
+    /// Njësoj si BuildLink te LoggingClinicNotificationService: Frontend:BaseUrl bosh do
+    /// të thotë "pa link" dhe email-i bie mbrapa te tokeni i papërpunuar (shih thirrësit).
+    /// Token-at e Identity janë base64 dhe mund të përmbajnë '+', '/', '=' — duhen encoduar
+    /// përpara se të futen si query string, ndryshe linku thyhet në disa klientë email-i.
+    /// </summary>
+    private string? BuildAuthLink(string path, string email, string token)
+    {
+        var baseUrl = _frontendSettings.BaseUrl?.TrimEnd('/');
+        if (string.IsNullOrWhiteSpace(baseUrl))
+        {
+            return null;
+        }
+
+        var query = $"token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(email)}";
+        return $"{baseUrl}{path}?{query}";
     }
 
     /// <summary>Gabimet e Identity (password policy etj.) → ValidationException → HTTP 422.</summary>

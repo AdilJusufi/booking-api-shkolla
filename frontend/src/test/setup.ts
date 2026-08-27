@@ -40,7 +40,7 @@ beforeEach(async () => {
 
   // jsdom doesn't implement matchMedia — ThemeContext calls it on first render
   // to pick a light/dark default when nothing is stored yet, and
-  // InstallPromptContext uses it to detect a standalone launch.
+  // isInstalled() (pwa/installPrompt.ts) uses it to detect a standalone launch.
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
     configurable: true,

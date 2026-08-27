@@ -214,7 +214,9 @@
       "timeRequired": "Start and end time are required.",
       "slotDurationInvalid": "Slot duration must be greater than 0.",
       "addedToast": "Schedule added."
-    }
+    },
+    "pendingTitle": "The clinic is still awaiting approval",
+    "pendingHint": "Doctor management opens up as soon as a SuperAdmin approves the clinic."
   },
   "services": {
     "pageTitle": "Clinic Services",
@@ -258,7 +260,9 @@
       "durationInvalid": "Duration must be greater than 0.",
       "priceRequired": "Price is required.",
       "addedToast": "Service added."
-    }
+    },
+    "pendingTitle": "The clinic is still awaiting approval",
+    "pendingHint": "Service management opens up as soon as a SuperAdmin approves the clinic."
   },
   "branches": {
     "pageTitle": "Clinic Branches",
@@ -295,7 +299,9 @@
       "addressRequired": "Address is required.",
       "cityRequired": "City is required.",
       "addedToast": "Branch added."
-    }
+    },
+    "pendingTitle": "The clinic is still awaiting approval",
+    "pendingHint": "Branch management opens up as soon as a SuperAdmin approves the clinic."
   },
   "saClinics": {
     "pageTitle": "Clinic Management",
@@ -379,13 +385,13 @@
     "pageTitle": "My Clinics",
     "pageSubtitle": "Choose a clinic to manage staff, schedules and patients.",
     "registerNewCta": "Register New Clinic",
-    "registerInfoToast": "New clinics are registered by Rezervo Mjekun staff. Contact the central administrator.",
     "pendingBanner": {
       "title": "Pending request",
       "body": "The clinic \"{{name}}\" is being verified by our staff. Some features may be limited until it's approved."
     },
     "emptyTitle": "You don't have any clinic assigned yet.",
-    "emptyText": "Contact the Rezervo Mjekun central administrator to have a clinic assigned to you.",
+    "emptyText": "Register your clinic below, or contact the central administrator if you're expecting to be assigned an existing one.",
+    "emptyActionCta": "Register a new clinic",
     "addAnotherTitle": "Add another clinic",
     "addAnotherSub": "Grow your network by adding a new location.",
     "card": {
