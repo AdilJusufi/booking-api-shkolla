@@ -601,6 +601,6 @@ public class AdminListEndpointsTests
             .ReadFromJsonAsync<List<Booking.Infrastructure.Notifications.DevEmail>>(TestHelpers.Json);
 
         messages.Should().ContainSingle();
-        messages!.Single().Body.Should().Contain("/konfirmo-email?").And.Contain("token=");
+        messages!.Single().TextBody.Should().Contain("/konfirmo-email?").And.Contain("token=");
     }
 }

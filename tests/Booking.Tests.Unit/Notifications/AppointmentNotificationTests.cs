@@ -35,7 +35,7 @@ public class AppointmentNotificationTests
         await CreateSut().AppointmentCreatedAsync(Context("+383 44 123 456"));
 
         _emailService.Verify(
-            e => e.SendAsync("pacienti@test.dev", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            e => e.SendAsync("pacienti@test.dev", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Once);
         _smsService.Verify(
             s => s.SendAsync("+383 44 123 456", It.IsAny<string>(), It.IsAny<CancellationToken>()),
@@ -48,7 +48,7 @@ public class AppointmentNotificationTests
         await CreateSut().AppointmentCreatedAsync(Context(phone: null));
 
         _emailService.Verify(
-            e => e.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            e => e.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Once);
         _smsService.Verify(
             s => s.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
@@ -61,7 +61,7 @@ public class AppointmentNotificationTests
         await CreateSut().AppointmentCancelledAsync(Context(phone: null));
 
         _emailService.Verify(
-            e => e.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            e => e.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 }

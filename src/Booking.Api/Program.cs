@@ -166,6 +166,20 @@ try
                 "Resend:ApiKey/FromAddress mungojnë — dërgimi i email-eve (konfirmim llogarie, rivendosje " +
                 "fjalëkalimi, njoftime klinike) do të dështojë derisa të konfigurohen (p.sh. me Resend__ApiKey).");
         }
+
+        // KRITIK, jo thjesht "mungon një komoditet": pa këtë, AuthService.BuildAuthLink
+        // hedh përjashtim për çdo email konfirmimi/rivendosjeje (shih koment atje) — asnjë
+        // user nuk konfirmon dot llogarinë, dhe RequireConfirmedEmail=true e mban të
+        // kyçur jashtë përgjithmonë. Kjo saktësisht ndodhi në prodhim një herë (linku
+        // mungonte, doli tokeni i papërpunuar) — ky warning duhet ta kishte kapur në
+        // logjet e deploy-it, jo pas raportimit të një useri real.
+        if (string.IsNullOrWhiteSpace(builder.Configuration["Frontend:BaseUrl"]))
+        {
+            Log.Warning(
+                "Frontend:BaseUrl mungon — KONFIRMIMI I EMAIL-IT DHE RIVENDOSJA E PASSWORD-IT DO TË DËSHTOJNË " +
+                "për çdo user (asnjë link s'mund të ndërtohet). Vendose me env var Frontend__BaseUrl " +
+                "(p.sh. https://www.rezervomjekun.com).");
+        }
     }
 
     builder.Services.AddHealthChecks()

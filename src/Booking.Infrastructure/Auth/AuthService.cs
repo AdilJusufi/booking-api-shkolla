@@ -7,6 +7,7 @@ using Booking.Application.Features.Clinics;
 using Booking.Domain.Entities;
 using Booking.Domain.Enums;
 using Booking.Infrastructure.Identity;
+using Booking.Infrastructure.Notifications.Templates;
 using Booking.Infrastructure.Persistence;
 using FluentValidation;
 using FluentValidation.Results;
@@ -102,8 +103,8 @@ public class AuthService : IAuthService
             async () =>
             {
                 var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                var (subject, body) = BuildEmailConfirmationEmail(user, confirmationToken);
-                await _emailService.SendAsync(user.Email!, subject, body, cancellationToken);
+                var email = BuildEmailConfirmationEmail(user, confirmationToken);
+                await _emailService.SendAsync(user.Email!, email.Subject, email.Html, email.Text, cancellationToken);
             },
             user.Id.ToString(), "email-i i konfirmimit të llogarisë (pacient)");
 
@@ -224,8 +225,8 @@ public class AuthService : IAuthService
             async () =>
             {
                 var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                var (subject, body) = BuildEmailConfirmationEmail(user, confirmationToken);
-                await _emailService.SendAsync(user.Email!, subject, body, cancellationToken);
+                var email = BuildEmailConfirmationEmail(user, confirmationToken);
+                await _emailService.SendAsync(user.Email!, email.Subject, email.Html, email.Text, cancellationToken);
             },
             clinic.Id.ToString(), "email-i i konfirmimit të llogarisë");
 
@@ -385,8 +386,8 @@ public class AuthService : IAuthService
             async () =>
             {
                 var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
-                var (subject, body) = BuildPasswordResetEmail(user, resetToken);
-                await _emailService.SendAsync(user.Email!, subject, body, cancellationToken);
+                var email = BuildPasswordResetEmail(user, resetToken);
+                await _emailService.SendAsync(user.Email!, email.Subject, email.Html, email.Text, cancellationToken);
             },
             user.Id.ToString(), "email-i i rivendosjes së password-it");
     }
@@ -469,8 +470,8 @@ public class AuthService : IAuthService
             async () =>
             {
                 var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                var (subject, body) = BuildEmailConfirmationEmail(user, confirmationToken);
-                await _emailService.SendAsync(user.Email!, subject, body, cancellationToken);
+                var email = BuildEmailConfirmationEmail(user, confirmationToken);
+                await _emailService.SendAsync(user.Email!, email.Subject, email.Html, email.Text, cancellationToken);
             },
             user.Id.ToString(), "ridërgimi i email-it të konfirmimit");
     }
@@ -553,61 +554,53 @@ public class AuthService : IAuthService
     /// nuk merr kontekst gjuhe — pra backend-i sot NUK ka mënyrë ta dijë gjuhën e marrësit.
     /// Për ta zgjidhur do të duhej: (1) një kolonë PreferredLanguage te ApplicationUser,
     /// e mbushur p.sh. nga header-i Accept-Language në regjistrim ose nga zgjedhja e
-    /// userit në UI, dhe (2) shabllone email-i për secilën gjuhë këtu.
+    /// userit në UI, dhe (2) shabllone email-i për secilën gjuhë. EmailTemplates i mban
+    /// stringjet e përmbajtjes të ndara nga markup-u pikërisht për këtë — kur të vijë
+    /// lokalizimi, ato stringje shkojnë te burime resx/json, layout-i mbetet i paprekur.
     /// </summary>
-    private (string Subject, string Body) BuildEmailConfirmationEmail(ApplicationUser user, string confirmationToken)
+    private EmailContent BuildEmailConfirmationEmail(ApplicationUser user, string confirmationToken)
     {
-        var link = BuildAuthLink(_frontendSettings.ConfirmEmailPath, user.Email!, confirmationToken);
-        var body =
-            $"""
-             Përshëndetje {user.FirstName},
-
-             Faleminderit që u regjistruat në Rezervo Mjekun! Për të përfunduar regjistrimin
-             dhe për t'u kyçur, konfirmoni email-in tuaj:
-
-             {link ?? $"Tokeni i konfirmimit: {confirmationToken}"}
-
-             Nëse s'e keni krijuar ju këtë llogari, thjesht injoroni këtë email.
-             """;
-
-        return ("Konfirmo llogarinë tënde", body);
+        var confirmUrl = BuildAuthLink(_frontendSettings.ConfirmEmailPath, user.Email!, confirmationToken);
+        var resendUrl = BuildPlainLink(_frontendSettings.ResendConfirmationPath);
+        return EmailTemplates.Confirmation(user.FirstName, confirmUrl, resendUrl);
     }
 
-    private (string Subject, string Body) BuildPasswordResetEmail(ApplicationUser user, string resetToken)
+    private EmailContent BuildPasswordResetEmail(ApplicationUser user, string resetToken)
     {
-        var link = BuildAuthLink(_frontendSettings.ResetPasswordPath, user.Email!, resetToken);
-        var body =
-            $"""
-             Përshëndetje {user.FirstName},
-
-             Keni kërkuar rivendosjen e fjalëkalimit për llogarinë tuaj në Rezervo Mjekun.
-             Për të vendosur një fjalëkalim të ri, hapni:
-
-             {link ?? $"Tokeni për rivendosje: {resetToken}"}
-
-             Nëse s'e keni kërkuar ju këtë, injorojeni këtë email — fjalëkalimi juaj mbetet
-             i pandryshuar.
-             """;
-
-        return ("Rivendos fjalëkalimin", body);
+        var resetUrl = BuildAuthLink(_frontendSettings.ResetPasswordPath, user.Email!, resetToken);
+        var forgotPasswordUrl = BuildPlainLink(_frontendSettings.ForgotPasswordPath);
+        return EmailTemplates.PasswordReset(user.FirstName, resetUrl, forgotPasswordUrl);
     }
 
     /// <summary>
-    /// Njësoj si BuildLink te LoggingClinicNotificationService: Frontend:BaseUrl bosh do
-    /// të thotë "pa link" dhe email-i bie mbrapa te tokeni i papërpunuar (shih thirrësit).
+    /// Ndryshe nga versioni i mëparshëm: KURRË s'kthen null në heshtje. Një token pa link
+    /// është i papërdorshëm për marrësin — dërgimi i tij do ta linte userin përgjithmonë
+    /// të bllokuar (shih raportin: pikërisht kjo ndodhi në prodhim). Nëse Frontend:BaseUrl
+    /// mungon, hedhim përjashtim, që NotifyAsync (te thirrësit) ta logojë me zë të lartë
+    /// (Error) dhe TË MOS dërgojë asgjë — heshtje operacionale këtu është më keq se një
+    /// email që s'shkoi fare, sepse askush s'do ta vinte re problemin real (config-u).
     /// Token-at e Identity janë base64 dhe mund të përmbajnë '+', '/', '=' — duhen encoduar
     /// përpara se të futen si query string, ndryshe linku thyhet në disa klientë email-i.
     /// </summary>
-    private string? BuildAuthLink(string path, string email, string token)
+    private string BuildAuthLink(string path, string email, string token)
     {
         var baseUrl = _frontendSettings.BaseUrl?.TrimEnd('/');
         if (string.IsNullOrWhiteSpace(baseUrl))
         {
-            return null;
+            throw new InvalidOperationException(
+                "Frontend:BaseUrl mungon në konfigurim — s'mund të ndërtohet linku i email-it. " +
+                "Vendose me env var Frontend__BaseUrl (p.sh. https://www.rezervomjekun.com).");
         }
 
         var query = $"token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(email)}";
         return $"{baseUrl}{path}?{query}";
+    }
+
+    /// <summary>Njësoj si BuildAuthLink, por për faqe pa token/email (formularë "kërko një link të ri").</summary>
+    private string? BuildPlainLink(string path)
+    {
+        var baseUrl = _frontendSettings.BaseUrl?.TrimEnd('/');
+        return string.IsNullOrWhiteSpace(baseUrl) ? null : $"{baseUrl}{path}";
     }
 
     /// <summary>Gabimet e Identity (password policy etj.) → ValidationException → HTTP 422.</summary>

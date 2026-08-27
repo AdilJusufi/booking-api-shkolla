@@ -52,7 +52,7 @@ public class EmailAbuseLimitsTests
 
         var inbox = await DevEmailsAsync(client, email);
         var resendEmail = inbox.First(e => e.Subject.Contains("Konfirmo"));
-        var (token, linkEmail) = ExtractTokenAndEmail(resendEmail.Body);
+        var (token, linkEmail) = ExtractTokenAndEmail(resendEmail.TextBody);
         linkEmail.Should().Be(email);
 
         var confirmResponse = await client.PostAsJsonAsync(
@@ -70,7 +70,7 @@ public class EmailAbuseLimitsTests
         var confirmedEmail = $"ridergo-konfirmuar-{Guid.NewGuid():N}@test.dev";
         await TestHelpers.RegisterPatientAsync(client, confirmedEmail);
         var firstInbox = await DevEmailsAsync(client, confirmedEmail);
-        var (regToken, _) = ExtractTokenAndEmail(firstInbox.Single().Body);
+        var (regToken, _) = ExtractTokenAndEmail(firstInbox.Single().TextBody);
         await client.PostAsJsonAsync("/api/auth/confirm-email", new ConfirmEmailRequest(confirmedEmail, regToken), TestHelpers.Json);
 
         var confirmedResponse = await client.PostAsJsonAsync(

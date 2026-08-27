@@ -1,12 +1,16 @@
 namespace Booking.Application.Common.Interfaces;
 
 /// <summary>
-/// Dërgimi i email-eve. Në V1 implementimi vetëm logon (LoggingEmailService);
-/// struktura është gati për SendGrid ose SMTP më vonë.
+/// Dërgimi i email-eve. HTML dhe text janë TË DYJA të detyrueshme, jo opsionale: Resend
+/// (dhe email klientë të mirë-sjellshëm) i duan të dyja në çdo dërgim — HTML për shfaqje,
+/// text si alternativë kur klienti/useri e preferon, dhe si sinjal antispam (email vetëm
+/// HTML trajtohet me më shumë dyshim nga filtrat). Kurrë mos e ndërto njërin nga tjetri
+/// automatikisht (p.sh. duke hequr tag-et HTML) — shih EmailTemplates për ndërtimin e
+/// përbashkët të të dyjave nga të njëjtat të dhëna burimore.
 /// </summary>
 public interface IEmailService
 {
-    Task SendAsync(string toEmail, string subject, string body, CancellationToken cancellationToken = default);
+    Task SendAsync(string toEmail, string subject, string htmlBody, string textBody, CancellationToken cancellationToken = default);
 }
 
 /// <summary>

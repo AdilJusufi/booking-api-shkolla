@@ -22,4 +22,10 @@ public sealed class FrontendSettings
 
     /// <summary>Faqja e konfirmimit të email-it (shih App.tsx) — pret ?token=&amp;email=.</summary>
     public string ConfirmEmailPath { get; set; } = "/konfirmo-email";
+
+    /// <summary>Faqja e ridërgimit të email-it të konfirmimit — pa parametra, thjesht formular.</summary>
+    public string ResendConfirmationPath { get; set; } = "/konfirmo-email/ridergo";
+
+    /// <summary>Faqja "kam harruar fjalëkalimin" — pa parametra, thjesht formular.</summary>
+    public string ForgotPasswordPath { get; set; } = "/harrova-fjalekalimin";
 }

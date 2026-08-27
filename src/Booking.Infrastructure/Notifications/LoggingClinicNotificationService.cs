@@ -2,6 +2,7 @@ using Booking.Application.Common.Interfaces;
 using Booking.Application.Common.Models;
 using Booking.Application.Common.Security;
 using Booking.Application.Features.Clinics;
+using Booking.Infrastructure.Notifications.Templates;
 using Booking.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -13,6 +14,12 @@ namespace Booking.Infrastructure.Notifications;
 /// V1: njoftimet e klinikave shkojnë përmes IEmailService, që sot vetëm logon.
 /// Përmbajtja dhe marrësit janë realë — mjafton të regjistrohet një IEmailService
 /// me SMTP/SendGrid dhe email-at nisen pa asnjë ndryshim këtu.
+///
+/// Ndryshe nga tokenat e AuthService (konfirmim, rivendosje password-i), asnjë nga
+/// këto tre email-e s'mbart një token — janë njoftime "për dijeni", jo hapa të
+/// domosdoshëm. Prandaj kur Frontend:BaseUrl mungon, BuildLink kthen null dhe
+/// shabllonet e EmailTemplates thjesht heqin butonin/linkun, pa e ndalur dërgimin:
+/// marrësi ende e kupton mesazhin, thjesht pa një shkurtore klikimi.
 /// </summary>
 public class LoggingClinicNotificationService : IClinicNotificationService
 {
@@ -47,25 +54,19 @@ public class LoggingClinicNotificationService : IClinicNotificationService
         }
 
         var reviewLink = BuildLink(_frontendSettings.SuperAdminClinicsPath);
-        var body =
-            $"""
-             Një klinikë e re është paraqitur dhe pret rishikim.
-
-             Klinika: {context.ClinicName}
-             ID: {context.ClinicId}
-             Telefoni: {Or(context.ClinicPhoneNumber)}
-             Email: {Or(context.ClinicEmail)}
-             Web: {Or(context.Website)}
-             Qytetet e degëve: {(context.BranchCities.Count == 0 ? "—" : string.Join(", ", context.BranchCities))}
-
-             Mbajtësi i llogarisë: {context.AdminFullName}
-             Email: {context.AdminEmail}
-             Telefoni: {Or(context.AdminPhoneNumber)}
-
-             Paraqitur më: {context.SubmittedAtUtc:dd.MM.yyyy HH:mm} UTC
-             {SameNameNote(context)}
-             Rishikimi: {reviewLink ?? $"paneli SuperAdmin → Klinikat (ID {context.ClinicId})"}
-             """;
+        var email = EmailTemplates.NewClinicAwaitingReview(
+            context.ClinicName,
+            context.ClinicId,
+            context.ClinicPhoneNumber,
+            context.ClinicEmail,
+            context.Website,
+            context.BranchCities,
+            context.AdminFullName,
+            context.AdminEmail,
+            context.AdminPhoneNumber,
+            context.SubmittedAtUtc,
+            context.ClinicsWithSameName,
+            reviewLink);
 
         _logger.LogInformation(
             "Njoftim regjistrimi klinike {ClinicId} për {RecipientCount} SuperAdmin",
@@ -73,7 +74,7 @@ public class LoggingClinicNotificationService : IClinicNotificationService
 
         foreach (var recipient in recipients)
         {
-            await _emailService.SendAsync(recipient, "Klinikë e re në pritje të aprovimit", body, cancellationToken);
+            await _emailService.SendAsync(recipient, email.Subject, email.Html, email.Text, cancellationToken);
         }
     }
 
@@ -81,23 +82,11 @@ public class LoggingClinicNotificationService : IClinicNotificationService
         ClinicRegistrationNotificationContext context, CancellationToken cancellationToken = default)
     {
         var myClinicsLink = BuildLink(_frontendSettings.MyClinicsPath);
-        var body =
-            $"""
-             Përshëndetje {context.AdminFullName},
-
-             Aplikimi juaj për klinikën "{context.ClinicName}" u pranua dhe është në rishikim.
-
-             Deri sa ekipi ynë ta verifikojë, klinika nuk shfaqet në kërkimin publik dhe
-             menaxhimi i degëve, shërbimeve dhe mjekëve mbetet i mbyllur. Mund të kyçeni
-             që tani dhe do ta shihni klinikën në gjendjen "Në pritje".
-             {(myClinicsLink is null ? string.Empty : $"\n{myClinicsLink}\n")}
-             Do t'ju njoftojmë me email sapo rishikimi të përfundojë.
-             """;
+        var email = EmailTemplates.ClinicPendingReview(context.AdminFullName, context.ClinicName, myClinicsLink);
 
         _logger.LogInformation("Konfirmim paraqitjeje për klinikën {ClinicId}", context.ClinicId);
 
-        await _emailService.SendAsync(
-            context.AdminEmail, "Klinika juaj është në rishikim", body, cancellationToken);
+        await _emailService.SendAsync(context.AdminEmail, email.Subject, email.Html, email.Text, cancellationToken);
     }
 
     public async Task ClinicApprovedAsync(
@@ -109,20 +98,13 @@ public class LoggingClinicNotificationService : IClinicNotificationService
         }
 
         var myClinicsLink = BuildLink(_frontendSettings.MyClinicsPath);
-        var body =
-            $"""
-             Klinika "{context.ClinicName}" u aprovua.
-
-             Që tani ajo shfaqet në kërkimin publik dhe mund të menaxhoni degët,
-             shërbimet dhe mjekët e saj.
-             {(myClinicsLink is null ? string.Empty : $"\n{myClinicsLink}")}
-             """;
+        var email = EmailTemplates.ClinicApproved(context.ClinicName, myClinicsLink);
 
         _logger.LogInformation("Njoftim aprovimi për klinikën {ClinicId}", context.ClinicId);
 
         foreach (var recipient in context.AdminEmails)
         {
-            await _emailService.SendAsync(recipient, "Klinika juaj u aprovua", body, cancellationToken);
+            await _emailService.SendAsync(recipient, email.Subject, email.Html, email.Text, cancellationToken);
         }
     }
 
@@ -145,11 +127,4 @@ public class LoggingClinicNotificationService : IClinicNotificationService
         var baseUrl = _frontendSettings.BaseUrl?.TrimEnd('/');
         return string.IsNullOrWhiteSpace(baseUrl) ? null : baseUrl + path;
     }
-
-    private static string Or(string? value) => string.IsNullOrWhiteSpace(value) ? "—" : value;
-
-    private static string SameNameNote(ClinicRegistrationNotificationContext context) =>
-        context.ClinicsWithSameName == 0
-            ? string.Empty
-            : $"\nKujdes: {context.ClinicsWithSameName} klinikë tjetër e regjistruar e mban të njëjtin emër.\n";
 }

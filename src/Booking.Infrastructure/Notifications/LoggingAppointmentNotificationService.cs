@@ -59,9 +59,15 @@ public class LoggingAppointmentNotificationService : IAppointmentNotificationSer
 
         // Email-i mungon te pacientët e krijuar me telefon nga recepsioni; SMS-ja
         // mbetet kanali i tyre, prandaj mungesa e email-it nuk e ndal njoftimin.
+        //
+        // Jashtë fushëveprimit të shabllonizimit HTML (shih EmailTemplates) — këto janë
+        // fjali të vetme, pa nevojë për markup; mbështillen minimalisht vetëm që të mos
+        // rregresojnë (më parë shkonin si "text" i papërpunuar te Resend, tani duhet
+        // gjithsesi një "html", ndryshe do të dilnin bosh për marrësit që shohin HTML).
         if (!string.IsNullOrWhiteSpace(context.PatientEmail))
         {
-            await _emailService.SendAsync(context.PatientEmail, subject, body, cancellationToken);
+            var htmlBody = $"""<p style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#131718;">{System.Net.WebUtility.HtmlEncode(body)}</p>""";
+            await _emailService.SendAsync(context.PatientEmail, subject, htmlBody, body, cancellationToken);
         }
 
         if (!string.IsNullOrWhiteSpace(context.PatientPhoneNumber))

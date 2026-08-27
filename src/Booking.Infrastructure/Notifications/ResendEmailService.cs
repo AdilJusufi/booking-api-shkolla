@@ -68,7 +68,7 @@ public class ResendEmailService : IEmailService
         _retryDelays = retryDelays;
     }
 
-    public async Task SendAsync(string toEmail, string subject, string body, CancellationToken cancellationToken = default)
+    public async Task SendAsync(string toEmail, string subject, string htmlBody, string textBody, CancellationToken cancellationToken = default)
     {
         // I qëndrueshëm përgjatë gjithë riprovave të kësaj thirrjeje — shih rem. e klasës.
         var idempotencyKey = Guid.NewGuid().ToString();
@@ -78,7 +78,7 @@ public class ResendEmailService : IEmailService
             HttpResponseMessage response;
             try
             {
-                response = await SendOnceAsync(toEmail, subject, body, idempotencyKey, cancellationToken);
+                response = await SendOnceAsync(toEmail, subject, htmlBody, textBody, idempotencyKey, cancellationToken);
             }
             catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && attempt < MaxAttempts)
             {
@@ -120,16 +120,21 @@ public class ResendEmailService : IEmailService
     }
 
     private async Task<HttpResponseMessage> SendOnceAsync(
-        string toEmail, string subject, string body, string idempotencyKey, CancellationToken cancellationToken)
+        string toEmail, string subject, string htmlBody, string textBody, string idempotencyKey, CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, "emails")
         {
+            // Të dyja fushat gjithmonë: html për shfaqje, text si alternativë — shih
+            // koment mbi IEmailService. Më parë dërgohej vetëm "text", pra çdo email
+            // deri tani ka mbërritur si tekst i papërpunuar, pavarësisht markup-ut të
+            // ndërtuar nga thirrësi.
             Content = JsonContent.Create(new
             {
                 from = _settings.FromAddress,
                 to = new[] { toEmail },
                 subject,
-                text = body
+                html = htmlBody,
+                text = textBody
             })
         };
         request.Headers.Add("Idempotency-Key", idempotencyKey);

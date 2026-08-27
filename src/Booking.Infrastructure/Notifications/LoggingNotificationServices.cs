@@ -17,10 +17,11 @@ public class LoggingEmailService : IEmailService
         _logger = logger;
     }
 
-    public Task SendAsync(string toEmail, string subject, string body, CancellationToken cancellationToken = default)
+    public Task SendAsync(string toEmail, string subject, string htmlBody, string textBody, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("[EMAIL-MOCK] Për: {ToEmail} | Subjekti: {Subject} | (trupi nuk logohet)", toEmail, subject);
-        _logger.LogDebug("[EMAIL-MOCK] Trupi: {Body}", body);
+        // Versioni text, jo HTML — më i lexueshëm në konsolë gjatë zhvillimit.
+        _logger.LogDebug("[EMAIL-MOCK] Trupi (text): {TextBody}", textBody);
         return Task.CompletedTask;
     }
 }
