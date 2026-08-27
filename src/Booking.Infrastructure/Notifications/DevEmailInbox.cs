@@ -4,7 +4,7 @@ using Booking.Application.Common.Interfaces;
 namespace Booking.Infrastructure.Notifications;
 
 /// <summary>Një email i "dërguar" gjatë zhvillimit — mbahet vetëm në memorie.</summary>
-public sealed record DevEmail(string ToEmail, string Subject, string Body, DateTime SentAtUtc);
+public sealed record DevEmail(string ToEmail, string Subject, string HtmlBody, string TextBody, DateTime SentAtUtc);
 
 /// <summary>
 /// Kutia postare e zhvillimit: ruan email-at e fundit në memorie që frontend-i
@@ -56,9 +56,9 @@ public sealed class DevInboxEmailService : IEmailService
         _dateTimeProvider = dateTimeProvider;
     }
 
-    public async Task SendAsync(string toEmail, string subject, string body, CancellationToken cancellationToken = default)
+    public async Task SendAsync(string toEmail, string subject, string htmlBody, string textBody, CancellationToken cancellationToken = default)
     {
-        _inbox.Record(new DevEmail(toEmail, subject, body, _dateTimeProvider.UtcNow));
-        await _inner.SendAsync(toEmail, subject, body, cancellationToken);
+        _inbox.Record(new DevEmail(toEmail, subject, htmlBody, textBody, _dateTimeProvider.UtcNow));
+        await _inner.SendAsync(toEmail, subject, htmlBody, textBody, cancellationToken);
     }
 }

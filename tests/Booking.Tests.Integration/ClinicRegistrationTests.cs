@@ -244,13 +244,13 @@ public class ClinicRegistrationTests
 
         var inbox = await DevEmailsAsync(client, DbSeeder.SuperAdminEmail);
 
-        var notification = inbox.FirstOrDefault(e => e.Body.Contains(registration.ClinicId.ToString()));
+        var notification = inbox.FirstOrDefault(e => e.TextBody.Contains(registration.ClinicId.ToString()));
         notification.Should().NotBeNull("SuperAdmin duhet të njoftohet për çdo klinikë të re");
         notification!.Subject.Should().Contain("aprovim");
-        notification.Body.Should().Contain(request.ClinicName);
-        notification.Body.Should().Contain(request.ClinicPhoneNumber);
-        notification.Body.Should().Contain(request.Email);
-        notification.Body.Should().Contain("Prishtinë");
+        notification.TextBody.Should().Contain(request.ClinicName);
+        notification.TextBody.Should().Contain(request.ClinicPhoneNumber);
+        notification.TextBody.Should().Contain(request.Email);
+        notification.TextBody.Should().Contain("Prishtinë");
     }
 
     [Fact]
@@ -262,9 +262,9 @@ public class ClinicRegistrationTests
 
         var inbox = await DevEmailsAsync(client, request.Email);
 
-        var confirmation = inbox.FirstOrDefault(e => e.Body.Contains(request.ClinicName));
+        var confirmation = inbox.FirstOrDefault(e => e.TextBody.Contains(request.ClinicName));
         confirmation.Should().NotBeNull("mbajtësi i llogarisë duhet të marrë konfirmim");
-        confirmation!.Body.Should().Contain("rishikim");
+        confirmation!.TextBody.Should().Contain("rishikim");
     }
 
     [Fact]
@@ -279,7 +279,7 @@ public class ClinicRegistrationTests
         var inbox = await DevEmailsAsync(client, request.Email);
 
         inbox.Should().Contain(e =>
-            e.Body.Contains("/konfirmo-email?") && e.Body.Contains("token=") && e.Body.Contains(Uri.EscapeDataString(request.Email)));
+            e.TextBody.Contains("/konfirmo-email?") && e.TextBody.Contains("token=") && e.TextBody.Contains(Uri.EscapeDataString(request.Email)));
     }
 
     [Fact]
@@ -292,7 +292,7 @@ public class ClinicRegistrationTests
         await ApproveAsync(registration.ClinicId);
 
         var inbox = await DevEmailsAsync(client, request.Email);
-        inbox.Should().Contain(e => e.Subject.Contains("aprovua") && e.Body.Contains(request.ClinicName));
+        inbox.Should().Contain(e => e.Subject.Contains("aprovua") && e.TextBody.Contains(request.ClinicName));
     }
 
     // ---------- Regresion: rruga e pacientit ----------

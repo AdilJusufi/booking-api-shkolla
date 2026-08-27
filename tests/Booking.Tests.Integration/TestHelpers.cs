@@ -15,7 +15,7 @@ namespace Booking.Tests.Integration;
 /// </summary>
 public sealed class AlwaysThrowingEmailService : IEmailService
 {
-    public Task SendAsync(string toEmail, string subject, string body, CancellationToken cancellationToken = default) =>
+    public Task SendAsync(string toEmail, string subject, string htmlBody, string textBody, CancellationToken cancellationToken = default) =>
         throw new InvalidOperationException("Dështim i simuluar i dërgimit të email-it (testi).");
 }
 

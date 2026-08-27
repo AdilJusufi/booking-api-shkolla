@@ -58,7 +58,7 @@ public class ResendEmailServiceTests
 
         var sut = CreateSut(handler);
 
-        await sut.SendAsync("pacienti@test.dev", "Rivendos fjalëkalimin", "Trupi i email-it", CancellationToken.None);
+        await sut.SendAsync("pacienti@test.dev", "Rivendos fjalëkalimin", "<p>Trupi HTML</p>", "Trupi i email-it", CancellationToken.None);
 
         captured.Should().NotBeNull();
         captured!.Method.Should().Be(HttpMethod.Post);
@@ -70,7 +70,8 @@ public class ResendEmailServiceTests
         payload.GetProperty("from").GetString().Should().Be(FromAddress);
         payload.GetProperty("to")[0].GetString().Should().Be("pacienti@test.dev");
         payload.GetProperty("subject").GetString().Should().Be("Rivendos fjalëkalimin");
-        payload.GetProperty("text").GetString().Should().Be("Trupi i email-it");
+        payload.GetProperty("html").GetString().Should().Be("<p>Trupi HTML</p>", "Resend duhet të marrë GJITHMONË edhe html");
+        payload.GetProperty("text").GetString().Should().Be("Trupi i email-it", "dhe GJITHMONË edhe text — jo vetëm njërin nga të dyja");
 
         handler.CallCount.Should().Be(1, "s'ka dështim, s'duhet riprovë");
     }
@@ -98,7 +99,7 @@ public class ResendEmailServiceTests
 
         var sut = CreateSut(handler, fastRetries: true);
 
-        await sut.SendAsync("pacienti@test.dev", "Subjekti", "Trupi", CancellationToken.None);
+        await sut.SendAsync("pacienti@test.dev", "Subjekti", "<p>Trupi</p>", "Trupi", CancellationToken.None);
 
         handler.CallCount.Should().Be(3, "dy dështime transiente + një sukses");
     }
@@ -123,7 +124,7 @@ public class ResendEmailServiceTests
 
         var sut = CreateSut(handler, fastRetries: true);
 
-        await sut.SendAsync("pacienti@test.dev", "Subjekti", "Trupi", CancellationToken.None);
+        await sut.SendAsync("pacienti@test.dev", "Subjekti", "<p>Trupi</p>", "Trupi", CancellationToken.None);
 
         idempotencyKeys.Should().HaveCount(2);
         idempotencyKeys.Distinct().Should().ContainSingle(
@@ -141,7 +142,7 @@ public class ResendEmailServiceTests
 
         var sut = CreateSut(handler, fastRetries: true);
 
-        var act = () => sut.SendAsync("adresë-e-keqe", "Subjekti", "Trupi", CancellationToken.None);
+        var act = () => sut.SendAsync("adresë-e-keqe", "Subjekti", "<p>Trupi</p>", "Trupi", CancellationToken.None);
 
         await act.Should().ThrowAsync<EmailSendException>();
         handler.CallCount.Should().Be(1, "422 s'është transient — s'duhet riprovë");
@@ -157,7 +158,7 @@ public class ResendEmailServiceTests
 
         var sut = CreateSut(handler, fastRetries: true);
 
-        var act = () => sut.SendAsync("pacienti@test.dev", "Subjekti", "Trupi", CancellationToken.None);
+        var act = () => sut.SendAsync("pacienti@test.dev", "Subjekti", "<p>Trupi</p>", "Trupi", CancellationToken.None);
 
         (await act.Should().ThrowAsync<EmailSendException>()).Which.Message.Should().Contain("500");
         handler.CallCount.Should().Be(3, "3 tentativa gjithsej pastaj dorëzohet");
@@ -183,7 +184,7 @@ public class ResendEmailServiceTests
 
         var sut = CreateSut(handler, fastRetries: true);
 
-        await sut.SendAsync("pacienti@test.dev", "Subjekti", "Trupi", CancellationToken.None);
+        await sut.SendAsync("pacienti@test.dev", "Subjekti", "<p>Trupi</p>", "Trupi", CancellationToken.None);
 
         handler.CallCount.Should().Be(2);
     }

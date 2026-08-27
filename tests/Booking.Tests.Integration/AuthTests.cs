@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Booking.Application.Common.Interfaces;
+using Booking.Application.Common.Models;
 using Booking.Application.Features.Auth;
 using Booking.Infrastructure.Auth;
 using Booking.Infrastructure.Notifications;
@@ -217,7 +218,7 @@ public class AuthTests
 
         var inbox = await DevEmailsAsync(client, email);
         inbox.Should().Contain(e =>
-            e.Subject.Contains("Rivendos") && e.Body.Contains("/rivendos-fjalekalimin?") && e.Body.Contains("token="));
+            e.Subject.Contains("Rivendos") && e.TextBody.Contains("/rivendos-fjalekalimin?") && e.TextBody.Contains("token="));
     }
 
     [Fact]
@@ -243,7 +244,7 @@ public class AuthTests
 
         var inbox = await DevEmailsAsync(client, email);
         inbox.Should().Contain(e =>
-            e.Subject.Contains("Konfirmo") && e.Body.Contains("/konfirmo-email?") && e.Body.Contains("token="));
+            e.Subject.Contains("Konfirmo") && e.TextBody.Contains("/konfirmo-email?") && e.TextBody.Contains("token="));
     }
 
     [Fact]
@@ -286,6 +287,64 @@ public class AuthTests
 
         auth.AccessToken.Should().NotBeNullOrEmpty(
             "regjistrimi tashmë e ka ruajtur userin në DB — një email i dështuar s'duhet ta rrëzojë kërkesën me 500");
+    }
+
+    // ---------- Rregresioni real i prodhimit: Frontend:BaseUrl mungon ----------
+    //
+    // Kjo saktësisht ndodhi: BaseUrl mungonte në Render, AuthService.BuildAuthLink
+    // kthente null në heshtje, dhe useri merrte një email me "Tokeni i konfirmimit: ..."
+    // të papërdorshëm. Rregullimi: BuildAuthLink tani HEDH përjashtim kur BaseUrl mungon,
+    // që NotifyAsync (shih AuthService) ta kapë, ta logojë me zë të lartë, dhe TË MOS
+    // dërgojë asnjë email — heshtje operacionale këtu do të thoshte që askush s'do ta
+    // vinte re problemin real (config-u) derisa një user real të raportonte.
+
+    [Fact]
+    public async Task RegisterPatient_MissingBaseUrl_SendsNoEmail_ButStillSucceeds()
+    {
+        await using var factory = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureTestServices(services =>
+                services.Configure<FrontendSettings>(o => o.BaseUrl = null)));
+
+        var client = factory.CreateClient();
+        var email = $"pa-baseurl-{Guid.NewGuid():N}@test.dev";
+
+        var auth = await TestHelpers.RegisterPatientAsync(client, email);
+
+        auth.AccessToken.Should().NotBeNullOrEmpty(
+            "regjistrimi vetë s'varet nga BaseUrl — vetëm dërgimi i email-it të konfirmimit e humb");
+
+        var inbox = await DevEmailsAsync(client, email);
+        inbox.Should().BeEmpty(
+            "asnjë email s'duhet të dërgohet kur linku s'mund të ndërtohet — një token pa link " +
+            "do ta linte userin përgjithmonë të bllokuar (shih raportin)");
+    }
+
+    [Fact]
+    public async Task ForgotPassword_MissingBaseUrl_Returns204_ButSendsNoEmail()
+    {
+        // Regjistrimi mund të bëhet kundrejt CILITDO client — të dy factory-t ndajnë të
+        // njëjtin Postgres, ndryshon vetëm DI-ja (dhe kështu, DevEmailInbox-i, Singleton
+        // për-host). E rëndësishmja: forgot-password DHE leximi i inbox-it bëhen kundrejt
+        // TË NJËJTIT factory (BaseUrl=null), që inbox-i bosh të provojë vërtet "s'u dërgua
+        // asgjë prej KËSAJ kërkese" — jo thjesht "kjo është një inbox tjetër, i paprekur".
+        await using var factory = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureTestServices(services =>
+                services.Configure<FrontendSettings>(o => o.BaseUrl = null)));
+        var client = factory.CreateClient();
+
+        var email = $"rivendos-pa-baseurl-{Guid.NewGuid():N}@test.dev";
+        await TestHelpers.RegisterPatientAsync(client, email);
+        var inboxAfterRegister = await DevEmailsAsync(client, email);
+        inboxAfterRegister.Should().BeEmpty("regjistrimi vetë s'duhet të kishte dërguar email konfirmimi pa BaseUrl");
+
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/forgot-password", new ForgotPasswordRequest(email), TestHelpers.Json);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent,
+            "përgjigja mbetet identike — dështimi i konfigurimit s'duhet të zbulojë ekzistencën e llogarisë as të kthejë 500");
+
+        var inboxAfterForgotPassword = await DevEmailsAsync(client, email);
+        inboxAfterForgotPassword.Should().BeEmpty("as forgot-password s'duhet të dërgojë email kur linku s'mund të ndërtohet");
     }
 
     private static async Task<IReadOnlyList<DevEmail>> DevEmailsAsync(HttpClient client, string toEmail) =>
