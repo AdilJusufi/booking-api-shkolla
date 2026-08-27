@@ -1,10 +1,39 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Booking.Application.Common.Interfaces;
 using Booking.Application.Features.Auth;
 using Booking.Domain.Enums;
 
 namespace Booking.Tests.Integration;
+
+/// <summary>
+/// Simulon Resend real-isht poshtë (ose çfarëdo IEmailService tjetër) duke dështuar
+/// gjithmonë — regjistrohet nëpërmjet WithWebHostBuilder për të provuar se rrugët që
+/// duhet të mos bllokohen nga një email i dështuar (regjistrim pacienti, forgot-password)
+/// vërtet nuk bllokohen.
+/// </summary>
+public sealed class AlwaysThrowingEmailService : IEmailService
+{
+    public Task SendAsync(string toEmail, string subject, string body, CancellationToken cancellationToken = default) =>
+        throw new InvalidOperationException("Dështim i simuluar i dërgimit të email-it (testi).");
+}
+
+/// <summary>
+/// IDateTimeProvider i kontrollueshëm — testet e cooldown/tavan-ditor duan të kalojnë
+/// minuta/ditë "kohe" pa pritur realisht. Regjistrohet si Singleton nëpërmjet
+/// WithWebHostBuilder; testi e mban referencën dhe ia ndryshon UtcNow mes kërkesave.
+///
+/// Data fillestare RASTËSORE (jo "sot", jo një konstante fikse): EmailSendAttempts
+/// jeton në TË NJËJTËN bazë të dhënash për gjithë collection fixture-in, kështu që një
+/// ditë fikse do të përplasej me rreshtat e testeve të tjera që përdorin gjithashtu
+/// ManualClock (të gjithë do të "binin" në të njëjtën ditë UTC).
+/// </summary>
+public sealed class ManualClock : IDateTimeProvider
+{
+    public DateTime UtcNow { get; set; } =
+        new DateTime(2000, 1, 1, 8, 0, 0, DateTimeKind.Utc).AddDays(Random.Shared.Next(0, 9000));
+}
 
 public static class TestHelpers
 {

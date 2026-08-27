@@ -193,6 +193,9 @@ export default function LoginPage() {
           <p className="auth-alt" style={{ marginTop: 16 }}>
             <Link to="/harrova-fjalekalimin">{t("login.forgotPasswordLink")}</Link>
           </p>
+          <p className="auth-alt" style={{ marginTop: 4 }}>
+            <Link to="/konfirmo-email/ridergo">{t("login.resendConfirmationLink")}</Link>
+          </p>
         </div>
       </div>
     </div>

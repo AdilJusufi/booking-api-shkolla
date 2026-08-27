@@ -39,6 +39,7 @@ public class BookingDbContext : IdentityDbContext<ApplicationUser, ApplicationRo
     public DbSet<Appointment> Appointments => Set<Appointment>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<EmailSendAttempt> EmailSendAttempts => Set<EmailSendAttempt>();
 
     /// <summary>Key ring-u i Data Protection — e kërkon <see cref="IDataProtectionKeyContext"/>.</summary>
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();

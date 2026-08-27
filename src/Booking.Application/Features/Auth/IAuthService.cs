@@ -31,4 +31,10 @@ public interface IAuthService
     Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request, CancellationToken cancellationToken = default);
 
     Task ConfirmEmailAsync(ConfirmEmailRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Kthen gjithmonë sukses — nuk zbulon nëse email-i ekziston, është tashmë i
+    /// konfirmuar, apo u kufizua nga limitet e abuzimit. Shih EmailAbuseGuard.
+    /// </summary>
+    Task ResendConfirmationEmailAsync(ResendConfirmationRequest request, CancellationToken cancellationToken = default);
 }

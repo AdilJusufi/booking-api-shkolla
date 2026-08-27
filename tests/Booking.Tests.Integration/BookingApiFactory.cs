@@ -48,6 +48,7 @@ public class BookingApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         SetConfig("RateLimiting__AuthPermitLimit", "1000");
         SetConfig("RateLimiting__BookingPermitLimit", "1000");
         SetConfig("RateLimiting__PatientSearchPermitLimit", "1000");
+        SetConfig("RateLimiting__EmailSendPermitLimit", "1000");
     }
 
     private static void SetConfig(string key, string value) =>

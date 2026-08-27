@@ -278,7 +278,8 @@ public class ClinicRegistrationTests
 
         var inbox = await DevEmailsAsync(client, request.Email);
 
-        inbox.Should().Contain(e => e.Body.Contains("Tokeni i konfirmimit:"));
+        inbox.Should().Contain(e =>
+            e.Body.Contains("/konfirmo-email?") && e.Body.Contains("token=") && e.Body.Contains(Uri.EscapeDataString(request.Email)));
     }
 
     [Fact]

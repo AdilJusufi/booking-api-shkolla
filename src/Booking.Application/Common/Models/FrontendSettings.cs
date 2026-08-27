@@ -16,4 +16,10 @@ public sealed class FrontendSettings
 
     /// <summary>Rruga ku ClinicAdmin-i i sheh klinikat e veta, përfshirë ato në pritje.</summary>
     public string MyClinicsPath { get; set; } = "/admin-panel/klinikat";
+
+    /// <summary>Faqja e rivendosjes së fjalëkalimit (shih App.tsx) — pret ?token=&amp;email=.</summary>
+    public string ResetPasswordPath { get; set; } = "/rivendos-fjalekalimin";
+
+    /// <summary>Faqja e konfirmimit të email-it (shih App.tsx) — pret ?token=&amp;email=.</summary>
+    public string ConfirmEmailPath { get; set; } = "/konfirmo-email";
 }

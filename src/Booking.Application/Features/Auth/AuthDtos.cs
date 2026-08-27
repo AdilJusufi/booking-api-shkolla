@@ -81,6 +81,8 @@ public sealed record ChangePasswordRequest(string CurrentPassword, string NewPas
 
 public sealed record ConfirmEmailRequest(string Email, string Token);
 
+public sealed record ResendConfirmationRequest(string Email);
+
 public sealed record AuthResponse
 {
     public required Guid UserId { get; init; }

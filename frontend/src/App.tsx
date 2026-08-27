@@ -37,6 +37,7 @@ import SpecialtiesPage from './pages/SpecialtiesPage'
 import UsersPage from './pages/UsersPage'
 import AuditLogsPage from './pages/AuditLogsPage'
 import ConfirmEmailPage from './pages/ConfirmEmailPage'
+import ResendConfirmationPage from './pages/ResendConfirmationPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
@@ -64,6 +65,7 @@ export default function App() {
     <Routes>
       <Route path="/hyr" element={<LoginPage />} />
       <Route path="/konfirmo-email" element={<ConfirmEmailPage />} />
+      <Route path="/konfirmo-email/ridergo" element={<ResendConfirmationPage />} />
       <Route path="/harrova-fjalekalimin" element={<ForgotPasswordPage />} />
       <Route path="/rivendos-fjalekalimin" element={<ResetPasswordPage />} />
       <Route

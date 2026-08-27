@@ -5,6 +5,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- ResendEmailService: konstruktor internal me vonesa riprove të konfigurueshme, vetëm për teste. -->
+    <InternalsVisibleTo Include="Booking.Tests.Unit" />
+  </ItemGroup>
+
+  <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 

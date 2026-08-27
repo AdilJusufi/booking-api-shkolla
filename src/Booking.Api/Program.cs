@@ -70,6 +70,8 @@ try
     var authPermitLimit = builder.Configuration.GetValue<int?>("RateLimiting:AuthPermitLimit") ?? 10;
     var bookingPermitLimit = builder.Configuration.GetValue<int?>("RateLimiting:BookingPermitLimit") ?? 20;
     var patientSearchPermitLimit = builder.Configuration.GetValue<int?>("RateLimiting:PatientSearchPermitLimit") ?? 30;
+    var emailSendPermitLimit = builder.Configuration.GetValue<int?>("RateLimiting:EmailSendPermitLimit") ?? 5;
+    var emailSendWindowMinutes = builder.Configuration.GetValue<int?>("RateLimiting:EmailSendWindowMinutes") ?? 5;
 
     builder.Services.AddRateLimiter(options =>
     {
@@ -109,6 +111,21 @@ try
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0
             }));
+
+        // forgot-password / resend-confirmation: më i rreptë se "auth" qëllimisht — këto
+        // dy të vetmet endpoint-e publike e zgjedhin VETË kujt t'i dërgojnë email, kështu
+        // që 10/min do të lejonte të njëjtin IP të "provonte" dhjetëra adresa të ndryshme
+        // për minutë. Kjo shtresë kap enumerimin nga një IP i vetëm; kufizimi për-adresë
+        // (cooldown + tavan ditor, pavarësisht IP-së) jeton te IEmailAbuseGuard, jo këtu —
+        // 429-ja këtu s'zbulon asgjë për asnjë adresë specifike, thjesht "ky IP po ngutet".
+        options.AddPolicy("email-send", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = emailSendPermitLimit,
+                Window = TimeSpan.FromMinutes(emailSendWindowMinutes),
+                QueueLimit = 0
+            }));
     });
 
     var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
@@ -135,6 +152,20 @@ try
         Log.Warning(
             "Cloudinary:CloudName/ApiKey/ApiSecret mungojnë — ngarkimi i logos së klinikës do të dështojë " +
             "derisa të konfigurohen (p.sh. me Cloudinary__ApiSecret).");
+    }
+
+    // Vetëm jashtë Development-it: atje IEmailService është qëllimisht LoggingEmailService
+    // (shih AddInfrastructure), kështu që Resend s'përdoret fare dhe paralajmërimi do të
+    // ishte zhurmë e rreme, ndryshe nga Cloudinary që përdoret edhe lokalisht.
+    if (!builder.Environment.IsDevelopment())
+    {
+        var resendSection = builder.Configuration.GetSection("Resend");
+        if (string.IsNullOrWhiteSpace(resendSection["ApiKey"]) || string.IsNullOrWhiteSpace(resendSection["FromAddress"]))
+        {
+            Log.Warning(
+                "Resend:ApiKey/FromAddress mungojnë — dërgimi i email-eve (konfirmim llogarie, rivendosje " +
+                "fjalëkalimi, njoftime klinike) do të dështojë derisa të konfigurohen (p.sh. me Resend__ApiKey).");
+        }
     }
 
     builder.Services.AddHealthChecks()

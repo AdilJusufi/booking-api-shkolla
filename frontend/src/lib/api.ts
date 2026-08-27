@@ -233,6 +233,8 @@ export const api = {
     request<RegisterClinicResponse>('/api/auth/register-clinic', { method: 'POST', body: payload }),
   confirmEmail: (token: string, email: string) =>
     request<void>('/api/auth/confirm-email', { method: 'POST', body: { token, email } }),
+  resendConfirmation: (email: string) =>
+    request<void>('/api/auth/resend-confirmation', { method: 'POST', body: { email } }),
   forgotPassword: (email: string) =>
     request<void>('/api/auth/forgot-password', { method: 'POST', body: { email } }),
   resetPassword: (token: string, email: string, newPassword: string) =>

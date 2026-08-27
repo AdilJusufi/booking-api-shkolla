@@ -71,9 +71,15 @@ public class AuthController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// "email-send" jo "auth": ky endpoint dërgon email drejt një adrese arbitrare pa
+    /// autentikim, kështu që i nevojitet kufizim IP më i rreptë se login/register (shih
+    /// Program.cs). Vetë kufizimi për-adresë/global jeton te IEmailAbuseGuard brenda
+    /// AuthService — ky policy është vetëm shtresa e parë, kundër enumerimit të shpejtë.
+    /// </summary>
     [HttpPost("forgot-password")]
     [AllowAnonymous]
-    [EnableRateLimiting("auth")]
+    [EnableRateLimiting("email-send")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest request, CancellationToken cancellationToken)
     {
@@ -108,6 +114,17 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> ConfirmEmail(ConfirmEmailRequest request, CancellationToken cancellationToken)
     {
         await _authService.ConfirmEmailAsync(request, cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>Shih koment mbi ForgotPassword: e njëjta arsye për "email-send" në vend të "auth".</summary>
+    [HttpPost("resend-confirmation")]
+    [AllowAnonymous]
+    [EnableRateLimiting("email-send")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> ResendConfirmation(ResendConfirmationRequest request, CancellationToken cancellationToken)
+    {
+        await _authService.ResendConfirmationEmailAsync(request, cancellationToken);
         return NoContent();
     }
 }

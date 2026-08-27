@@ -102,6 +102,14 @@ public sealed class ForgotPasswordRequestValidator : AbstractValidator<ForgotPas
     }
 }
 
+public sealed class ResendConfirmationRequestValidator : AbstractValidator<ResendConfirmationRequest>
+{
+    public ResendConfirmationRequestValidator()
+    {
+        RuleFor(x => x.Email).NotEmpty().EmailAddress();
+    }
+}
+
 public sealed class ResetPasswordRequestValidator : AbstractValidator<ResetPasswordRequest>
 {
     public ResetPasswordRequestValidator()

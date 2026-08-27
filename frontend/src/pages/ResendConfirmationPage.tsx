@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, CheckCircle, ChevronLeft, Mail, Moon, Sun } from 'lucide-react'
-import { Trans, useTranslation } from 'react-i18next'
+import { useTranslation } from 'react-i18next'
 import { useTheme } from '../context/ThemeContext'
-import { useToast } from '../context/ToastContext'
 import { api, ApiError } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import { useCooldown } from '../lib/useCooldown'
@@ -12,35 +11,32 @@ import Logo from '../components/Logo'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-export default function ForgotPasswordPage() {
+export default function ResendConfirmationPage() {
   const { t: tCommon } = useTranslation('common')
   const { t } = useTranslation('auth')
   const { theme, toggleTheme } = useTheme()
-  const { notify } = useToast()
 
   const [email, setEmail] = useState('')
   const [fieldError, setFieldError] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
-  // "email-send" policy (forgot-password/resend-confirmation), jo "auth" — dritarja
-  // është 5 minuta, jo 1, shih Program.cs.
+  // "email-send" policy: dritare 5-minutëshe, jo 1 minutë si "auth" — shih Program.cs.
   const { secondsLeft: cooldown, startCooldown } = useCooldown(300)
 
-  // The endpoint returns 204 regardless of whether the email exists (by
-  // design, so the response never reveals which). Only a genuine failure —
-  // network, 429, 500 — should ever produce an error state here; success
-  // is the *only* thing that should ever set `sent`.
+  // Endpoint-i kthen 204 pavarësisht nëse adresa ekziston, është e pakonfirmuar,
+  // apo u kufizua — asnjë prej tyre s'duhet të prodhojë një gjendje të dukshme
+  // ndryshe nga suksesi. Vetëm një dështim i vërtetë (rrjet, 429, 500) prodhon gabim.
   async function submit() {
     setError('')
     setLoading(true)
     try {
-      await api.forgotPassword(email)
+      await api.resendConfirmation(email)
       setSent(true)
       startCooldown()
     } catch (err) {
       if (err instanceof ApiError && err.status === 429) startCooldown()
-      setError(getErrorMessage(err, { default: t('forgotPassword.sendFailure') }))
+      setError(getErrorMessage(err, { default: t('resendConfirmation.sendFailure') }))
     } finally {
       setLoading(false)
     }
@@ -50,23 +46,10 @@ export default function ForgotPasswordPage() {
     e.preventDefault()
     setFieldError('')
     if (!email.trim() || !EMAIL_RE.test(email)) {
-      setFieldError(t('forgotPassword.invalidEmail'))
+      setFieldError(t('resendConfirmation.invalidEmail'))
       return
     }
     submit()
-  }
-
-  async function handleResend() {
-    if (cooldown > 0) return
-    setError('')
-    try {
-      await api.forgotPassword(email)
-      notify(t('forgotPassword.resentToast'), 'ok')
-      startCooldown()
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 429) startCooldown()
-      setError(getErrorMessage(err, { default: t('forgotPassword.resendFailure') }))
-    }
   }
 
   const topRow = (
@@ -119,10 +102,10 @@ export default function ForgotPasswordPage() {
           {!sent ? (
             <>
               <h1 style={{ fontSize: '1.7rem', fontWeight: 800, color: 'var(--ink)' }}>
-                {t('forgotPassword.title')}
+                {t('resendConfirmation.title')}
               </h1>
               <p className="auth-sub" style={{ maxWidth: '34ch' }}>
-                {t('forgotPassword.subtitle')}
+                {t('resendConfirmation.subtitle')}
               </p>
 
               <form onSubmit={handleSubmit} className="form">
@@ -143,19 +126,19 @@ export default function ForgotPasswordPage() {
                 <button className="btn btn--primary btn--block" disabled={loading || cooldown > 0}>
                   {loading ? (
                     <>
-                      <Pending /> {t('forgotPassword.submitting')}
+                      <Pending /> {t('resendConfirmation.submitting')}
                     </>
                   ) : cooldown > 0 ? (
-                    t('forgotPassword.resendCountdown', { seconds: cooldown })
+                    t('resendConfirmation.resendCountdown', { seconds: cooldown })
                   ) : (
                     <>
-                      {t('forgotPassword.submit')} <ArrowRight size={16} strokeWidth={1.5} />
+                      {t('resendConfirmation.submit')} <ArrowRight size={16} strokeWidth={1.5} />
                     </>
                   )}
                 </button>
 
                 <p style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center', marginTop: 10 }}>
-                  {t('forgotPassword.spamHint')}
+                  {t('resendConfirmation.spamHint')}
                 </p>
               </form>
             </>
@@ -165,33 +148,16 @@ export default function ForgotPasswordPage() {
                 <Mail size={28} strokeWidth={1.5} />
               </div>
               <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--ink)', textAlign: 'center' }}>
-                {t('forgotPassword.checkEmailTitle')}
+                {t('resendConfirmation.checkEmailTitle')}
               </h1>
               <p
                 className="auth-sub"
                 style={{ maxWidth: '34ch', textAlign: 'center', marginInline: 'auto' }}
               >
-                <Trans
-                  i18nKey="forgotPassword.checkEmailBody"
-                  ns="auth"
-                  values={{ email }}
-                  components={[<strong key="0" />]}
-                />
+                {t('resendConfirmation.checkEmailBody')}
               </p>
 
               {error && <ErrorBox message={error} />}
-
-              <div className="auth-resend">
-                <span>{t('forgotPassword.notReceived')}</span>
-                <button
-                  type="button"
-                  className="btn btn--ghost btn--sm"
-                  disabled={cooldown > 0}
-                  onClick={handleResend}
-                >
-                  {cooldown > 0 ? t('forgotPassword.resendCountdown', { seconds: cooldown }) : t('forgotPassword.resend')}
-                </button>
-              </div>
 
               <p className="auth-alt" style={{ marginTop: 16 }}>
                 <Link to="/hyr" className="link-icon">
