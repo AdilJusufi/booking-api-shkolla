@@ -43,6 +43,9 @@ public sealed record AdminClinicDto
     /// bosh nëse s'i është caktuar ende asnjë.
     /// </summary>
     public required IReadOnlyList<ClinicAdministratorDto> Administrators { get; init; }
+
+    /// <summary>Qytetet e degëve të klinikës (pa duplikatë) — bosh nëse ende s'ka asnjë degë.</summary>
+    public required IReadOnlyList<string> Cities { get; init; }
 }
 
 /// <summary>

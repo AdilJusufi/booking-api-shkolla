@@ -74,7 +74,8 @@ public class SuperAdminService : ISuperAdminService
             }
         }
 
-        return ToAdminDto(clinic, administrators);
+        return ToAdminDto(
+            clinic, administrators, await ClinicBranchCityLookup.LoadForClinicAsync(_dbContext, clinicId, cancellationToken));
     }
 
     public async Task<AdminClinicDto> SetClinicActiveAsync(
@@ -90,7 +91,10 @@ public class SuperAdminService : ISuperAdminService
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
 
-        return ToAdminDto(clinic, await ClinicAdministratorLookup.LoadForClinicAsync(_dbContext, clinicId, cancellationToken));
+        return ToAdminDto(
+            clinic,
+            await ClinicAdministratorLookup.LoadForClinicAsync(_dbContext, clinicId, cancellationToken),
+            await ClinicBranchCityLookup.LoadForClinicAsync(_dbContext, clinicId, cancellationToken));
     }
 
     public async Task AssignClinicAdminAsync(
@@ -351,7 +355,8 @@ public class SuperAdminService : ISuperAdminService
         await _dbContext.Clinics.FirstOrDefaultAsync(c => c.Id == clinicId, cancellationToken)
         ?? throw new NotFoundException("Clinic", clinicId);
 
-    private static AdminClinicDto ToAdminDto(Clinic clinic, IReadOnlyList<ClinicAdministratorDto> administrators) => new()
+    private static AdminClinicDto ToAdminDto(
+        Clinic clinic, IReadOnlyList<ClinicAdministratorDto> administrators, IReadOnlyList<string> cities) => new()
     {
         Id = clinic.Id,
         Name = clinic.Name,
@@ -359,9 +364,11 @@ public class SuperAdminService : ISuperAdminService
         PhoneNumber = clinic.PhoneNumber,
         Email = clinic.Email,
         Website = clinic.Website,
+        LogoUrl = clinic.LogoUrl,
         IsApproved = clinic.IsApproved,
         IsActive = clinic.IsActive,
         CreatedAt = clinic.CreatedAt,
-        Administrators = administrators
+        Administrators = administrators,
+        Cities = cities
     };
 }

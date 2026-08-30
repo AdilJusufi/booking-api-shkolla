@@ -72,6 +72,11 @@
     "pageTitle": "Nema internet veze",
     "pageMessage": "Rezervo Mjekun zahteva internet vezu za prikaz termina i lekara. Proverite vezu i pokušajte ponovo."
   },
+  "errorBoundary": {
+    "pageTitle": "Nešto je pošlo po zlu",
+    "pageMessage": "Ova stranica je naišla na neočekivanu grešku. Osvežavanje obično rešava problem.",
+    "reloadCta": "Osveži stranicu"
+  },
   "pwaInstall": {
     "dismissAria": "Zatvori obaveštenje o instalaciji",
     "text": "Instalirajte Rezervo Mjekun za brži pristup",

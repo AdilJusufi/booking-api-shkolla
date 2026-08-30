@@ -310,6 +310,8 @@
     "createCta": "Kreiraj kliniku",
     "loadingLabel": "Učitavanje klinika",
     "emptyTitle": "Nijedna klinika nije pronađena sa ovim filterima.",
+    "emptyPendingHint": "Trenutno nema ničega na čekanju za pregled.",
+    "emptyFilterHint": "Probajte drugu pretragu ili filter.",
     "tabAll": "Sve",
     "tabApproved": "Odobrene",
     "tabPending": "Na čekanju",
@@ -323,12 +325,32 @@
     "statusPending": "NA ČEKANJU",
     "statusInactive": "NEAKTIVNO",
     "actionsAria": "Radnje",
-    "approveMenuItem": "Odobri",
+    "approveCta": "Odobri",
+    "rejectCta": "Odbij",
     "assignAdminMenuItem": "Dodeli admina",
     "deactivateMenuItem": "Deaktiviraj",
     "activateMenuItem": "Aktiviraj",
+    "viewDetailsMenuItem": "Prikaži detalje",
     "updatedToast": "Klinika je ažurirana.",
     "adminAssignedToast": "Administrator je dodeljen.",
+    "decision": {
+      "noCity": "Još nema registrovane filijale",
+      "noAdmin": "Još nema dodeljenog administratora"
+    },
+    "approveModal": {
+      "title": "Odobri kliniku",
+      "body": "<0>{{name}}</0> će odmah postati javno vidljiva i dostupna za zakazivanje. Proverite detalje pre nego što nastavite.",
+      "confirmCta": "Odobri kliniku",
+      "approvingCta": "Odobravanje…",
+      "toast": "{{name}} je odobrena i sada je javna."
+    },
+    "rejectModal": {
+      "title": "Odbij kliniku",
+      "body": "Ovo deaktivira <0>{{name}}</0> — ne postoji poseban status \"odbijeno\", pa će se pomeriti na karticu Neaktivne umesto da ostane Na čekanju. Neće postati javna osim ako se kasnije ponovo ne aktivira.",
+      "confirmCta": "Odbij kliniku",
+      "rejectingCta": "Odbijanje…",
+      "toast": "{{name}} je odbijena."
+    },
     "createModal": {
       "title": "Kreiraj novu kliniku",
       "nameLabel": "Naziv",

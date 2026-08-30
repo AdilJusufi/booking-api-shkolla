@@ -63,6 +63,8 @@ export function buildAdminClinic(overrides: Partial<AdminClinic> = {}): AdminCli
     isApproved: true,
     isActive: true,
     createdAt: '2026-07-21T19:35:46.075267Z',
+    administrators: [],
+    cities: ['Prishtinë'],
     ...overrides,
   }
 }
