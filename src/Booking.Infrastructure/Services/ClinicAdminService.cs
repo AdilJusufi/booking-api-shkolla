@@ -61,13 +61,15 @@ public class ClinicAdminService : IClinicAdminService
             .ToListAsync(cancellationToken);
 
         // Një query e vetme për të gjitha klinikat — pa N+1 për kolonën "Admin Klinikës".
-        var adminsByClinic = await ClinicAdministratorLookup.LoadAsync(
-            _dbContext, clinics.Select(c => c.Id).ToList(), cancellationToken);
+        var clinicIds = clinics.Select(c => c.Id).ToList();
+        var adminsByClinic = await ClinicAdministratorLookup.LoadAsync(_dbContext, clinicIds, cancellationToken);
+        var citiesByClinic = await ClinicBranchCityLookup.LoadAsync(_dbContext, clinicIds, cancellationToken);
 
         return clinics
             .Select(c => ToAdminDto(
                 c,
-                adminsByClinic.TryGetValue(c.Id, out var admins) ? admins : []))
+                adminsByClinic.TryGetValue(c.Id, out var admins) ? admins : [],
+                citiesByClinic.TryGetValue(c.Id, out var cities) ? cities : []))
             .ToList();
     }
 
@@ -88,7 +90,7 @@ public class ClinicAdminService : IClinicAdminService
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         // Klinika e sapokrijuar s'ka ende administrator të caktuar.
-        return ToAdminDto(clinic, []);
+        return ToAdminDto(clinic, [], []);
     }
 
     public async Task<AdminClinicDto> UpdateClinicAsync(
@@ -112,7 +114,10 @@ public class ClinicAdminService : IClinicAdminService
             new { clinic.Name, clinic.Description, clinic.PhoneNumber, clinic.Email, clinic.Website, clinic.LogoUrl });
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return ToAdminDto(clinic, await ClinicAdministratorLookup.LoadForClinicAsync(_dbContext, clinicId, cancellationToken));
+        return ToAdminDto(
+            clinic,
+            await ClinicAdministratorLookup.LoadForClinicAsync(_dbContext, clinicId, cancellationToken),
+            await ClinicBranchCityLookup.LoadForClinicAsync(_dbContext, clinicId, cancellationToken));
     }
 
     public async Task<CloudinarySignatureDto> GenerateUploadSignatureAsync(
@@ -545,7 +550,8 @@ public class ClinicAdminService : IClinicAdminService
         public decimal Revenue { get; set; }
     }
 
-    private static AdminClinicDto ToAdminDto(Clinic clinic, IReadOnlyList<ClinicAdministratorDto> administrators) => new()
+    private static AdminClinicDto ToAdminDto(
+        Clinic clinic, IReadOnlyList<ClinicAdministratorDto> administrators, IReadOnlyList<string> cities) => new()
     {
         Id = clinic.Id,
         Name = clinic.Name,
@@ -557,6 +563,7 @@ public class ClinicAdminService : IClinicAdminService
         IsApproved = clinic.IsApproved,
         IsActive = clinic.IsActive,
         CreatedAt = clinic.CreatedAt,
-        Administrators = administrators
+        Administrators = administrators,
+        Cities = cities
     };
 }

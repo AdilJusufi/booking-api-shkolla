@@ -462,7 +462,14 @@ export interface UnavailabilityDto {
   reason?: string
 }
 
-/** Pasqyron AdminClinicDto — GET /api/admin/clinics nuk kthen adresë/qytet/numra, vetëm bazat. */
+/** Pasqyron ClinicAdministratorDto — administratori i caktuar për një klinikë. */
+export interface ClinicAdministrator {
+  userId: string
+  email: string
+  fullName: string
+}
+
+/** Pasqyron AdminClinicDto — GET /api/admin/clinics. */
 export interface AdminClinic {
   id: string
   name: string
@@ -474,6 +481,8 @@ export interface AdminClinic {
   isApproved: boolean
   isActive: boolean
   createdAt: string
+  administrators: ClinicAdministrator[]
+  cities: string[]
 }
 
 /** Pasqyron ClinicReportDto — GET /api/admin/clinics/{id}/report. */

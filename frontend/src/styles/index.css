@@ -491,14 +491,6 @@ textarea {
     background: rgba(255, 255, 255, 0.18);
   }
 }
-.theme-toggle--on-dark {
-  background: rgba(255, 255, 255, 0.1) !important;
-  color: #fff !important;
-}
-.theme-toggle--on-dark:hover {
-  background: rgba(255, 255, 255, 0.18) !important;
-}
-
 /* ============ Custom dropdown ============ */
 .dropdown {
   position: relative;
@@ -2711,10 +2703,6 @@ textarea {
 .patient-sidebar__spacer {
   flex: 1;
 }
-.patient-sidebar .theme-toggle {
-  width: 44px;
-  height: 44px;
-}
 .patient-sidebar .patient-avatar {
   width: 28px;
   height: 28px;
@@ -2864,6 +2852,23 @@ textarea {
   background: var(--primary);
   color: #fff;
   font-weight: 600;
+}
+.status-tab__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--warn);
+  color: #fff;
+}
+.status-tab.is-active .status-tab__count {
+  background: rgba(255, 255, 255, 0.25);
 }
 .appts-search {
   flex: 1;
@@ -6055,6 +6060,25 @@ textarea {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+}
+.sa-table__row--pending > td {
+  background: var(--warn-bg);
+  border-left: 3px solid var(--warn);
+}
+.sa-pending-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sa-pending-row__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sa-pending-row__actions {
+  display: flex;
+  gap: 8px;
 }
 .sa-table__json pre {
   background: var(--surface);

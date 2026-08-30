@@ -72,6 +72,11 @@
     "pageTitle": "No internet connection",
     "pageMessage": "Rezervo Mjekun needs an internet connection to show appointments and doctors. Check your connection and try again."
   },
+  "errorBoundary": {
+    "pageTitle": "Something went wrong",
+    "pageMessage": "This page ran into an unexpected error. Reloading usually fixes it.",
+    "reloadCta": "Reload page"
+  },
   "pwaInstall": {
     "dismissAria": "Dismiss the install notice",
     "text": "Install Rezervo Mjekun for faster access",

@@ -309,6 +309,8 @@
     "createCta": "Create Clinic",
     "loadingLabel": "Loading clinics",
     "emptyTitle": "No clinic found matching these filters.",
+    "emptyPendingHint": "Nothing waiting for review right now.",
+    "emptyFilterHint": "Try a different search or filter.",
     "tabAll": "All",
     "tabApproved": "Approved",
     "tabPending": "Pending",
@@ -322,12 +324,32 @@
     "statusPending": "PENDING",
     "statusInactive": "INACTIVE",
     "actionsAria": "Actions",
-    "approveMenuItem": "Approve",
+    "approveCta": "Approve",
+    "rejectCta": "Reject",
     "assignAdminMenuItem": "Assign Admin",
     "deactivateMenuItem": "Deactivate",
     "activateMenuItem": "Activate",
+    "viewDetailsMenuItem": "View Details",
     "updatedToast": "Clinic updated.",
     "adminAssignedToast": "Administrator assigned.",
+    "decision": {
+      "noCity": "No branch registered yet",
+      "noAdmin": "No administrator assigned yet"
+    },
+    "approveModal": {
+      "title": "Approve Clinic",
+      "body": "<0>{{name}}</0> will become publicly visible and bookable immediately. Make sure you've checked its details before continuing.",
+      "confirmCta": "Approve Clinic",
+      "approvingCta": "Approving…",
+      "toast": "{{name}} has been approved and is now public."
+    },
+    "rejectModal": {
+      "title": "Reject Clinic",
+      "body": "This deactivates <0>{{name}}</0> — there's no separate \"rejected\" state, so it will move to the Inactive tab instead of staying in Pending. It will never become public unless reactivated later.",
+      "confirmCta": "Reject Clinic",
+      "rejectingCta": "Rejecting…",
+      "toast": "{{name}} has been rejected."
+    },
     "createModal": {
       "title": "Create New Clinic",
       "nameLabel": "Name",

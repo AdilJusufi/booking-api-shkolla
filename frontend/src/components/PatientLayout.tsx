@@ -80,14 +80,6 @@ export default function PatientLayout() {
 
           <div className="patient-sidebar__spacer" />
 
-          <button
-            type="button"
-            className="theme-toggle theme-toggle--on-dark"
-            aria-label={theme === 'dark' ? tCommon('theme.switchToLight') : tCommon('theme.switchToDark')}
-            onClick={toggleTheme}
-          >
-            {theme === 'dark' ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}
-          </button>
           <span className="patient-avatar" aria-hidden>{userInitials}</span>
         </aside>
 

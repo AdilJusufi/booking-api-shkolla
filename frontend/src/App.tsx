@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Route, Routes } from 'react-router-dom'
+import { AlertTriangle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useOnlineStatus } from './pwa/useOnlineStatus'
 import OfflineFallback from './components/OfflineFallback'
+import ErrorBoundary from './components/ErrorBoundary'
+import Logo from './components/Logo'
 import Layout from './components/Layout'
 import PatientLayout from './components/PatientLayout'
 import DoctorLayout from './components/DoctorLayout'
@@ -62,7 +66,8 @@ export default function App() {
   }
 
   return (
-    <Routes>
+    <ErrorBoundary fallback={<RouteCrashFallback />}>
+      <Routes>
       <Route path="/hyr" element={<LoginPage />} />
       <Route path="/konfirmo-email" element={<ConfirmEmailPage />} />
       <Route path="/konfirmo-email/ridergo" element={<ResendConfirmationPage />} />
@@ -133,6 +138,29 @@ export default function App() {
         <Route path="/kushtet-e-perdorimit" element={<TermsOfServicePage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
-    </Routes>
+      </Routes>
+    </ErrorBoundary>
+  )
+}
+
+function RouteCrashFallback() {
+  const { t } = useTranslation('common')
+  return (
+    <div className="offline-page">
+      <span className="offline-page__brand">
+        <Logo variant="stacked" size={48} />
+      </span>
+
+      <div className="icon-circle icon-circle--danger">
+        <AlertTriangle size={26} strokeWidth={1.5} />
+      </div>
+
+      <h1>{t('errorBoundary.pageTitle')}</h1>
+      <p className="auth-sub">{t('errorBoundary.pageMessage')}</p>
+
+      <button type="button" className="btn btn--primary" onClick={() => window.location.reload()}>
+        {t('errorBoundary.reloadCta')}
+      </button>
+    </div>
   )
 }

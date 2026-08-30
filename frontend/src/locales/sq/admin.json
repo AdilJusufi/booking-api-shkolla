@@ -309,6 +309,8 @@
     "createCta": "Krijo Klinikë",
     "loadingLabel": "Duke ngarkuar klinikat",
     "emptyTitle": "Nuk u gjet asnjë klinikë me këto filtra.",
+    "emptyPendingHint": "Asgjë në pritje për shqyrtim tani.",
+    "emptyFilterHint": "Provoni një kërkim ose filtër tjetër.",
     "tabAll": "Të gjitha",
     "tabApproved": "Aprovuar",
     "tabPending": "Në pritje",
@@ -322,12 +324,32 @@
     "statusPending": "NË PRITJE",
     "statusInactive": "JOAKTIVE",
     "actionsAria": "Veprimet",
-    "approveMenuItem": "Aprovo",
+    "approveCta": "Aprovo",
+    "rejectCta": "Refuzo",
     "assignAdminMenuItem": "Cakto Admin",
     "deactivateMenuItem": "Çaktivizo",
     "activateMenuItem": "Aktivizo",
+    "viewDetailsMenuItem": "Shiko Detajet",
     "updatedToast": "Klinika u përditësua.",
     "adminAssignedToast": "Administratori u caktua.",
+    "decision": {
+      "noCity": "Ende s'ka asnjë degë të regjistruar",
+      "noAdmin": "Ende s'ka administrator të caktuar"
+    },
+    "approveModal": {
+      "title": "Aprovo Klinikën",
+      "body": "<0>{{name}}</0> do të bëhet publike dhe e rezervueshme menjëherë. Sigurohu që i ke kontrolluar detajet përpara se të vazhdosh.",
+      "confirmCta": "Aprovo Klinikën",
+      "approvingCta": "Duke aprovuar…",
+      "toast": "{{name}} u aprovua dhe tani është publike."
+    },
+    "rejectModal": {
+      "title": "Refuzo Klinikën",
+      "body": "Kjo e çaktivizon <0>{{name}}</0> — s'ka status të veçantë \"e refuzuar\", prandaj do të kalojë te skeda Joaktive në vend që të mbetet Në pritje. S'do të bëhet publike përveçse nëse aktivizohet përsëri.",
+      "confirmCta": "Refuzo Klinikën",
+      "rejectingCta": "Duke refuzuar…",
+      "toast": "{{name}} u refuzua."
+    },
     "createModal": {
       "title": "Krijo Klinikë të Re",
       "nameLabel": "Emri",

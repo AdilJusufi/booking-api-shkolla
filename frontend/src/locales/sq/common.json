@@ -72,6 +72,11 @@
     "pageTitle": "Nuk keni lidhje me internetin",
     "pageMessage": "Rezervo Mjekun ka nevojë për lidhje interneti për të shfaqur terminet dhe mjekët. Kontrolloni lidhjen tuaj dhe provoni përsëri."
   },
+  "errorBoundary": {
+    "pageTitle": "Diçka shkoi keq",
+    "pageMessage": "Kjo faqe hasi një gabim të papritur. Rifreskimi zakonisht e zgjidh problemin.",
+    "reloadCta": "Rifresko faqen"
+  },
   "pwaInstall": {
     "dismissAria": "Mbyll njoftimin e instalimit",
     "text": "Instaloni Rezervo Mjekun për qasje më të shpejtë",
