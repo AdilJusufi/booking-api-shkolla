@@ -1,9 +1,10 @@
 import { Outlet } from 'react-router-dom'
-import { Bell, Moon, Sun } from 'lucide-react'
+import { Moon, Sun } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '../context/ThemeContext'
 import { AdminBreadcrumbProvider, useAdminBreadcrumb } from '../context/AdminBreadcrumbContext'
 import Logo from './Logo'
+import NotificationsBell from './NotificationsBell'
 import UserMenu from './UserMenu'
 
 export default function AdminLayout() {
@@ -38,9 +39,7 @@ function AdminLayoutInner() {
           >
             {theme === 'dark' ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}
           </button>
-          <button type="button" className="admin-icon-btn" aria-label={t('layout.notificationsAria')}>
-            <Bell size={18} strokeWidth={1.5} />
-          </button>
+          <NotificationsBell />
           <div className="admin-account">
             <UserMenu />
           </div>

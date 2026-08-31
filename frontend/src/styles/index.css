@@ -4964,7 +4964,9 @@ textarea {
   width: 100%;
   max-width: 440px;
   max-height: 90dvh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   animation: modal-rise 0.34s var(--ease-spring);
 }
 .modal--lg {
@@ -4986,9 +4988,8 @@ textarea {
   align-items: center;
   padding: 18px 20px;
   border-bottom: 1px solid var(--line);
-  position: sticky;
-  top: 0;
   background: var(--surface);
+  flex-shrink: 0;
 }
 .modal__header h3 {
   font-size: 16px;
@@ -5008,6 +5009,9 @@ textarea {
 }
 .modal__body {
   padding: 20px;
+  overflow-y: auto;
+  /* Lejon zvogëlimin nën përmbajtjen natyrale — pa këtë, flex child nuk scrollohet. */
+  min-height: 0;
 }
 
 /* ============ Admin panel (theme-aware shell, with deeper dark variant) ============ */
@@ -6276,6 +6280,52 @@ textarea {
   z-index: 200;
   overflow: hidden;
   animation: modal-rise 0.24s var(--ease-spring);
+}
+.notif-bell {
+  position: relative;
+}
+.notif-bell__panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 260px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  z-index: 200;
+  overflow: hidden;
+  animation: modal-rise 0.24s var(--ease-spring);
+}
+.notif-bell__header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.notif-bell__empty {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.notif-bell__empty-badge {
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--primary);
+  background: var(--primary-050);
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+.notif-bell__empty p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.4;
 }
 .user-menu__header {
   padding: 14px 16px 12px;

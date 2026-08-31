@@ -51,6 +51,66 @@ public class LoggingAppointmentNotificationService : IAppointmentNotificationSer
             $"Ju kujtojmë terminin te {context.DoctorName} ({context.ClinicName}) më {context.StartDateTimeLocal:dd.MM.yyyy HH:mm}.",
             cancellationToken);
 
+    public Task AppointmentUnavailabilityConflictAsync(AppointmentNotificationContext context, CancellationToken cancellationToken = default) =>
+        SendAsync(context, "Mundësi konflikti me terminin tuaj",
+            $"Doktori juaj shënoi paarritshmëri që përplaset me terminin tuaj te {context.DoctorName} më " +
+            $"{context.StartDateTimeLocal:dd.MM.yyyy HH:mm}. Klinika {context.ClinicName} do t'ju kontaktojë për riplanifikim.",
+            cancellationToken);
+
+    public Task AppointmentCreatedForStaffAsync(AppointmentStaffNotificationContext context, CancellationToken cancellationToken = default) =>
+        SendStaffAsync(context, "Rezervim i ri",
+            $"{context.PatientName} rezervoi një termin te {context.DoctorName} ({context.ClinicName}) më " +
+            $"{context.StartDateTimeLocal:dd.MM.yyyy HH:mm}. Pret konfirmim.",
+            cancellationToken);
+
+    public Task AppointmentCancelledForStaffAsync(AppointmentStaffNotificationContext context, CancellationToken cancellationToken = default) =>
+        SendStaffAsync(context, "Termin i anuluar",
+            $"Termini i {context.PatientName} te {context.DoctorName} më {context.StartDateTimeLocal:dd.MM.yyyy HH:mm} u anulua.",
+            cancellationToken);
+
+    public Task AppointmentRescheduledForStaffAsync(AppointmentStaffNotificationContext context, CancellationToken cancellationToken = default) =>
+        SendStaffAsync(context, "Termin i riplanifikuar",
+            $"Termini i {context.PatientName} te {context.DoctorName} u zhvendos më {context.StartDateTimeLocal:dd.MM.yyyy HH:mm}.",
+            cancellationToken);
+
+    public Task AppointmentNoShowForStaffAsync(AppointmentStaffNotificationContext context, CancellationToken cancellationToken = default) =>
+        SendStaffAsync(context, "Pacienti nuk u paraqit",
+            $"{context.PatientName} nuk u paraqit te {context.DoctorName} për terminin e {context.StartDateTimeLocal:dd.MM.yyyy HH:mm}.",
+            cancellationToken);
+
+    public Task AppointmentUnavailabilityConflictForStaffAsync(AppointmentStaffNotificationContext context, CancellationToken cancellationToken = default) =>
+        SendStaffAsync(context, "Konflikt: paarritshmëri e re",
+            $"{context.DoctorName} shënoi paarritshmëri që përplaset me terminin e konfirmuar të {context.PatientName} më " +
+            $"{context.StartDateTimeLocal:dd.MM.yyyy HH:mm}. Kontaktoni pacientin për riplanifikim.",
+            cancellationToken);
+
+    /// <summary>
+    /// Një email për doktor (nëse s'e ka kryer ai vetë veprimin) dhe një për secilin
+    /// administrator klinike (nëse veprimi s'u krye nga vetë klinika) — dy audienca,
+    /// jo një broadcast i vetëm, sepse ClinicAdminEmails mund të ketë shumë marrës.
+    /// </summary>
+    private async Task SendStaffAsync(
+        AppointmentStaffNotificationContext context, string subject, string body, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation(
+            "Njoftim stafi për terminin {AppointmentId}: {Subject}", context.AppointmentId, subject);
+
+        var htmlBody = $"""<p style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#131718;">{System.Net.WebUtility.HtmlEncode(body)}</p>""";
+
+        if (!string.IsNullOrWhiteSpace(context.DoctorEmail))
+        {
+            await _emailService.SendAsync(context.DoctorEmail, subject, htmlBody, body, cancellationToken);
+        }
+
+        foreach (var clinicAdminEmail in context.ClinicAdminEmails)
+        {
+            if (!string.IsNullOrWhiteSpace(clinicAdminEmail))
+            {
+                await _emailService.SendAsync(clinicAdminEmail, subject, htmlBody, body, cancellationToken);
+            }
+        }
+    }
+
     private async Task SendAsync(
         AppointmentNotificationContext context, string subject, string body, CancellationToken cancellationToken)
     {

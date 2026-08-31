@@ -1,10 +1,13 @@
 using Booking.Application.Common.Exceptions;
 using Booking.Application.Common.Interfaces;
+using Booking.Application.Features.Appointments;
 using Booking.Application.Features.Schedules;
 using Booking.Domain.Entities;
+using Booking.Domain.Enums;
 using Booking.Domain.Exceptions;
 using Booking.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Booking.Infrastructure.Services;
 
@@ -12,11 +15,19 @@ public class ScheduleService : IScheduleService
 {
     private readonly BookingDbContext _dbContext;
     private readonly ITimeZoneService _timeZoneService;
+    private readonly IAppointmentNotificationService _notificationService;
+    private readonly ILogger<ScheduleService> _logger;
 
-    public ScheduleService(BookingDbContext dbContext, ITimeZoneService timeZoneService)
+    public ScheduleService(
+        BookingDbContext dbContext,
+        ITimeZoneService timeZoneService,
+        IAppointmentNotificationService notificationService,
+        ILogger<ScheduleService> logger)
     {
         _dbContext = dbContext;
         _timeZoneService = timeZoneService;
+        _notificationService = notificationService;
+        _logger = logger;
     }
 
     public async Task<Guid> GetDoctorIdForUserAsync(Guid userId, CancellationToken cancellationToken = default)
@@ -173,7 +184,86 @@ public class ScheduleService : IScheduleService
         var branchNames = await GetBranchNamesAsync(
             unavailability.ClinicBranchId is { } id ? [id] : [], cancellationToken);
 
+        await NotifyConflictingAppointmentsSafeAsync(doctorId, unavailability, cancellationToken);
+
         return ToDto(unavailability, branchNames);
+    }
+
+    /// <summary>
+    /// Deri tani asnjë kontroll s'ekzistonte: një paarritshmëri e re mund të përplasej në
+    /// heshtje me termine tashmë të konfirmuara. Këtu vetëm njoftohen pacienti i prekur dhe
+    /// klinika — nuk anulohet apo bllokohet vetë termini, sepse kjo do të ishte një ndryshim
+    /// i sjelljes më i madh se sa u kërkua; riplanifikimi mbetet veprim manual i klinikës.
+    /// </summary>
+    private async Task NotifyConflictingAppointmentsSafeAsync(
+        Guid doctorId, DoctorUnavailability unavailability, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var conflicting = await _dbContext.Appointments
+                .Where(a => a.DoctorId == doctorId
+                            && a.Status == AppointmentStatus.Confirmed
+                            && a.StartDateTime < unavailability.EndDateTime
+                            && a.EndDateTime > unavailability.StartDateTime
+                            && (unavailability.ClinicBranchId == null || a.ClinicBranchId == unavailability.ClinicBranchId))
+                .Select(a => new
+                {
+                    a.Id,
+                    a.ClinicId,
+                    ClinicName = a.Clinic.Name,
+                    ServiceName = a.MedicalService.Name,
+                    a.StartDateTime,
+                    PatientEmail = _dbContext.Users.Where(u => u.Id == a.PatientProfile.UserId).Select(u => u.Email).First(),
+                    PatientPhoneNumber = _dbContext.Users.Where(u => u.Id == a.PatientProfile.UserId).Select(u => u.PhoneNumber).First(),
+                    PatientName = _dbContext.Users.Where(u => u.Id == a.PatientProfile.UserId).Select(u => u.FirstName + " " + u.LastName).First()
+                })
+                .ToListAsync(cancellationToken);
+
+            if (conflicting.Count == 0)
+            {
+                return;
+            }
+
+            var doctorName = await _dbContext.Users
+                .Where(u => u.Id == _dbContext.Doctors.Where(d => d.Id == doctorId).Select(d => d.UserId).First())
+                .Select(u => u.FirstName + " " + u.LastName)
+                .FirstAsync(cancellationToken);
+
+            foreach (var appointment in conflicting)
+            {
+                var startLocal = _timeZoneService.ToLocal(appointment.StartDateTime);
+
+                await _notificationService.AppointmentUnavailabilityConflictAsync(new AppointmentNotificationContext
+                {
+                    AppointmentId = appointment.Id,
+                    PatientEmail = appointment.PatientEmail,
+                    PatientPhoneNumber = appointment.PatientPhoneNumber,
+                    PatientName = appointment.PatientName,
+                    DoctorName = doctorName,
+                    ClinicName = appointment.ClinicName,
+                    ServiceName = appointment.ServiceName,
+                    StartDateTimeLocal = startLocal
+                }, cancellationToken);
+
+                var clinicAdmins = await ClinicAdministratorLookup.LoadForClinicAsync(_dbContext, appointment.ClinicId, cancellationToken);
+
+                await _notificationService.AppointmentUnavailabilityConflictForStaffAsync(new AppointmentStaffNotificationContext
+                {
+                    AppointmentId = appointment.Id,
+                    PatientName = appointment.PatientName,
+                    DoctorName = doctorName,
+                    DoctorEmail = null,
+                    ClinicName = appointment.ClinicName,
+                    ClinicAdminEmails = clinicAdmins.Select(a => a.Email).ToList(),
+                    ServiceName = appointment.ServiceName,
+                    StartDateTimeLocal = startLocal
+                }, cancellationToken);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Njoftimi i konfliktit të paarritshmërisë dështoi për doktorin {DoctorId}", doctorId);
+        }
     }
 
     public async Task DeleteUnavailabilityAsync(Guid doctorId, Guid unavailabilityId, CancellationToken cancellationToken = default)

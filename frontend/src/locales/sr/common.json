@@ -24,6 +24,12 @@
     "switchToLight": "Prebaci na svetlu temu",
     "switchToDark": "Prebaci na tamnu temu"
   },
+  "notifications": {
+    "aria": "Obaveštenja",
+    "title": "Obaveštenja",
+    "emptyState": "Uskoro ćete ovde moći da vidite obaveštenja o terminima.",
+    "comingSoon": "Uskoro"
+  },
   "language": {
     "label": "Jezik",
     "sq": "Shqip",

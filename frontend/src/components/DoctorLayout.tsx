@@ -1,11 +1,12 @@
 import { Link, NavLink, Outlet, useMatch } from 'react-router-dom'
-import { Bell, CalendarDays, CalendarOff, Clock, Moon, Search, Sun } from 'lucide-react'
+import { CalendarDays, CalendarOff, Clock, Moon, Search, Sun } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { DoctorSearchProvider, useDoctorSearch } from '../context/DoctorSearchContext'
 import { initials } from './ui'
 import Logo from './Logo'
+import NotificationsBell from './NotificationsBell'
 import UserMenu from './UserMenu'
 
 export default function DoctorLayout() {
@@ -56,7 +57,7 @@ function DoctorLayoutInner() {
           >
             {theme === 'dark' ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}
           </button>
-          <Bell size={20} strokeWidth={1.5} color="var(--muted)" />
+          <NotificationsBell triggerClassName="theme-toggle" size={20} />
           <UserMenu />
         </div>
       </header>
