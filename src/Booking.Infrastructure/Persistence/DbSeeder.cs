@@ -65,12 +65,64 @@ public static class DbSeeder
         }
 
         await SeedRolesAsync(scope.ServiceProvider);
+        await SeedSpecialtiesAsync(dbContext, logger);
 
         if (configuration.GetValue<bool>("Seed:Enabled"))
         {
             await SeedDevelopmentDataAsync(scope.ServiceProvider, configuration, logger);
         }
     }
+
+    /// <summary>
+    /// Specializimet janë të dhëna referuese, jo test-data — aplikacioni s'funksionon pa to
+    /// (asnjë doktor apo shërbim s'krijohet dot pa specializim). Prandaj rrjedhin PA
+    /// varësi nga Seed:Enabled dhe ekzekutohen në çdo nisje.
+    ///
+    /// Idempotente në dy nivele: një ID fiks ekzistues (Dentist/Pediatër, referuar nga
+    /// doktorët e seed-it) nuk prekët kurrë — as për ta rikrijuar, as për t'ia
+    /// mbishkruar emrin, sepse mund të jetë ndryshuar më pas nga SuperAdmin përmes UI-t
+    /// CRUD. Pjesa tjetër (pa ID fiks) kontrollohet përmes emrit, që të mos dyfishohet
+    /// nëse ekziston tashmë me një ID tjetër (p.sh. e krijuar dorazi nga SuperAdmin).
+    /// </summary>
+    private static async Task SeedSpecialtiesAsync(BookingDbContext dbContext, Microsoft.Extensions.Logging.ILogger logger)
+    {
+        var existing = await dbContext.Specialties
+            .Select(s => new { s.Id, s.Name })
+            .ToListAsync();
+        var existingIds = existing.Select(s => s.Id).ToHashSet();
+        var existingNames = new HashSet<string>(existing.Select(s => s.Name), StringComparer.OrdinalIgnoreCase);
+
+        var missing = ReferenceSpecialties
+            .Where(s => s.Id.HasValue ? !existingIds.Contains(s.Id.Value) : !existingNames.Contains(s.Name))
+            .ToList();
+
+        if (missing.Count == 0)
+        {
+            return;
+        }
+
+        dbContext.Specialties.AddRange(missing.Select(s => new Specialty
+        {
+            Id = s.Id ?? Guid.NewGuid(),
+            Name = s.Name,
+            Description = s.Description
+        }));
+
+        await dbContext.SaveChangesAsync();
+        logger.LogInformation("U shtuan {Count} specializime referuese që mungonin.", missing.Count);
+    }
+
+    private static readonly (Guid? Id, string Name, string Description)[] ReferenceSpecialties =
+    [
+        (Ids.SpecialtyDentist, "Stomatologji", "Kujdes për dhëmbët dhe gojën."),
+        (Ids.SpecialtyPediatrician, "Pediatri", "Kujdes shëndetësor për fëmijët."),
+        (null, "Oftalmologji", "Diagnostikim dhe trajtim i syve dhe shikimit."),
+        (null, "Dermatologji", "Diagnostikim dhe trajtim i lëkurës."),
+        (null, "Kardiologji", "Diagnostikim dhe trajtim i zemrës dhe sistemit vaskular."),
+        (null, "Gjinekologji", "Kujdes shëndetësor për femrat."),
+        (null, "Otorinolaringologji", "Diagnostikim dhe trajtim i veshëve, hundës dhe fytit."),
+        (null, "Mjekësi Familjare", "Kujdes shëndetësor i përgjithshëm për të gjitha moshat.")
+    ];
 
     private static async Task SeedRolesAsync(IServiceProvider serviceProvider)
     {
@@ -110,19 +162,8 @@ public static class DbSeeder
         // --- SuperAdmin ---
         var superAdmin = await CreateUserAsync(userManager, SuperAdminEmail, "Super", "Admin", superAdminPassword, Roles.SuperAdmin);
 
-        // --- Specializimet ---
-        var specialties = new List<Specialty>
-        {
-            new() { Id = Ids.SpecialtyDentist, Name = "Stomatologji", Description = "Kujdes për dhëmbët dhe gojën." },
-            new() { Id = Ids.SpecialtyPediatrician, Name = "Pediatri", Description = "Kujdes shëndetësor për fëmijët." },
-            new() { Name = "Oftalmologji", Description = "Diagnostikim dhe trajtim i syve dhe shikimit." },
-            new() { Name = "Dermatologji", Description = "Diagnostikim dhe trajtim i lëkurës." },
-            new() { Name = "Kardiologji", Description = "Diagnostikim dhe trajtim i zemrës dhe sistemit vaskular." },
-            new() { Name = "Gjinekologji", Description = "Kujdes shëndetësor për femrat." },
-            new() { Name = "Otorinolaringologji", Description = "Diagnostikim dhe trajtim i veshëve, hundës dhe fytit." },
-            new() { Name = "Mjekësi Familjare", Description = "Kujdes shëndetësor i përgjithshëm për të gjitha moshat." }
-        };
-        dbContext.Specialties.AddRange(specialties);
+        // Specializimet (Dentist/Pediatër, referuar më poshtë) tashmë janë seeduar
+        // pa kushte te SeedSpecialtiesAsync, i thirrur përpara kësaj metode.
 
         // --- Klinikat + degët (Prishtinë) ---
         dbContext.Clinics.AddRange(
@@ -298,7 +339,7 @@ public static class DbSeeder
         });
 
         await dbContext.SaveChangesAsync();
-        logger.LogInformation("Seed u krye: 2 klinika, 3 degë, 5 doktorë, {SpecialtyCount} specializime.", specialties.Count);
+        logger.LogInformation("Seed u krye: 2 klinika, 3 degë, 5 doktorë.");
     }
 
     private static async Task<ApplicationUser> CreateUserAsync(

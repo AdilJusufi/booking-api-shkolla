@@ -24,6 +24,12 @@
     "switchToLight": "Kalo në temën e çelët",
     "switchToDark": "Kalo në temën e errët"
   },
+  "notifications": {
+    "aria": "Njoftimet",
+    "title": "Njoftimet",
+    "emptyState": "Së shpejti do të mund t'i shihni këtu njoftimet për terminet tuaja.",
+    "comingSoon": "Së shpejti"
+  },
   "language": {
     "label": "Gjuha",
     "sq": "Shqip",

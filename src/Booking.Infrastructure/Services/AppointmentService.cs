@@ -164,6 +164,7 @@ public class AppointmentService : IAppointmentService
 
         var dto = await GetMyAppointmentByIdAsync(userId, appointment.Id, cancellationToken);
         await NotifySafeAsync(_notificationService.AppointmentCreatedAsync, userId, dto, cancellationToken);
+        await NotifyStaffSafeAsync(_notificationService.AppointmentCreatedForStaffAsync, userId, dto, cancellationToken);
         return dto;
     }
 
@@ -195,6 +196,7 @@ public class AppointmentService : IAppointmentService
 
         var dto = await GetMyAppointmentByIdAsync(userId, appointmentId, cancellationToken);
         await NotifySafeAsync(_notificationService.AppointmentCancelledAsync, userId, dto, cancellationToken);
+        await NotifyStaffSafeAsync(_notificationService.AppointmentCancelledForStaffAsync, userId, dto, cancellationToken);
         return dto;
     }
 
@@ -260,6 +262,7 @@ public class AppointmentService : IAppointmentService
 
         var dto = await GetMyAppointmentByIdAsync(userId, replacement.Id, cancellationToken);
         await NotifySafeAsync(_notificationService.AppointmentRescheduledAsync, userId, dto, cancellationToken);
+        await NotifyStaffSafeAsync(_notificationService.AppointmentRescheduledForStaffAsync, userId, dto, cancellationToken);
         return dto;
     }
 
@@ -375,6 +378,47 @@ public class AppointmentService : IAppointmentService
         {
             // Njoftimi nuk guxon ta rrëzojë rezervimin (kërkesa 14) — vetëm logohet.
             _logger.LogError(ex, "Njoftimi dështoi për terminin {AppointmentId}; rezervimi mbetet i vlefshëm", dto.Id);
+        }
+    }
+
+    /// <summary>
+    /// Pacienti e ka kryer veprimin — dyja audiencat (doktori dhe klinika) njoftohen.
+    /// Try/catch i veçantë nga NotifySafeAsync: dështimi këtu nuk guxon të bllokojë as
+    /// rezervimin, as njoftimin (tashmë të dërguar) të pacientit.
+    /// </summary>
+    private async Task NotifyStaffSafeAsync(
+        Func<AppointmentStaffNotificationContext, CancellationToken, Task> send,
+        Guid patientUserId, AppointmentDto dto, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var patientName = await _dbContext.Users
+                .Where(u => u.Id == patientUserId)
+                .Select(u => u.FirstName + " " + u.LastName)
+                .FirstAsync(cancellationToken);
+
+            var doctorEmail = await _dbContext.Doctors
+                .Where(d => d.Id == dto.DoctorId)
+                .Select(d => _dbContext.Users.Where(u => u.Id == d.UserId).Select(u => u.Email).First())
+                .FirstAsync(cancellationToken);
+
+            var clinicAdmins = await ClinicAdministratorLookup.LoadForClinicAsync(_dbContext, dto.ClinicId, cancellationToken);
+
+            await send(new AppointmentStaffNotificationContext
+            {
+                AppointmentId = dto.Id,
+                PatientName = patientName,
+                DoctorName = dto.DoctorName,
+                DoctorEmail = doctorEmail,
+                ClinicName = dto.ClinicName,
+                ClinicAdminEmails = clinicAdmins.Select(a => a.Email).ToList(),
+                ServiceName = dto.ServiceName,
+                StartDateTimeLocal = dto.StartDateTime
+            }, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Njoftimi i stafit dështoi për terminin {AppointmentId}; rezervimi mbetet i vlefshëm", dto.Id);
         }
     }
 

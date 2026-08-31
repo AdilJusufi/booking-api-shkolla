@@ -24,6 +24,12 @@
     "switchToLight": "Switch to light theme",
     "switchToDark": "Switch to dark theme"
   },
+  "notifications": {
+    "aria": "Notifications",
+    "title": "Notifications",
+    "emptyState": "You'll be able to see appointment notifications here soon.",
+    "comingSoon": "Coming soon"
+  },
   "language": {
     "label": "Language",
     "sq": "Shqip",

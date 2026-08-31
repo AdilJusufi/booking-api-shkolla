@@ -2,7 +2,6 @@
   "layout": {
     "panelBreadcrumb": "Dashboard",
     "myClinicsBreadcrumbFallback": "My Clinics",
-    "notificationsAria": "Notifications",
     "superAdminBreadcrumb": "Dashboard / Super Admin",
     "navClinics": "Clinics",
     "navSpecialties": "Specialties",
