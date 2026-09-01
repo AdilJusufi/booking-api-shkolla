@@ -3,13 +3,10 @@ import { Calendar, Clock, Info, Plus, Trash2 } from 'lucide-react'
 import { Trans, useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
-import type { CreateWorkingScheduleRequest, DoctorWorkingSchedule } from '../lib/types'
+import type { CreateWorkingScheduleRequest, DoctorBranch, DoctorWorkingSchedule } from '../lib/types'
 import { useToast } from '../context/ToastContext'
-import { CustomSelect, EmptyState, ErrorBox, Modal, SkeletonRows } from '../components/ui'
-import { monthName, weekdayName } from '../lib/format'
-
-// Display order Monday-first while the backend's DayOfWeek stays Sunday(0)..Saturday(6).
-const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0]
+import { CustomSelect, EmptyState, ErrorBox, Modal, SkeletonRows, TimeField, WeekdayMultiSelect } from '../components/ui'
+import { DAY_ORDER, monthName, weekdayName } from '../lib/format'
 
 function formatDatePill(iso?: string): string {
   if (!iso) return ''
@@ -24,9 +21,12 @@ function validityLabel(s: DoctorWorkingSchedule, t: (key: string, opts?: Record<
   return t('workingSchedule.validUntilOnly', { date: formatDatePill(s.validUntil) })
 }
 
+type ScheduleFormMode = 'single' | 'range'
+
 interface FormState {
   clinicBranchId: string
   dayOfWeek: string
+  selectedDays: number[]
   startTime: string
   endTime: string
   slotDurationMinutes: string
@@ -37,11 +37,18 @@ interface FormState {
 const EMPTY_FORM: FormState = {
   clinicBranchId: '',
   dayOfWeek: '1',
+  selectedDays: [],
   startTime: '09:00',
   endTime: '17:00',
   slotDurationMinutes: '30',
   validFrom: '',
   validUntil: '',
+}
+
+/** Per-day outcome of a range submission — kept visible until the user dismisses it, not a transient toast, since it can list several failures at once. */
+interface RangeSubmitResult {
+  succeededDays: number[]
+  failedDays: { day: number; message: string }[]
 }
 
 export default function WorkingSchedulePage() {
@@ -50,14 +57,17 @@ export default function WorkingSchedulePage() {
   const { notify } = useToast()
 
   const [schedules, setSchedules] = useState<DoctorWorkingSchedule[]>([])
+  const [branches, setBranches] = useState<DoctorBranch[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   const [showAddModal, setShowAddModal] = useState(false)
+  const [scheduleMode, setScheduleMode] = useState<ScheduleFormMode>('single')
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
   const [openField, setOpenField] = useState<'branch' | 'day' | null>(null)
+  const [rangeResult, setRangeResult] = useState<RangeSubmitResult | null>(null)
 
   const [deleteTarget, setDeleteTarget] = useState<DoctorWorkingSchedule | null>(null)
   const [actingId, setActingId] = useState('')
@@ -70,22 +80,25 @@ export default function WorkingSchedulePage() {
   function load() {
     setLoading(true)
     setError('')
-    api
-      .getWorkingSchedules()
-      .then(setSchedules)
+    Promise.all([api.getWorkingSchedules(), api.getMyBranches()])
+      .then(([scheduleList, branchList]) => {
+        setSchedules(scheduleList)
+        setBranches(branchList)
+      })
       .catch((e) => setError(getErrorMessage(e)))
       .finally(() => setLoading(false))
   }
 
   useEffect(load, [])
 
-  const branchOptions = useMemo(() => {
-    const seen = new Map<string, string>()
-    for (const s of schedules) {
-      if (!seen.has(s.clinicBranchId)) seen.set(s.clinicBranchId, s.branchName)
-    }
-    return Array.from(seen.entries()).map(([id, name]) => ({ id, name }))
-  }, [schedules])
+  // Branches come from the doctor's own DoctorClinicBranch assignments
+  // (getMyBranches), NOT derived from existing schedules — a doctor with
+  // branches but zero schedules yet (exactly the case this form exists for)
+  // would otherwise always see "no branches available".
+  const branchOptions = useMemo(
+    () => branches.map((b) => ({ id: b.branchId, name: b.branchName })),
+    [branches],
+  )
 
   const grouped = useMemo(() => {
     const map = new Map<number, DoctorWorkingSchedule[]>()
@@ -101,53 +114,94 @@ export default function WorkingSchedulePage() {
   function openAddModal() {
     setForm({ ...EMPTY_FORM, clinicBranchId: branchOptions[0]?.id ?? '' })
     setFormError('')
+    setScheduleMode('single')
+    setRangeResult(null)
     setShowAddModal(true)
   }
 
-  function updateField(key: keyof FormState, value: string) {
+  function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
+  }
+
+  /** Shared per-day validation — same rules for single-day and every day in range mode. */
+  function validateCommonFields(): string | null {
+    if (!form.clinicBranchId) return t('workingSchedule.validation.branchRequired')
+    if (form.endTime <= form.startTime) return t('workingSchedule.validation.endAfterStart')
+    const duration = Number(form.slotDurationMinutes)
+    if (!duration || duration < 5 || duration > 240) return t('workingSchedule.validation.durationRange')
+    if (form.validFrom && form.validUntil && form.validUntil < form.validFrom) {
+      return t('workingSchedule.validation.validUntilAfterFrom')
+    }
+    return null
+  }
+
+  function buildPayload(dayOfWeek: number): CreateWorkingScheduleRequest {
+    return {
+      clinicBranchId: form.clinicBranchId,
+      dayOfWeek,
+      startTime: `${form.startTime}:00`,
+      endTime: `${form.endTime}:00`,
+      slotDurationMinutes: Number(form.slotDurationMinutes),
+      validFrom: form.validFrom || undefined,
+      validUntil: form.validUntil || undefined,
+    }
   }
 
   async function handleCreate() {
     setFormError('')
-    if (!form.clinicBranchId) {
-      setFormError(t('workingSchedule.validation.branchRequired'))
-      return
-    }
-    if (form.endTime <= form.startTime) {
-      setFormError(t('workingSchedule.validation.endAfterStart'))
-      return
-    }
-    const duration = Number(form.slotDurationMinutes)
-    if (!duration || duration < 5 || duration > 240) {
-      setFormError(t('workingSchedule.validation.durationRange'))
-      return
-    }
-    if (form.validFrom && form.validUntil && form.validUntil < form.validFrom) {
-      setFormError(t('workingSchedule.validation.validUntilAfterFrom'))
+    setRangeResult(null)
+    const validationError = validateCommonFields()
+    if (validationError) return setFormError(validationError)
+
+    if (scheduleMode === 'single') {
+      setSaving(true)
+      try {
+        await api.createWorkingSchedule(buildPayload(Number(form.dayOfWeek)))
+        setShowAddModal(false)
+        notify(t('workingSchedule.createdToast'), 'ok')
+        load()
+      } catch (e) {
+        setFormError(getErrorMessage(e))
+      } finally {
+        setSaving(false)
+      }
       return
     }
 
-    const payload: CreateWorkingScheduleRequest = {
-      clinicBranchId: form.clinicBranchId,
-      dayOfWeek: Number(form.dayOfWeek),
-      startTime: `${form.startTime}:00`,
-      endTime: `${form.endTime}:00`,
-      slotDurationMinutes: duration,
-      validFrom: form.validFrom || undefined,
-      validUntil: form.validUntil || undefined,
-    }
+    // Range mode: each day is its own independent request, not a new bulk
+    // endpoint — the backend's overlap check is already scoped per (doctor,
+    // branch, dayOfWeek), so different days structurally can't conflict with
+    // each other in one submission, and the desired UX (partial success, no
+    // rollback) is exactly what N independent calls give for free. Fired in
+    // parallel via allSettled rather than sequentially — same round trips
+    // either way, but faster and simpler than threading an abort-on-first-
+    // failure loop.
+    if (form.selectedDays.length === 0) return setFormError(t('workingSchedule.validation.daysRequired'))
 
     setSaving(true)
-    try {
-      await api.createWorkingSchedule(payload)
+    const results = await Promise.allSettled(
+      form.selectedDays.map((day) => api.createWorkingSchedule(buildPayload(day))),
+    )
+    setSaving(false)
+
+    const succeededDays: number[] = []
+    const failedDays: { day: number; message: string }[] = []
+    results.forEach((r, i) => {
+      const day = form.selectedDays[i]
+      if (r.status === 'fulfilled') succeededDays.push(day)
+      else failedDays.push({ day, message: getErrorMessage(r.reason) })
+    })
+
+    load() // whatever succeeded should show up behind the modal even if some failed
+
+    if (failedDays.length === 0) {
       setShowAddModal(false)
-      notify(t('workingSchedule.createdToast'), 'ok')
-      load()
-    } catch (e) {
-      setFormError(getErrorMessage(e))
-    } finally {
-      setSaving(false)
+      notify(t('workingSchedule.rangeCreatedToast', { count: succeededDays.length }), 'ok')
+    } else {
+      // Kept in the modal (not a toast) — a toast disappears in 4s, and a
+      // partial-failure result with per-day reasons deserves to stay visible
+      // until the user has actually read it and decided what to do next.
+      setRangeResult({ succeededDays, failedDays })
     }
   }
 
@@ -269,6 +323,53 @@ export default function WorkingSchedulePage() {
       {showAddModal && (
         <Modal title={t('workingSchedule.addModalTitle')} onClose={() => setShowAddModal(false)}>
           {formError && <ErrorBox message={formError} />}
+
+          {rangeResult && (
+            <div className="range-result">
+              {rangeResult.succeededDays.length > 0 && (
+                <p className="range-result__success">
+                  <Trans
+                    i18nKey="workingSchedule.rangePartialSuccess"
+                    ns="doctor"
+                    values={{
+                      count: rangeResult.succeededDays.length,
+                      total: rangeResult.succeededDays.length + rangeResult.failedDays.length,
+                    }}
+                    components={[<strong key="0" />]}
+                  />
+                </p>
+              )}
+              <ul className="range-result__failures">
+                {rangeResult.failedDays.map(({ day, message }) => (
+                  <li key={day}>
+                    <strong>{weekdayName(day)}</strong>: {message}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="tabs" role="tablist" aria-label={t('workingSchedule.modeLabel')}>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={scheduleMode === 'single'}
+              className={`tab ${scheduleMode === 'single' ? 'is-active' : ''}`}
+              onClick={() => { setScheduleMode('single'); setRangeResult(null) }}
+            >
+              {t('workingSchedule.modeSingle')}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={scheduleMode === 'range'}
+              className={`tab ${scheduleMode === 'range' ? 'is-active' : ''}`}
+              onClick={() => { setScheduleMode('range'); setRangeResult(null) }}
+            >
+              {t('workingSchedule.modeRange')}
+            </button>
+          </div>
+
           {branchOptions.length === 0 ? (
             <div className="field">
               <label>{t('workingSchedule.branchLabel')}</label>
@@ -289,26 +390,33 @@ export default function WorkingSchedulePage() {
             </div>
           )}
 
-          <div className="field">
-            <CustomSelect
-              label={t('workingSchedule.dayOfWeekLabel')}
-              options={dayOptions}
-              value={form.dayOfWeek}
-              onChange={(v) => updateField('dayOfWeek', v)}
-              open={openField === 'day'}
-              onOpenChange={(isOpen) => setOpenField(isOpen ? 'day' : null)}
-            />
-          </div>
+          {scheduleMode === 'single' ? (
+            <div className="field">
+              <CustomSelect
+                label={t('workingSchedule.dayOfWeekLabel')}
+                options={dayOptions}
+                value={form.dayOfWeek}
+                onChange={(v) => updateField('dayOfWeek', v)}
+                open={openField === 'day'}
+                onOpenChange={(isOpen) => setOpenField(isOpen ? 'day' : null)}
+              />
+            </div>
+          ) : (
+            <div className="field">
+              <label>{t('workingSchedule.daysLabel')}</label>
+              <WeekdayMultiSelect
+                selectedDays={form.selectedDays}
+                onChange={(days) => updateField('selectedDays', days)}
+                fromLabel={t('workingSchedule.rangeFromLabel')}
+                toLabel={t('workingSchedule.rangeToLabel')}
+                applyRangeCta={t('workingSchedule.rangeApplyCta')}
+              />
+            </div>
+          )}
 
           <div className="form-row">
-            <div className="field">
-              <label>{t('workingSchedule.startTimeLabel')}</label>
-              <input type="time" value={form.startTime} onChange={(e) => updateField('startTime', e.target.value)} />
-            </div>
-            <div className="field">
-              <label>{t('workingSchedule.endTimeLabel')}</label>
-              <input type="time" value={form.endTime} onChange={(e) => updateField('endTime', e.target.value)} />
-            </div>
+            <TimeField label={t('workingSchedule.startTimeLabel')} value={form.startTime} onChange={(v) => updateField('startTime', v)} />
+            <TimeField label={t('workingSchedule.endTimeLabel')} value={form.endTime} onChange={(v) => updateField('endTime', v)} />
           </div>
 
           <div className="field">
@@ -339,7 +447,11 @@ export default function WorkingSchedulePage() {
             disabled={saving || branchOptions.length === 0}
             onClick={handleCreate}
           >
-            {saving ? t('workingSchedule.saving') : t('workingSchedule.addScheduleSubmit')}
+            {saving
+              ? t('workingSchedule.saving')
+              : scheduleMode === 'single'
+                ? t('workingSchedule.addScheduleSubmit')
+                : t('workingSchedule.addRangeSubmit')}
           </button>
         </Modal>
       )}

@@ -49,6 +49,12 @@ public class AdminDoctorsController : ControllerBase
     public async Task<ActionResult<AdminDoctorDetailDto>> Activate(Guid id, CancellationToken cancellationToken) =>
         Ok(await _clinicAdminService.ActivateDoctorAsync(id, cancellationToken));
 
+    [HttpGet("{id:guid}/working-schedules")]
+    [ProducesResponseType(typeof(IReadOnlyList<WorkingScheduleDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<WorkingScheduleDto>>> GetSchedules(
+        Guid id, CancellationToken cancellationToken) =>
+        Ok(await _clinicAdminService.GetDoctorSchedulesAsync(id, cancellationToken));
+
     [HttpPost("{id:guid}/working-schedules")]
     [ProducesResponseType(typeof(WorkingScheduleDto), StatusCodes.Status201Created)]
     public async Task<ActionResult<WorkingScheduleDto>> AddSchedule(

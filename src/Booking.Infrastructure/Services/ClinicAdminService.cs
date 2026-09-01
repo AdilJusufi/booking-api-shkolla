@@ -581,6 +581,14 @@ public class ClinicAdminService : IClinicAdminService
         return await QueryDoctorDetails(d => d.Id == doctorId).FirstAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<WorkingScheduleDto>> GetDoctorSchedulesAsync(
+        Guid doctorId, CancellationToken cancellationToken = default)
+    {
+        await _tenantAccess.EnsureCanManageDoctorAsync(doctorId, cancellationToken);
+
+        return await _scheduleService.GetSchedulesAsync(doctorId, cancellationToken);
+    }
+
     public async Task<WorkingScheduleDto> AddDoctorScheduleAsync(
         Guid doctorId, CreateWorkingScheduleRequest request, CancellationToken cancellationToken = default)
     {

@@ -1,6 +1,7 @@
 using Booking.Application.Common.Exceptions;
 using Booking.Application.Common.Interfaces;
 using Booking.Application.Features.Appointments;
+using Booking.Application.Features.Doctors;
 using Booking.Application.Features.Schedules;
 using Booking.Domain.Entities;
 using Booking.Domain.Enums;
@@ -38,6 +39,24 @@ public class ScheduleService : IScheduleService
             .FirstOrDefaultAsync(cancellationToken);
 
         return doctorId ?? throw new NotFoundException("Profili i doktorit nuk u gjet për këtë përdorues.");
+    }
+
+    public async Task<IReadOnlyList<DoctorBranchDto>> GetDoctorBranchesAsync(
+        Guid doctorId, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.DoctorClinicBranches
+            .Where(dcb => dcb.DoctorId == doctorId && dcb.IsActive && dcb.ClinicBranch.IsActive)
+            .OrderBy(dcb => dcb.ClinicBranch.Name)
+            .Select(dcb => new DoctorBranchDto
+            {
+                BranchId = dcb.ClinicBranchId,
+                BranchName = dcb.ClinicBranch.Name,
+                ClinicId = dcb.ClinicBranch.ClinicId,
+                ClinicName = dcb.ClinicBranch.Clinic.Name,
+                City = dcb.ClinicBranch.City,
+                Address = dcb.ClinicBranch.Address
+            })
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyList<WorkingScheduleDto>> GetSchedulesAsync(

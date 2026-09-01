@@ -5,7 +5,7 @@ import { api, ApiError } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import type { CreateUnavailabilityRequest, UnavailabilityDto } from '../lib/types'
 import { useToast } from '../context/ToastContext'
-import { CustomSelect, EmptyState, ErrorBox, Modal, SkeletonRows } from '../components/ui'
+import { CustomSelect, EmptyState, ErrorBox, Modal, SkeletonRows, TimeField } from '../components/ui'
 import { monthName, toDateInput, weekdayName } from '../lib/format'
 
 // GET /api/doctor/unavailability defaults to a 30-day forward window when no
@@ -51,7 +51,10 @@ function formatDuration(u: UnavailabilityDto, t: (key: string, opts?: Record<str
   return t('unavailability.durationDays', { count: days })
 }
 
-const EMPTY_FORM = { clinicBranchId: '', startDateTime: '', endDateTime: '', reason: '' }
+// Split date + time (rather than a single datetime-local value) so the time
+// portion can go through TimeField — see TimeField in ui.tsx for why
+// datetime-local's native time picker isn't used.
+const EMPTY_FORM = { clinicBranchId: '', startDate: '', startTime: '09:00', endDate: '', endTime: '17:00', reason: '' }
 
 export default function UnavailabilityPage() {
   const { t } = useTranslation('doctor')
@@ -288,9 +291,9 @@ function UnavailabilityFormModal({
   }
 
   async function handleSubmit() {
-    if (!form.startDateTime || !form.endDateTime) return setFormError(t('unavailability.validation.timesRequired'))
-    const start = new Date(form.startDateTime)
-    const end = new Date(form.endDateTime)
+    if (!form.startDate || !form.endDate) return setFormError(t('unavailability.validation.timesRequired'))
+    const start = new Date(`${form.startDate}T${form.startTime}`)
+    const end = new Date(`${form.endDate}T${form.endTime}`)
     if (end <= start) return setFormError(t('unavailability.validation.endAfterStart'))
     if (start < new Date()) return setFormError(t('unavailability.validation.notInPast'))
 
@@ -332,13 +335,19 @@ function UnavailabilityFormModal({
         />
       </div>
 
-      <div className="field">
-        <label>{t('unavailability.startLabel')}</label>
-        <input type="datetime-local" value={form.startDateTime} onChange={(e) => update('startDateTime', e.target.value)} />
+      <div className="form-row">
+        <div className="field">
+          <label>{t('unavailability.startLabel')}</label>
+          <input type="date" value={form.startDate} onChange={(e) => update('startDate', e.target.value)} />
+        </div>
+        <TimeField label={t('unavailability.startTimeLabel')} value={form.startTime} onChange={(v) => update('startTime', v)} />
       </div>
-      <div className="field">
-        <label>{t('unavailability.endLabel')}</label>
-        <input type="datetime-local" value={form.endDateTime} onChange={(e) => update('endDateTime', e.target.value)} />
+      <div className="form-row">
+        <div className="field">
+          <label>{t('unavailability.endLabel')}</label>
+          <input type="date" value={form.endDate} onChange={(e) => update('endDate', e.target.value)} />
+        </div>
+        <TimeField label={t('unavailability.endTimeLabel')} value={form.endTime} onChange={(v) => update('endTime', v)} />
       </div>
 
       <div className="field">
