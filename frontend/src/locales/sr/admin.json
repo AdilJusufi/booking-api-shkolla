@@ -126,7 +126,6 @@
     "filterAll": "Sve",
     "filterActive": "Aktivan",
     "filterInactive": "Neaktivan",
-    "featureInDevelopmentToast": "Funkcija u razvoju.",
     "card": {
       "statusActive": "AKTIVAN",
       "editAria": "Izmeni podatke",
@@ -141,10 +140,15 @@
       "branchesLabel": "OGRANCI:",
       "noBranchAssigned": "Nijedan ogranak nije dodeljen",
       "servicesLabel": "USLUGE:",
-      "noServiceAssigned": "Nijedna usluga nije dodeljena",
       "moreServicesCount": "+{{count}} više",
       "idLabel": "ID: {{id}}",
-      "manageScheduleCta": "Upravljaj rasporedom"
+      "manageScheduleCta": "Upravljaj rasporedom",
+      "statusInactive": "NEAKTIVAN",
+      "manageServicesMenuItem": "Upravljaj uslugama",
+      "activateMenuItem": "Reaktiviraj",
+      "deactivatedToast": "Dr. {{firstName}} {{lastName}} je deaktiviran.",
+      "reactivatedToast": "Dr. {{firstName}} {{lastName}} je reaktiviran.",
+      "noServiceAssignedCta": "Dodeli usluge"
     },
     "multiSelect": {
       "noOptions": "Nema dostupnih opcija."
@@ -216,7 +220,32 @@
       "addedToast": "Raspored je dodat."
     },
     "pendingTitle": "Klinika još uvek čeka odobrenje",
-    "pendingHint": "Upravljanje lekarima se otvara čim SuperAdmin odobri kliniku."
+    "pendingHint": "Upravljanje lekarima se otvara čim SuperAdmin odobri kliniku.",
+    "editModal": {
+      "title": "Izmeni podatke — Dr. {{firstName}} {{lastName}}",
+      "emailReadOnlyNote": "Email se ne može promeniti ovde — kontaktirajte SuperAdmin-a ako je pogrešan.",
+      "saveCta": "Sačuvaj izmene",
+      "savingCta": "Čuvanje…",
+      "savedToast": "Podaci su sačuvani."
+    },
+    "servicesModal": {
+      "title": "Usluge — Dr. {{firstName}} {{lastName}}",
+      "durationLabel": "Trajanje (min)",
+      "priceLabel": "Cena ({{currency}})",
+      "noneWarning": "Ovaj doktor nema dodeljenu nijednu uslugu — ne može se rezervisati dok ne izaberete bar jednu.",
+      "noClinicServices": "Klinika još nema kreiranih usluga. Prvo dodajte usluge na kartici \"Usluge\".",
+      "saveCta": "Sačuvaj usluge",
+      "savingCta": "Čuvanje…",
+      "savedToast": "Usluge su ažurirane."
+    },
+    "deactivateModal": {
+      "title": "Deaktiviraj — Dr. {{firstName}} {{lastName}}",
+      "confirmText": "Dr. {{firstName}} {{lastName}} će biti uklonjen iz javne pretrage i neće moći da prima nove rezervacije. Nastaviti?",
+      "deactivateCta": "Deaktiviraj",
+      "deactivatingCta": "Deaktiviranje…",
+      "cancelAppointmentsPrompt": "Da biste ipak deaktivirali, predstojeći termini moraju prvo biti otkazani — pogođeni pacijenti se automatski obaveštavaju.",
+      "cancelAndDeactivateCta": "Otkaži termine i deaktiviraj"
+    }
   },
   "services": {
     "pageTitle": "Usluge klinike",

@@ -126,7 +126,6 @@
     "filterAll": "Të gjitha",
     "filterActive": "Aktiv",
     "filterInactive": "Joaktiv",
-    "featureInDevelopmentToast": "Funksion në zhvillim.",
     "card": {
       "statusActive": "AKTIV",
       "editAria": "Ndrysho të dhënat",
@@ -140,10 +139,15 @@
       "branchesLabel": "DEGËT:",
       "noBranchAssigned": "Asnjë degë e caktuar",
       "servicesLabel": "SHËRBIMET:",
-      "noServiceAssigned": "Asnjë shërbim i caktuar",
       "moreServicesCount": "+{{count}} më shumë",
       "idLabel": "ID: {{id}}",
-      "manageScheduleCta": "Menaxho Orarin"
+      "manageScheduleCta": "Menaxho Orarin",
+      "statusInactive": "JOAKTIV",
+      "manageServicesMenuItem": "Menaxho shërbimet",
+      "activateMenuItem": "Riaktivizo",
+      "deactivatedToast": "Dr. {{firstName}} {{lastName}} u çaktivizua.",
+      "reactivatedToast": "Dr. {{firstName}} {{lastName}} u riaktivizua.",
+      "noServiceAssignedCta": "Cakto shërbime"
     },
     "multiSelect": {
       "noOptions": "Nuk ka opsione në dispozicion."
@@ -215,7 +219,32 @@
       "addedToast": "Orari u shtua."
     },
     "pendingTitle": "Klinika është ende në pritje të aprovimit",
-    "pendingHint": "Menaxhimi i mjekëve hapet sapo SuperAdmin ta aprovojë klinikën."
+    "pendingHint": "Menaxhimi i mjekëve hapet sapo SuperAdmin ta aprovojë klinikën.",
+    "editModal": {
+      "title": "Ndrysho të Dhënat — Dr. {{firstName}} {{lastName}}",
+      "emailReadOnlyNote": "Email-i nuk mund të ndryshohet këtu — kontaktoni SuperAdmin nëse është gabim.",
+      "saveCta": "Ruaj Ndryshimet",
+      "savingCta": "Duke ruajtur…",
+      "savedToast": "Të dhënat u ruajtën."
+    },
+    "servicesModal": {
+      "title": "Shërbimet — Dr. {{firstName}} {{lastName}}",
+      "durationLabel": "Kohëzgjatja (min)",
+      "priceLabel": "Çmimi ({{currency}})",
+      "noneWarning": "Ky doktor s’ka asnjë shërbim të caktuar — nuk mund të rezervohet derisa të zgjidhni së paku një.",
+      "noClinicServices": "Klinika nuk ka ende asnjë shërbim të krijuar. Shtoni shërbime te tabi \"Shërbimet\" së pari.",
+      "saveCta": "Ruaj Shërbimet",
+      "savingCta": "Duke ruajtur…",
+      "savedToast": "Shërbimet u përditësuan."
+    },
+    "deactivateModal": {
+      "title": "Çaktivizo — Dr. {{firstName}} {{lastName}}",
+      "confirmText": "Dr. {{firstName}} {{lastName}} do të hiqet nga kërkimi publik dhe s’do të mund të pranojë rezervime të reja. Vazhdo?",
+      "deactivateCta": "Çaktivizo",
+      "deactivatingCta": "Duke çaktivizuar…",
+      "cancelAppointmentsPrompt": "Për ta çaktivizuar gjithsesi, terminet e ardhshme duhet të anulohen — pacientët e prekur njoftohen automatikisht.",
+      "cancelAndDeactivateCta": "Anulo Terminet dhe Çaktivizo"
+    }
   },
   "services": {
     "pageTitle": "Shërbimet e Klinikës",

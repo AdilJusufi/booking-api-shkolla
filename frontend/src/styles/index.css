@@ -5982,6 +5982,73 @@ textarea {
   padding-top: 12px;
   border-top: 1px solid var(--line);
 }
+.doctor-admin-card--inactive {
+  opacity: 0.7;
+}
+.doctor-admin-card--inactive .doctor-admin-card__avatar {
+  background: var(--surface-sunk);
+  color: var(--muted);
+}
+
+/* A chip that doubles as a button — the "no service assigned" empty state, clickable to fix it. */
+.chip--actionable {
+  border: 1px dashed var(--line);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease-spring), color var(--dur) var(--ease-spring);
+}
+.chip--actionable:hover {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+
+.dropdown__option--danger:hover {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  color: var(--danger);
+}
+.dropdown__option--danger svg {
+  color: var(--danger);
+}
+
+/* ============ Doctor services modal — checklist with per-row overrides ============ */
+.doctor-services-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.doctor-services-row {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+}
+.doctor-services-row.is-enabled {
+  background: var(--surface-sunk);
+  border-color: var(--line);
+}
+.doctor-services-row__toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+}
+.doctor-services-row__toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+}
+.doctor-services-row__overrides {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 10px;
+  padding-left: 26px;
+}
 
 .doctor-form__section-title {
   font-size: 11px;

@@ -96,9 +96,15 @@ public class AdminClinicsController : ControllerBase
         return StatusCode(StatusCodes.Status201Created, service);
     }
 
+    [HttpGet("{id:guid}/doctors")]
+    [ProducesResponseType(typeof(IReadOnlyList<AdminDoctorDetailDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<AdminDoctorDetailDto>>> GetDoctors(
+        Guid id, CancellationToken cancellationToken) =>
+        Ok(await _clinicAdminService.GetDoctorsAsync(id, cancellationToken));
+
     [HttpPost("{id:guid}/doctors")]
-    [ProducesResponseType(typeof(AdminDoctorDto), StatusCodes.Status201Created)]
-    public async Task<ActionResult<AdminDoctorDto>> AddDoctor(
+    [ProducesResponseType(typeof(AdminDoctorDetailDto), StatusCodes.Status201Created)]
+    public async Task<ActionResult<AdminDoctorDetailDto>> AddDoctor(
         Guid id, CreateDoctorRequest request, CancellationToken cancellationToken)
     {
         var doctor = await _clinicAdminService.CreateDoctorAsync(id, request, cancellationToken);

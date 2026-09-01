@@ -246,21 +246,81 @@ export interface Doctor {
   specialties: string[]
 }
 
+export interface AdminDoctorSpecialty {
+  id: string
+  name: string
+}
+
+export interface AdminDoctorBranch {
+  id: string
+  name: string
+}
+
+/** Kohëzgjatja/çmimi janë EFEKTIVE (override i doktorit kur ekziston, përndryshe vlera bazë e shërbimit). */
+export interface AdminDoctorService {
+  medicalServiceId: string
+  name: string
+  durationMinutes: number
+  price: number
+  currency: string
+  customDurationMinutes?: number
+  customPrice?: number
+}
+
 /**
- * Pasqyron AdminDoctorDto — përgjigja e POST /api/admin/clinics/{id}/doctors.
- * Kjo ËSHTË E VETMJA thirrje që kthen userId/licenseNumber/isVerified/isActive —
- * nuk ekziston asnjë GET administrativ që i kthen këto fusha për doktorë
- * ekzistues, prandaj UI-ja e listës (ClinicDoctorsPage) nuk mund t'i shfaqë.
+ * Pasqyron AdminDoctorDetailDto — GET /api/admin/clinics/{id}/doctors dhe përgjigja e
+ * çdo krijimi/update/deactivate/activate. Ndryshe nga GET /api/clinics/{id}/doctors
+ * (publik), përfshin edhe doktorë joaktivë dhe fusha vetëm-administrative
+ * (email, phoneNumber, licenseNumber, isVerified, isActive).
  */
-export interface AdminDoctor {
+export interface AdminDoctorDetail {
   id: string
   userId: string
   firstName: string
   lastName: string
   email: string
+  phoneNumber?: string
   licenseNumber: string
+  biography?: string
+  yearsOfExperience: number
   isVerified: boolean
   isActive: boolean
+  specialties: AdminDoctorSpecialty[]
+  branches: AdminDoctorBranch[]
+  services: AdminDoctorService[]
+}
+
+/** Pasqyron UpdateDoctorRequest — PUT /api/admin/doctors/{id}. */
+export interface UpdateDoctorRequest {
+  firstName: string
+  lastName: string
+  phoneNumber: string
+  licenseNumber: string
+  biography?: string
+  yearsOfExperience: number
+  specialtyIds: string[]
+}
+
+/** Pasqyron UpdateDoctorBranchesRequest — PUT /api/admin/doctors/{id}/branches. Zëvendëson tërësisht. */
+export interface UpdateDoctorBranchesRequest {
+  branchIds: string[]
+}
+
+/** Override-et janë opsionale: undefined = përdoret çmimi/kohëzgjatja bazë e shërbimit. */
+export interface DoctorServiceAssignment {
+  medicalServiceId: string
+  customDurationMinutes?: number
+  customPrice?: number
+}
+
+/** Pasqyron UpdateDoctorServicesRequest — PUT /api/admin/doctors/{id}/services. Zëvendëson tërësisht. */
+export interface UpdateDoctorServicesRequest {
+  services: DoctorServiceAssignment[]
+}
+
+/** Pasqyron SetDoctorActiveRequest — POST /api/admin/doctors/{id}/deactivate. */
+export interface SetDoctorActiveRequest {
+  cancelFutureAppointments: boolean
 }
 
 /** Pasqyron CreateDoctorRequest — POST /api/admin/clinics/{id}/doctors. */

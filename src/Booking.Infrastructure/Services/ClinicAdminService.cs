@@ -4,6 +4,7 @@ using Booking.Application.Common.Exceptions;
 using Booking.Application.Common.Interfaces;
 using Booking.Application.Common.Security;
 using Booking.Application.Features.Admin;
+using Booking.Application.Features.Appointments;
 using Booking.Application.Features.Clinics;
 using Booking.Application.Features.Schedules;
 using Booking.Domain.Entities;
@@ -14,6 +15,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Booking.Infrastructure.Services;
@@ -28,6 +30,8 @@ public class ClinicAdminService : IClinicAdminService
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly CloudinarySettings _cloudinarySettings;
+    private readonly IAppointmentNotificationService _notificationService;
+    private readonly ILogger<ClinicAdminService> _logger;
 
     public ClinicAdminService(
         BookingDbContext dbContext,
@@ -37,7 +41,9 @@ public class ClinicAdminService : IClinicAdminService
         ITimeZoneService timeZoneService,
         IDateTimeProvider dateTimeProvider,
         UserManager<ApplicationUser> userManager,
-        IOptions<CloudinarySettings> cloudinarySettings)
+        IOptions<CloudinarySettings> cloudinarySettings,
+        IAppointmentNotificationService notificationService,
+        ILogger<ClinicAdminService> logger)
     {
         _dbContext = dbContext;
         _tenantAccess = tenantAccess;
@@ -47,6 +53,8 @@ public class ClinicAdminService : IClinicAdminService
         _dateTimeProvider = dateTimeProvider;
         _userManager = userManager;
         _cloudinarySettings = cloudinarySettings.Value;
+        _notificationService = notificationService;
+        _logger = logger;
     }
 
     public async Task<IReadOnlyList<AdminClinicDto>> GetMyClinicsAsync(CancellationToken cancellationToken = default)
@@ -235,7 +243,7 @@ public class ClinicAdminService : IClinicAdminService
         };
     }
 
-    public async Task<AdminDoctorDto> CreateDoctorAsync(
+    public async Task<AdminDoctorDetailDto> CreateDoctorAsync(
         Guid clinicId, CreateDoctorRequest request, CancellationToken cancellationToken = default)
     {
         await _tenantAccess.EnsureCanManageApprovedClinicAsync(clinicId, cancellationToken);
@@ -326,17 +334,251 @@ public class ClinicAdminService : IClinicAdminService
             new { doctor.LicenseNumber, ClinicId = clinicId, request.Email });
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return new AdminDoctorDto
+        return await QueryDoctorDetails(d => d.Id == doctor.Id).FirstAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Ndryshe nga GET /api/clinics/{id}/doctors (publik), këtu përfshihen edhe doktorët
+    /// joaktivë — admini duhet t'i shohë për t'i riaktivizuar, jo vetëm ata ende të kërkueshëm.
+    /// </summary>
+    public async Task<IReadOnlyList<AdminDoctorDetailDto>> GetDoctorsAsync(
+        Guid clinicId, CancellationToken cancellationToken = default)
+    {
+        await _tenantAccess.EnsureCanManageApprovedClinicAsync(clinicId, cancellationToken);
+
+        var doctors = await QueryDoctorDetails(d => d.DoctorClinicBranches.Any(dcb => dcb.ClinicBranch.ClinicId == clinicId))
+            .ToListAsync(cancellationToken);
+
+        return doctors.OrderBy(d => d.LastName).ThenBy(d => d.FirstName).ToList();
+    }
+
+    public async Task<AdminDoctorDetailDto> UpdateDoctorAsync(
+        Guid doctorId, UpdateDoctorRequest request, CancellationToken cancellationToken = default)
+    {
+        await _tenantAccess.EnsureCanManageDoctorAsync(doctorId, cancellationToken);
+
+        var doctor = await _dbContext.Doctors.FirstOrDefaultAsync(d => d.Id == doctorId, cancellationToken)
+            ?? throw new NotFoundException("Doctor", doctorId);
+        var user = await _dbContext.Users.FirstAsync(u => u.Id == doctor.UserId, cancellationToken);
+
+        var licenseTaken = await _dbContext.Doctors
+            .AnyAsync(d => d.Id != doctorId && d.LicenseNumber == request.LicenseNumber, cancellationToken);
+        if (licenseTaken)
         {
-            Id = doctor.Id,
-            UserId = user.Id,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            Email = user.Email!,
-            LicenseNumber = doctor.LicenseNumber,
-            IsVerified = doctor.IsVerified,
-            IsActive = doctor.IsActive
+            throw new ConflictException("license-exists", "Ky numër licence është i regjistruar tashmë.");
+        }
+
+        var requestedSpecialtyIds = request.SpecialtyIds.Distinct().ToList();
+        var validSpecialtyCount = await _dbContext.Specialties
+            .CountAsync(s => requestedSpecialtyIds.Contains(s.Id) && s.IsActive, cancellationToken);
+        if (validSpecialtyCount != requestedSpecialtyIds.Count)
+        {
+            throw new NotFoundException("Një ose më shumë specializime nuk ekzistojnë.");
+        }
+
+        var oldValues = new
+        {
+            doctor.LicenseNumber, doctor.Biography, doctor.YearsOfExperience,
+            user.FirstName, user.LastName, user.PhoneNumber
         };
+
+        user.FirstName = request.FirstName;
+        user.LastName = request.LastName;
+        user.PhoneNumber = request.PhoneNumber;
+
+        doctor.LicenseNumber = request.LicenseNumber;
+        doctor.Biography = request.Biography;
+        doctor.YearsOfExperience = request.YearsOfExperience;
+
+        var existingSpecialties = await _dbContext.DoctorSpecialties
+            .Where(ds => ds.DoctorId == doctorId)
+            .ToListAsync(cancellationToken);
+        var toRemove = existingSpecialties.Where(ds => !requestedSpecialtyIds.Contains(ds.SpecialtyId)).ToList();
+        var toAddIds = requestedSpecialtyIds.Except(existingSpecialties.Select(ds => ds.SpecialtyId)).ToList();
+        _dbContext.DoctorSpecialties.RemoveRange(toRemove);
+        foreach (var specialtyId in toAddIds)
+        {
+            _dbContext.DoctorSpecialties.Add(new DoctorSpecialty { DoctorId = doctorId, SpecialtyId = specialtyId });
+        }
+
+        _auditService.Record("DOCTOR_UPDATED", nameof(Doctor), doctorId.ToString(), oldValues,
+            new
+            {
+                doctor.LicenseNumber, doctor.Biography, doctor.YearsOfExperience,
+                user.FirstName, user.LastName, user.PhoneNumber
+            });
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return await QueryDoctorDetails(d => d.Id == doctorId).FirstAsync(cancellationToken);
+    }
+
+    public async Task<AdminDoctorDetailDto> UpdateDoctorBranchesAsync(
+        Guid doctorId, UpdateDoctorBranchesRequest request, CancellationToken cancellationToken = default)
+    {
+        await _tenantAccess.EnsureCanManageDoctorAsync(doctorId, cancellationToken);
+
+        var clinicId = await GetDoctorClinicIdAsync(doctorId, cancellationToken);
+
+        var clinicBranchIds = await _dbContext.ClinicBranches
+            .Where(b => b.ClinicId == clinicId)
+            .Select(b => b.Id)
+            .ToListAsync(cancellationToken);
+        if (request.BranchIds.Except(clinicBranchIds).Any())
+        {
+            throw new ForbiddenAccessException("Një ose më shumë degë nuk i përkasin kësaj klinike.");
+        }
+
+        var requestedIds = request.BranchIds.Distinct().ToList();
+        var existing = await _dbContext.DoctorClinicBranches
+            .Where(dcb => dcb.DoctorId == doctorId)
+            .ToListAsync(cancellationToken);
+        var toRemove = existing.Where(dcb => !requestedIds.Contains(dcb.ClinicBranchId)).ToList();
+        var toAddIds = requestedIds.Except(existing.Select(dcb => dcb.ClinicBranchId)).ToList();
+        _dbContext.DoctorClinicBranches.RemoveRange(toRemove);
+        foreach (var branchId in toAddIds)
+        {
+            _dbContext.DoctorClinicBranches.Add(new DoctorClinicBranch { DoctorId = doctorId, ClinicBranchId = branchId });
+        }
+
+        _auditService.Record("DOCTOR_BRANCHES_UPDATED", nameof(DoctorClinicBranch), doctorId.ToString(), null,
+            new { BranchIds = requestedIds });
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return await QueryDoctorDetails(d => d.Id == doctorId).FirstAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Vetëm sa asgjë s'e rezervon dot doktorin pa shërbime — shih raportin. Override-et
+    /// (kohëzgjatje/çmim) ekspozohen që tani: DoctorService i ka që në modelin e domain-it
+    /// dhe raporti i klinikës (GetReportAsync) tashmë i mbështetet për çmimin efektiv.
+    /// </summary>
+    public async Task<AdminDoctorDetailDto> UpdateDoctorServicesAsync(
+        Guid doctorId, UpdateDoctorServicesRequest request, CancellationToken cancellationToken = default)
+    {
+        await _tenantAccess.EnsureCanManageDoctorAsync(doctorId, cancellationToken);
+
+        var clinicId = await GetDoctorClinicIdAsync(doctorId, cancellationToken);
+
+        var requestedIds = request.Services.Select(s => s.MedicalServiceId).ToList();
+        var clinicServiceIds = await _dbContext.MedicalServices
+            .Where(s => s.ClinicId == clinicId)
+            .Select(s => s.Id)
+            .ToListAsync(cancellationToken);
+        if (requestedIds.Except(clinicServiceIds).Any())
+        {
+            throw new ForbiddenAccessException("Një ose më shumë shërbime nuk i përkasin kësaj klinike.");
+        }
+
+        var existing = await _dbContext.DoctorServices
+            .Where(ds => ds.DoctorId == doctorId)
+            .ToListAsync(cancellationToken);
+        var requestedById = request.Services.ToDictionary(s => s.MedicalServiceId);
+
+        var toRemove = existing.Where(ds => !requestedById.ContainsKey(ds.MedicalServiceId)).ToList();
+        _dbContext.DoctorServices.RemoveRange(toRemove);
+
+        foreach (var doctorService in existing.Where(ds => requestedById.ContainsKey(ds.MedicalServiceId)))
+        {
+            var assignment = requestedById[doctorService.MedicalServiceId];
+            doctorService.CustomDurationMinutes = assignment.CustomDurationMinutes;
+            doctorService.CustomPrice = assignment.CustomPrice;
+        }
+
+        var existingIds = existing.Select(ds => ds.MedicalServiceId).ToHashSet();
+        foreach (var assignment in request.Services.Where(a => !existingIds.Contains(a.MedicalServiceId)))
+        {
+            _dbContext.DoctorServices.Add(new DoctorService
+            {
+                DoctorId = doctorId,
+                MedicalServiceId = assignment.MedicalServiceId,
+                CustomDurationMinutes = assignment.CustomDurationMinutes,
+                CustomPrice = assignment.CustomPrice
+            });
+        }
+
+        _auditService.Record("DOCTOR_SERVICES_UPDATED", nameof(DoctorService), doctorId.ToString(), null,
+            new { ServiceIds = requestedIds });
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return await QueryDoctorDetails(d => d.Id == doctorId).FirstAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Bllokohet nëse doktori ka termine të ardhshme aktive dhe request nuk kërkon
+    /// shprehimisht anulimin e tyre — shih SetDoctorActiveRequest. Anulimi (kur kërkohet)
+    /// dhe njoftimi i pacientëve ndodhin PAS ruajtjes së çaktivizimit; dështimi i një email-i
+    /// nuk e zhbën çaktivizimin, i cili tashmë është kryer.
+    /// </summary>
+    public async Task<AdminDoctorDetailDto> DeactivateDoctorAsync(
+        Guid doctorId, SetDoctorActiveRequest request, CancellationToken cancellationToken = default)
+    {
+        await _tenantAccess.EnsureCanManageDoctorAsync(doctorId, cancellationToken);
+
+        var doctor = await _dbContext.Doctors.FirstOrDefaultAsync(d => d.Id == doctorId, cancellationToken)
+            ?? throw new NotFoundException("Doctor", doctorId);
+
+        if (!doctor.IsActive)
+        {
+            return await QueryDoctorDetails(d => d.Id == doctorId).FirstAsync(cancellationToken);
+        }
+
+        var utcNow = _dateTimeProvider.UtcNow;
+        var futureBlocking = await _dbContext.Appointments
+            .Where(a => a.DoctorId == doctorId
+                        && Appointment.BlockingStatuses.Contains(a.Status)
+                        && a.StartDateTime > utcNow)
+            .ToListAsync(cancellationToken);
+
+        if (futureBlocking.Count > 0 && !request.CancelFutureAppointments)
+        {
+            throw new ConflictException(
+                "doctor-has-future-appointments",
+                $"Doktori ka {futureBlocking.Count} termine të ardhshme aktive. " +
+                "Kërkoni shprehimisht anulimin e tyre për ta çaktivizuar.");
+        }
+
+        doctor.IsActive = false;
+        _auditService.Record("DOCTOR_DEACTIVATED", nameof(Doctor), doctorId.ToString(),
+            new { IsActive = true }, new { IsActive = false, CancelledAppointmentCount = futureBlocking.Count });
+
+        var appointmentIdsToNotify = new List<Guid>();
+        foreach (var appointment in futureBlocking)
+        {
+            appointment.Status = AppointmentStatus.CancelledByClinic;
+            appointment.CancellationReason = "Doktori nuk është më aktiv në klinikë.";
+            appointment.CancelledByUserId = _tenantAccess.CurrentUserId;
+            appointment.CancelledAt = utcNow;
+            appointmentIdsToNotify.Add(appointment.Id);
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        foreach (var appointmentId in appointmentIdsToNotify)
+        {
+            await NotifyPatientCancelledSafeAsync(appointmentId, cancellationToken);
+        }
+
+        return await QueryDoctorDetails(d => d.Id == doctorId).FirstAsync(cancellationToken);
+    }
+
+    public async Task<AdminDoctorDetailDto> ActivateDoctorAsync(
+        Guid doctorId, CancellationToken cancellationToken = default)
+    {
+        await _tenantAccess.EnsureCanManageDoctorAsync(doctorId, cancellationToken);
+
+        var doctor = await _dbContext.Doctors.FirstOrDefaultAsync(d => d.Id == doctorId, cancellationToken)
+            ?? throw new NotFoundException("Doctor", doctorId);
+
+        if (!doctor.IsActive)
+        {
+            doctor.IsActive = true;
+            _auditService.Record("DOCTOR_ACTIVATED", nameof(Doctor), doctorId.ToString(),
+                new { IsActive = false }, new { IsActive = true });
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        return await QueryDoctorDetails(d => d.Id == doctorId).FirstAsync(cancellationToken);
     }
 
     public async Task<WorkingScheduleDto> AddDoctorScheduleAsync(
@@ -548,6 +790,102 @@ public class ClinicAdminService : IClinicAdminService
         public int Cancelled { get; set; }
         public int NoShow { get; set; }
         public decimal Revenue { get; set; }
+    }
+
+    /// <summary>Klinika e vetme e doktorit, e nxjerrë nga degët e tij aktuale — çdo doktor punon në degë të një klinike të vetme.</summary>
+    private async Task<Guid> GetDoctorClinicIdAsync(Guid doctorId, CancellationToken cancellationToken) =>
+        await _dbContext.DoctorClinicBranches
+            .Where(dcb => dcb.DoctorId == doctorId)
+            .Select(dcb => dcb.ClinicBranch.ClinicId)
+            .FirstAsync(cancellationToken);
+
+    /// <summary>
+    /// Projeksioni i plotë i AdminDoctorDetailDto — i ndarë sepse e përdorin krijimi,
+    /// lista dhe çdo update/deactivate/activate, që të kthejnë gjithmonë të njëjtën pamje.
+    /// </summary>
+    private IQueryable<AdminDoctorDetailDto> QueryDoctorDetails(
+        System.Linq.Expressions.Expression<Func<Doctor, bool>> predicate)
+    {
+        return _dbContext.Doctors
+            .Where(predicate)
+            .Select(d => new AdminDoctorDetailDto
+            {
+                Id = d.Id,
+                UserId = d.UserId,
+                FirstName = _dbContext.Users.Where(u => u.Id == d.UserId).Select(u => u.FirstName).First(),
+                LastName = _dbContext.Users.Where(u => u.Id == d.UserId).Select(u => u.LastName).First(),
+                Email = _dbContext.Users.Where(u => u.Id == d.UserId).Select(u => u.Email!).First(),
+                PhoneNumber = _dbContext.Users.Where(u => u.Id == d.UserId).Select(u => u.PhoneNumber).First(),
+                LicenseNumber = d.LicenseNumber,
+                Biography = d.Biography,
+                YearsOfExperience = d.YearsOfExperience,
+                IsVerified = d.IsVerified,
+                IsActive = d.IsActive,
+                Specialties = d.DoctorSpecialties
+                    .Select(ds => new AdminDoctorSpecialtyDto { Id = ds.SpecialtyId, Name = ds.Specialty.Name })
+                    .ToList(),
+                Branches = d.DoctorClinicBranches
+                    .Where(dcb => dcb.IsActive)
+                    .Select(dcb => new AdminDoctorBranchDto { Id = dcb.ClinicBranchId, Name = dcb.ClinicBranch.Name })
+                    .ToList(),
+                Services = d.DoctorServices
+                    .Where(ds => ds.IsActive)
+                    .Select(ds => new AdminDoctorServiceDto
+                    {
+                        MedicalServiceId = ds.MedicalServiceId,
+                        Name = ds.MedicalService.Name,
+                        DurationMinutes = ds.CustomDurationMinutes ?? ds.MedicalService.DurationMinutes,
+                        Price = ds.CustomPrice ?? ds.MedicalService.Price,
+                        Currency = ds.MedicalService.Currency,
+                        CustomDurationMinutes = ds.CustomDurationMinutes,
+                        CustomPrice = ds.CustomPrice
+                    })
+                    .ToList()
+            });
+    }
+
+    /// <summary>
+    /// Njofton pacientin që termini i tij u anulua sepse doktori u çaktivizua. Vetëm
+    /// pacienti — jo doktori (ai vetë sapo u çaktivizua) dhe jo klinika (ajo e kreu veprimin).
+    /// </summary>
+    private async Task NotifyPatientCancelledSafeAsync(Guid appointmentId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var info = await _dbContext.Appointments
+                .Where(a => a.Id == appointmentId)
+                .Select(a => new
+                {
+                    PatientUserId = a.PatientProfile.UserId,
+                    ClinicName = a.Clinic.Name,
+                    ServiceName = a.MedicalService.Name,
+                    a.StartDateTime,
+                    DoctorName = _dbContext.Users.Where(u => u.Id == a.Doctor.UserId).Select(u => u.FirstName + " " + u.LastName).First()
+                })
+                .FirstAsync(cancellationToken);
+
+            var patientUser = await _dbContext.Users
+                .Where(u => u.Id == info.PatientUserId)
+                .Select(u => new { u.Email, u.PhoneNumber, u.FirstName, u.LastName })
+                .FirstAsync(cancellationToken);
+
+            await _notificationService.AppointmentCancelledAsync(new AppointmentNotificationContext
+            {
+                AppointmentId = appointmentId,
+                PatientEmail = patientUser.Email,
+                PatientPhoneNumber = patientUser.PhoneNumber,
+                PatientName = $"{patientUser.FirstName} {patientUser.LastName}",
+                DoctorName = info.DoctorName,
+                ClinicName = info.ClinicName,
+                ServiceName = info.ServiceName,
+                StartDateTimeLocal = _timeZoneService.ToLocal(info.StartDateTime)
+            }, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Njoftimi i anulimit (çaktivizim doktori) dështoi për terminin {AppointmentId}", appointmentId);
+        }
     }
 
     private static AdminClinicDto ToAdminDto(
