@@ -2,6 +2,15 @@ import i18n, { type SupportedLanguage } from '../i18n'
 import { AppointmentStatus } from './types'
 
 /**
+ * Display order Monday-first while the backend's DayOfWeek (and JS
+ * Date.getDay()) stays Sunday(0)..Saturday(6). Single shared source — do not
+ * redeclare this per-file; every page that groups or lists by weekday
+ * (WorkingSchedulePage, ClinicDoctorsPage's admin schedule modal, the
+ * weekday multi-select) imports this one.
+ */
+export const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0]
+
+/**
  * Maps our language codes to the BCP-47 tags Intl needs. Serbian is pinned to
  * the Latin variant explicitly — the app only ships Latin sr copy (see
  * i18n.ts), and a bare "sr" tag risks resolving to Cyrillic month/weekday
@@ -27,32 +36,30 @@ function capitalizeFirst(s: string): string {
   return s.length === 0 ? s : s.charAt(0).toUpperCase() + s.slice(1)
 }
 
-/** Capitalizes every word — Intl gives lowercase weekday/month names, but
- * dropdown options and standalone headings read better in title case. */
-function capitalizeWords(s: string): string {
-  return s.replace(/\S+/g, capitalizeFirst)
-}
-
 /**
  * Localized weekday name for a JS Date.getDay() index (0 = Sunday .. 6 =
- * Saturday), independent of any specific date — built off a fixed reference
- * week (2023-01-01 was a Sunday) so callers don't need a real Date on hand.
- * Returned title-cased ("E Hënë" / "Monday" / "Ponedeljak"); callers that want
- * ALL CAPS (table headers, etc.) uppercase it themselves.
+ * Saturday). Looked up from a static translation table (common.json
+ * "dates.weekdaysLong"/"weekdaysShort") rather than Intl.DateTimeFormat:
+ * Intl's weekday/month names depend on the runtime's ICU locale data, and
+ * that data is not guaranteed complete for every BCP-47 tag — some Chrome/V8
+ * builds silently fall back to English for "sq" specifically (confirmed:
+ * Intl.DateTimeFormat.supportedLocalesOf(['sq']) returns [] while 'sr-Latn',
+ * 'de', 'ja', etc. resolve fine), with no error to catch. A static table
+ * removes the runtime dependency entirely — the same reason statusLabel()
+ * below reads from i18next rather than formatting enum names on the fly.
+ * Callers that want ALL CAPS (table headers, etc.) uppercase it themselves.
  */
 export function weekdayName(dayOfWeek: number, style: 'long' | 'short' = 'long'): string {
-  const reference = new Date(Date.UTC(2023, 0, 1 + dayOfWeek))
-  return capitalizeWords(
-    new Intl.DateTimeFormat(activeLocale(), { weekday: style, timeZone: 'UTC' }).format(reference),
-  )
+  const key = style === 'short' ? 'dates.weekdaysShort' : 'dates.weekdaysLong'
+  const names = i18n.t(key, { ns: 'common', returnObjects: true }) as unknown as string[]
+  return names[dayOfWeek] ?? ''
 }
 
-/** Localized month name for a 0-based month index, title-cased — see weekdayName. */
+/** Localized month name for a 0-based month index — see weekdayName for why this reads a static table instead of Intl. */
 export function monthName(monthIndex: number, style: 'long' | 'short' = 'long'): string {
-  const reference = new Date(Date.UTC(2023, monthIndex, 1))
-  return capitalizeWords(
-    new Intl.DateTimeFormat(activeLocale(), { month: style, timeZone: 'UTC' }).format(reference),
-  )
+  const key = style === 'short' ? 'dates.monthsShort' : 'dates.monthsLong'
+  const names = i18n.t(key, { ns: 'common', returnObjects: true }) as unknown as string[]
+  return names[monthIndex] ?? ''
 }
 
 /** Ora HH:mm nga një ISO string, pa e zhvendosur nga zona kohore. */

@@ -55,6 +55,10 @@ public interface IClinicAdminService
 
     Task<AdminDoctorDetailDto> ActivateDoctorAsync(Guid doctorId, CancellationToken cancellationToken = default);
 
+    /// <summary>E njëjta pamje si vetë-shërbimi i doktorit (GET api/doctor/working-schedules) — vetëm autorizimi ndryshon.</summary>
+    Task<IReadOnlyList<WorkingScheduleDto>> GetDoctorSchedulesAsync(
+        Guid doctorId, CancellationToken cancellationToken = default);
+
     Task<WorkingScheduleDto> AddDoctorScheduleAsync(
         Guid doctorId, CreateWorkingScheduleRequest request, CancellationToken cancellationToken = default);
 

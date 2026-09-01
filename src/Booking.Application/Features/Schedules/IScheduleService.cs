@@ -1,3 +1,5 @@
+using Booking.Application.Features.Doctors;
+
 namespace Booking.Application.Features.Schedules;
 
 /// <summary>
@@ -8,6 +10,14 @@ public interface IScheduleService
 {
     /// <summary>Gjen Doctor.Id për userin e kyçur me rol Doctor.</summary>
     Task<Guid> GetDoctorIdForUserAsync(Guid userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Degët e caktuara të doktorit (DoctorClinicBranch) — E PAVARUR nga oraret ekzistuese.
+    /// I domosdoshëm për formularin "shto orar të parë": nëse do të nxirrej nga
+    /// GetSchedulesAsync, një doktor pa asnjë orar ende (rasti pikërisht kur i duhet ky
+    /// formular) do të shihte gjithmonë "asnjë degë" edhe pse ka degë reale të caktuara.
+    /// </summary>
+    Task<IReadOnlyList<DoctorBranchDto>> GetDoctorBranchesAsync(Guid doctorId, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<WorkingScheduleDto>> GetSchedulesAsync(Guid doctorId, CancellationToken cancellationToken = default);
 

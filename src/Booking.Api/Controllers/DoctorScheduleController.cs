@@ -1,6 +1,7 @@
 using Booking.Application.Common.Exceptions;
 using Booking.Application.Common.Interfaces;
 using Booking.Application.Common.Security;
+using Booking.Application.Features.Doctors;
 using Booking.Application.Features.Schedules;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,6 +21,19 @@ public class DoctorScheduleController : ControllerBase
     {
         _scheduleService = scheduleService;
         _currentUser = currentUser;
+    }
+
+    /// <summary>
+    /// Degët e vetë doktorit — të pavarura nga oraret ekzistuese, ndryshe nga
+    /// GET working-schedules (shih komentin te IScheduleService.GetDoctorBranchesAsync).
+    /// </summary>
+    [HttpGet("branches")]
+    [ProducesResponseType(typeof(IReadOnlyList<DoctorBranchDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<DoctorBranchDto>>> GetBranches(
+        CancellationToken cancellationToken)
+    {
+        var doctorId = await ResolveDoctorIdAsync(cancellationToken);
+        return Ok(await _scheduleService.GetDoctorBranchesAsync(doctorId, cancellationToken));
     }
 
     [HttpGet("working-schedules")]

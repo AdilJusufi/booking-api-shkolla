@@ -1310,6 +1310,47 @@ textarea {
   color: var(--muted);
 }
 
+/* Two plain <selects> (hour/minute) styled as one field — see TimeField in ui.tsx for why. */
+.time-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--line);
+  background: var(--surface-sunk);
+  border-radius: var(--radius-sm);
+  min-height: 44px;
+  padding: 0 8px;
+  transition:
+    border-color var(--dur) var(--ease-spring),
+    background var(--dur) var(--ease-spring);
+}
+.time-field:focus-within {
+  border-color: var(--primary);
+  background: var(--surface);
+  box-shadow: 0 0 0 2px var(--primary-050);
+}
+.time-field select {
+  border: none;
+  background: none;
+  min-height: auto;
+  width: auto;
+  padding: 11px 2px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  cursor: pointer;
+}
+.time-field select:focus {
+  outline: none;
+  box-shadow: none;
+}
+.time-field__sep {
+  color: var(--muted);
+  font-weight: 700;
+}
+.time-field.is-disabled {
+  opacity: 0.6;
+}
+
 /* Slots: mono, tabular, 44px floor. Available = hairline, selected = solid accent. */
 .slots {
   display: grid;
@@ -2013,6 +2054,32 @@ textarea {
   font-weight: 700;
   cursor: pointer;
   transition: background var(--dur) var(--ease-spring);
+}
+
+/* Persistent (not a 4s toast) per-day result of a range schedule submission — some
+   days may succeed while others fail, and the failures deserve to stay readable. */
+.range-result {
+  background: var(--warn-bg);
+  border: 1px solid color-mix(in srgb, var(--warn) 28%, transparent);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+.range-result__success {
+  margin: 0 0 8px;
+  color: var(--ink);
+}
+.range-result__failures {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--warn);
+}
+.range-result__failures li {
+  margin-bottom: 4px;
+}
+.range-result__failures li:last-child {
+  margin-bottom: 0;
 }
 .errorbox__retry:hover {
   background: color-mix(in srgb, var(--danger) 12%, transparent);
@@ -6167,6 +6234,31 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+.weekday-multiselect {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.weekday-multiselect__range {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 8px;
+  align-items: end;
+}
+.weekday-multiselect__apply {
+  height: 44px;
+  white-space: nowrap;
+}
+@media (max-width: 520px) {
+  .weekday-multiselect__range {
+    grid-template-columns: 1fr 1fr;
+  }
+  .weekday-multiselect__apply {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
 }
 .multiselect-pill {
   border: 1px solid var(--line);

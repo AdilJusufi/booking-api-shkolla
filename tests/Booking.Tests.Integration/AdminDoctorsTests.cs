@@ -297,6 +297,60 @@ public class AdminDoctorsTests
             .Should().Contain(d => d.Id == doctorId);
     }
 
+    // ---------- Oraret e punës (GET admin) ----------
+
+    [Fact]
+    public async Task GetDoctorSchedules_OwnClinic_ReturnsSeededSchedules()
+    {
+        var client = await DardaniaAdminClientAsync();
+
+        // Dr. Arben (seed-uar) ka orar Hën–Pre te Dega Dardania — shih DbSeeder.
+        var response = await client.GetAsync($"/api/admin/doctors/{DbSeeder.Ids.DoctorArben}/working-schedules");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var schedules = await response.Content.ReadFromJsonAsync<List<WorkingScheduleDto>>(TestHelpers.Json);
+        schedules!.Should().NotBeEmpty();
+        schedules.Should().OnlyContain(s => s.DoctorId == DbSeeder.Ids.DoctorArben);
+        schedules.Should().Contain(s => s.DayOfWeek == DayOfWeek.Monday && s.ClinicBranchId == DbSeeder.Ids.BranchDardania);
+    }
+
+    [Fact]
+    public async Task GetDoctorSchedules_BelongingToOtherClinic_IsForbidden()
+    {
+        var client = await DardaniaAdminClientAsync();
+
+        // Dr. Elira i përket Sunny, jo Dardanisë.
+        var response = await client.GetAsync($"/api/admin/doctors/{DbSeeder.Ids.DoctorElira}/working-schedules");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task AddDoctorSchedule_NewEntryAppearsInSubsequentGet()
+    {
+        var client = await DardaniaAdminClientAsync();
+        var doctorId = await CreateBareDoctorAsync(client, "Orari");
+        // CreateBareDoctorAsync cakton doktorin te Dega Dardania.
+
+        var beforeResponse = await client.GetAsync($"/api/admin/doctors/{doctorId}/working-schedules");
+        (await beforeResponse.Content.ReadFromJsonAsync<List<WorkingScheduleDto>>(TestHelpers.Json))!.Should().BeEmpty();
+
+        var addResponse = await client.PostAsJsonAsync($"/api/admin/doctors/{doctorId}/working-schedules", new CreateWorkingScheduleRequest
+        {
+            ClinicBranchId = DbSeeder.Ids.BranchDardania,
+            DayOfWeek = DayOfWeek.Tuesday,
+            StartTime = new TimeOnly(9, 0),
+            EndTime = new TimeOnly(13, 0),
+            SlotDurationMinutes = 20
+        }, TestHelpers.Json);
+        addResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var afterResponse = await client.GetAsync($"/api/admin/doctors/{doctorId}/working-schedules");
+        var schedules = await afterResponse.Content.ReadFromJsonAsync<List<WorkingScheduleDto>>(TestHelpers.Json);
+        schedules!.Should().ContainSingle(s =>
+            s.DayOfWeek == DayOfWeek.Tuesday && s.StartTime == new TimeOnly(9, 0) && s.SlotDurationMinutes == 20);
+    }
+
     // ---------- Ndihmës ----------
 
     private static async Task<Guid> CreateBareDoctorAsync(HttpClient dardaniaAdminClient, string label)

@@ -25,6 +25,7 @@ import {
   type LucideProps,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { DAY_ORDER, weekdayName } from '../lib/format'
 
 /** A shimmering block sized to the thing it stands in for. */
 export function Skeleton({ className = '', style }: { className?: string; style?: CSSProperties }) {
@@ -397,6 +398,150 @@ export function CustomSelect({
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+const TIME_FIELD_HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
+const TIME_FIELD_MINUTES = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'))
+
+/**
+ * Always 24-hour HH:mm, regardless of the browser's or OS's locale settings.
+ * Native <input type="time"> renders 12h/AM-PM or 24h depending on the
+ * browser's locale resolution, which the `lang` attribute does NOT reliably
+ * override across browser/OS combinations (confirmed inconsistent even in
+ * recent Chromium). Kosovo/Europe expects 24h throughout, and this audience
+ * should never have to parse "5:00 PM". Two plain <select>s side-step the
+ * problem entirely — every option's text is authored right here, so there is
+ * no locale-dependent time formatting left to go wrong.
+ */
+export function TimeField({
+  label,
+  value,
+  onChange,
+  disabled = false,
+}: {
+  label: string
+  /** "HH:mm", 5-minute granularity — matches the app's minimum slot duration. */
+  value: string
+  onChange: (value: string) => void
+  disabled?: boolean
+}) {
+  const [hh, mm] = value ? value.split(':') : ['00', '00']
+  return (
+    <div className="field">
+      <label>{label}</label>
+      <div className={`time-field ${disabled ? 'is-disabled' : ''}`}>
+        <select
+          value={hh}
+          disabled={disabled}
+          aria-label={label}
+          onChange={(e) => onChange(`${e.target.value}:${mm}`)}
+        >
+          {TIME_FIELD_HOURS.map((h) => (
+            <option key={h} value={h}>{h}</option>
+          ))}
+        </select>
+        <span className="time-field__sep" aria-hidden>:</span>
+        <select
+          value={mm}
+          disabled={disabled}
+          aria-label={label}
+          onChange={(e) => onChange(`${hh}:${e.target.value}`)}
+        >
+          {TIME_FIELD_MINUTES.map((m) => (
+            <option key={m} value={m}>{m}</option>
+          ))}
+        </select>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Independently-toggleable day checkboxes (Mon/Wed/Fri without Tue/Thu is a
+ * real schedule, not just a contiguous range) plus a Nga/Deri range shortcut
+ * that checks a contiguous block in one click. Used by any "add schedule for
+ * several days at once" form — see WorkingSchedulePage / ClinicDoctorsPage.
+ * Manages its own two range-picker dropdowns' open state internally so
+ * callers don't need to thread extra state through their own openField union.
+ */
+export function WeekdayMultiSelect({
+  selectedDays,
+  onChange,
+  fromLabel,
+  toLabel,
+  applyRangeCta,
+}: {
+  selectedDays: number[]
+  onChange: (days: number[]) => void
+  fromLabel: string
+  toLabel: string
+  applyRangeCta: string
+}) {
+  const [fromDay, setFromDay] = useState('1')
+  const [toDay, setToDay] = useState('5')
+  const [openField, setOpenField] = useState<'from' | 'to' | null>(null)
+
+  const dayOptions: CustomSelectOption[] = DAY_ORDER.map((d) => ({ value: String(d), label: weekdayName(d) }))
+
+  function toggleDay(day: number) {
+    const next = selectedDays.includes(day)
+      ? selectedDays.filter((d) => d !== day)
+      : [...selectedDays, day]
+    // Kept in Monday-first order regardless of click order — callers that
+    // render selectedDays as a summary ("Hën, Mër, Pre") don't need to sort it themselves.
+    next.sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b))
+    onChange(next)
+  }
+
+  function applyRange() {
+    const fromIndex = DAY_ORDER.indexOf(Number(fromDay))
+    const toIndex = DAY_ORDER.indexOf(Number(toDay))
+    if (fromIndex === -1 || toIndex === -1) return
+    const [start, end] = fromIndex <= toIndex ? [fromIndex, toIndex] : [toIndex, fromIndex]
+    onChange(DAY_ORDER.slice(start, end + 1))
+  }
+
+  return (
+    <div className="weekday-multiselect">
+      <div className="weekday-multiselect__range">
+        <CustomSelect
+          label={fromLabel}
+          options={dayOptions}
+          value={fromDay}
+          onChange={setFromDay}
+          open={openField === 'from'}
+          onOpenChange={(o) => setOpenField(o ? 'from' : null)}
+        />
+        <CustomSelect
+          label={toLabel}
+          options={dayOptions}
+          value={toDay}
+          onChange={setToDay}
+          open={openField === 'to'}
+          onOpenChange={(o) => setOpenField(o ? 'to' : null)}
+        />
+        <button type="button" className="btn btn--ghost btn--sm weekday-multiselect__apply" onClick={applyRange}>
+          {applyRangeCta}
+        </button>
+      </div>
+      <div className="multiselect-pills">
+        {DAY_ORDER.map((d) => {
+          const isOn = selectedDays.includes(d)
+          return (
+            <button
+              key={d}
+              type="button"
+              className={`multiselect-pill ${isOn ? 'is-selected' : ''}`}
+              aria-pressed={isOn}
+              onClick={() => toggleDay(d)}
+            >
+              {weekdayName(d, 'short')}
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }

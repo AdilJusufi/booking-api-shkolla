@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Trans, useTranslation } from 'react-i18next'
 import {
-  AlertCircle,
   AlertTriangle,
   ArrowRight,
+  Calendar,
   Check,
   Clock,
   Copy,
@@ -25,18 +25,16 @@ import type {
   CreateDoctorRequest,
   CreateWorkingScheduleRequest,
   DoctorServiceAssignment,
+  DoctorWorkingSchedule,
   MedicalService,
   Specialty,
   UpdateDoctorRequest,
 } from '../lib/types'
 import { useToast } from '../context/ToastContext'
 import { useClinicContext } from '../components/ClinicDetailLayout'
-import { CustomSelect, EmptyState, ErrorBox, Modal, SkeletonRows, initials } from '../components/ui'
+import { CustomSelect, EmptyState, ErrorBox, Modal, SkeletonRows, TimeField, WeekdayMultiSelect, initials } from '../components/ui'
 import type { CustomSelectOption } from '../components/ui'
-import { weekdayName } from '../lib/format'
-
-// Display order Monday-first while JS Date.getDay() stays Sunday(0)..Saturday(6).
-const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0]
+import { DAY_ORDER, monthName, weekdayName } from '../lib/format'
 
 const EMPTY_DOCTOR_FORM: CreateDoctorRequest = {
   firstName: '',
@@ -818,14 +816,37 @@ function DoctorCredentialsModal({
   )
 }
 
+type ScheduleFormMode = 'single' | 'range'
+
 const EMPTY_SCHEDULE_FORM = {
   clinicBranchId: '',
   dayOfWeek: '1',
+  selectedDays: [] as number[],
   startTime: '09:00',
   endTime: '17:00',
   slotDurationMinutes: 30,
   validFrom: '',
   validUntil: '',
+}
+
+/** Per-day outcome of a range submission — see WorkingSchedulePage for why this stays in the modal rather than a toast. */
+interface RangeSubmitResult {
+  succeededDays: number[]
+  failedDays: { day: number; message: string }[]
+}
+
+/** Same date-pill/validity formatting as the doctor's own WorkingSchedulePage — see there for rationale. */
+function formatDatePill(iso?: string): string {
+  if (!iso) return ''
+  const m = iso.match(/(\d{4})-(\d{2})-(\d{2})/)
+  if (!m) return iso
+  return `${Number(m[3])} ${monthName(Number(m[2]) - 1, 'short')}`
+}
+
+function validityLabel(s: DoctorWorkingSchedule, t: (key: string, opts?: Record<string, unknown>) => string): string {
+  if (!s.validUntil) return t('doctors.scheduleModal.noExpiry')
+  if (s.validFrom) return t('doctors.scheduleModal.validRange', { from: formatDatePill(s.validFrom), to: formatDatePill(s.validUntil) })
+  return t('doctors.scheduleModal.validUntilOnly', { date: formatDatePill(s.validUntil) })
 }
 
 function DoctorScheduleModal({
@@ -837,10 +858,16 @@ function DoctorScheduleModal({
 }) {
   const { t } = useTranslation('admin')
   const { notify } = useToast()
+  const [scheduleMode, setScheduleMode] = useState<ScheduleFormMode>('single')
   const [form, setForm] = useState(EMPTY_SCHEDULE_FORM)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
   const [openSelect, setOpenSelect] = useState<'branch' | 'day' | null>(null)
+  const [rangeResult, setRangeResult] = useState<RangeSubmitResult | null>(null)
+
+  const [schedules, setSchedules] = useState<DoctorWorkingSchedule[]>([])
+  const [schedulesLoading, setSchedulesLoading] = useState(true)
+  const [schedulesError, setSchedulesError] = useState('')
 
   const doctorBranches = doctor.branches
   const branchOptions: CustomSelectOption[] = [
@@ -848,6 +875,29 @@ function DoctorScheduleModal({
     ...doctorBranches.map((b) => ({ value: b.id, label: b.name })),
   ]
   const dayOptions: CustomSelectOption[] = DAY_ORDER.map((d) => ({ value: String(d), label: weekdayName(d) }))
+
+  const loadSchedules = useCallback(() => {
+    setSchedulesLoading(true)
+    setSchedulesError('')
+    api
+      .getDoctorSchedulesAsAdmin(doctor.id)
+      .then(setSchedules)
+      .catch((e) => setSchedulesError(getErrorMessage(e)))
+      .finally(() => setSchedulesLoading(false))
+  }, [doctor.id])
+
+  useEffect(loadSchedules, [loadSchedules])
+
+  const grouped = useMemo(() => {
+    const map = new Map<number, DoctorWorkingSchedule[]>()
+    for (const s of schedules) {
+      const arr = map.get(s.dayOfWeek) ?? []
+      arr.push(s)
+      map.set(s.dayOfWeek, arr)
+    }
+    for (const arr of map.values()) arr.sort((a, b) => a.startTime.localeCompare(b.startTime))
+    return DAY_ORDER.filter((d) => map.has(d)).map((d) => ({ day: d, items: map.get(d)! }))
+  }, [schedules])
 
   useEffect(() => {
     if (doctorBranches.length > 0 && !form.clinicBranchId) {
@@ -860,49 +910,167 @@ function DoctorScheduleModal({
     setForm((prev) => ({ ...prev, [key]: value }))
   }
 
+  function buildSchedulePayload(dayOfWeek: number): CreateWorkingScheduleRequest {
+    return {
+      clinicBranchId: form.clinicBranchId,
+      dayOfWeek,
+      // TimeOnly's System.Text.Json converter requires "HH:mm:ss" — TimeField's
+      // value is bare "HH:mm" (see WorkingSchedulePage's identical fix).
+      startTime: `${form.startTime}:00`,
+      endTime: `${form.endTime}:00`,
+      slotDurationMinutes: form.slotDurationMinutes,
+      validFrom: form.validFrom || undefined,
+      validUntil: form.validUntil || undefined,
+    }
+  }
+
   async function handleSubmit() {
+    setRangeResult(null)
     if (!form.clinicBranchId) return setFormError(t('doctors.scheduleModal.branchRequired'))
     if (!form.startTime || !form.endTime) return setFormError(t('doctors.scheduleModal.timeRequired'))
     if (!form.slotDurationMinutes || form.slotDurationMinutes <= 0) return setFormError(t('doctors.scheduleModal.slotDurationInvalid'))
-
     setFormError('')
-    setSaving(true)
-    try {
-      const payload: CreateWorkingScheduleRequest = {
-        clinicBranchId: form.clinicBranchId,
-        dayOfWeek: Number(form.dayOfWeek),
-        startTime: form.startTime,
-        endTime: form.endTime,
-        slotDurationMinutes: form.slotDurationMinutes,
-        validFrom: form.validFrom || undefined,
-        validUntil: form.validUntil || undefined,
+
+    if (scheduleMode === 'single') {
+      setSaving(true)
+      try {
+        await api.createDoctorScheduleAsAdmin(doctor.id, buildSchedulePayload(Number(form.dayOfWeek)))
+        notify(t('doctors.scheduleModal.addedToast'), 'ok')
+        setForm({ ...EMPTY_SCHEDULE_FORM, clinicBranchId: form.clinicBranchId })
+        loadSchedules()
+      } catch (e) {
+        setFormError(getErrorMessage(e))
+      } finally {
+        setSaving(false)
       }
-      await api.createDoctorScheduleAsAdmin(doctor.id, payload)
-      notify(t('doctors.scheduleModal.addedToast'), 'ok')
+      return
+    }
+
+    // Range mode: N independent requests to the same existing endpoint, not a
+    // new bulk endpoint — see WorkingSchedulePage's identical comment. Days
+    // can't conflict with each other (the backend's overlap check is scoped
+    // per dayOfWeek), so there's nothing atomicity would buy here, and
+    // partial success is the explicitly desired UX.
+    if (form.selectedDays.length === 0) return setFormError(t('doctors.scheduleModal.daysRequired'))
+
+    setSaving(true)
+    const results = await Promise.allSettled(
+      form.selectedDays.map((day) => api.createDoctorScheduleAsAdmin(doctor.id, buildSchedulePayload(day))),
+    )
+    setSaving(false)
+
+    const succeededDays: number[] = []
+    const failedDays: { day: number; message: string }[] = []
+    results.forEach((r, i) => {
+      const day = form.selectedDays[i]
+      if (r.status === 'fulfilled') succeededDays.push(day)
+      else failedDays.push({ day, message: getErrorMessage(r.reason) })
+    })
+
+    loadSchedules()
+
+    if (failedDays.length === 0) {
+      notify(t('doctors.scheduleModal.rangeAddedToast', { count: succeededDays.length }), 'ok')
       setForm({ ...EMPTY_SCHEDULE_FORM, clinicBranchId: form.clinicBranchId })
-    } catch (e) {
-      setFormError(getErrorMessage(e))
-    } finally {
-      setSaving(false)
+    } else {
+      setRangeResult({ succeededDays, failedDays })
     }
   }
 
   return (
     <Modal title={t('doctors.scheduleModal.title', { firstName: doctor.firstName, lastName: doctor.lastName })} onClose={onClose} size="lg">
-      <div className="schedule-info-banner schedule-info-banner--warn">
-        <AlertCircle size={16} strokeWidth={1.5} color="var(--warn)" />
-        <span>
-          <Trans
-            i18nKey="doctors.scheduleModal.backendGapBanner"
-            ns="admin"
-            components={[<code key="0" />, <code key="1" />]}
-          />
-        </span>
-      </div>
+      <p className="doctor-form__section-title">{t('doctors.scheduleModal.existingSectionTitle')}</p>
+
+      {schedulesLoading ? (
+        <SkeletonRows count={3} label={t('doctors.scheduleModal.loadingLabel')} />
+      ) : schedulesError ? (
+        <ErrorBox message={schedulesError} onRetry={loadSchedules} />
+      ) : grouped.length === 0 ? (
+        <EmptyState icon={Calendar} title={t('doctors.scheduleModal.emptyTitle')} />
+      ) : (
+        grouped.map(({ day, items }) => (
+          <div key={day} className="schedule-day-group">
+            <div className="schedule-day-group__head">
+              <h2>{weekdayName(day)}</h2>
+              <span className="schedule-day-group__badge">
+                {t('doctors.scheduleModal.sessionCount', { count: items.length })}
+              </span>
+            </div>
+
+            {items.map((s) => (
+              <div className="schedule-card" key={s.id}>
+                <div className="schedule-card__time">
+                  <span className="schedule-card__time-label">{t('doctors.scheduleModal.timeLabel')}</span>
+                  <span className="schedule-card__time-start">{s.startTime.slice(0, 5)}</span>
+                  <span className="schedule-card__time-end">{t('doctors.scheduleModal.until', { time: s.endTime.slice(0, 5) })}</span>
+                </div>
+
+                <div className="schedule-card__main">
+                  <div className="schedule-card__branch">{s.branchName}</div>
+                  <div className="schedule-card__meta">
+                    <span><Clock size={13} strokeWidth={1.5} /> {t('doctors.scheduleModal.perAppointment', { count: s.slotDurationMinutes })}</span>
+                    <span><Calendar size={13} strokeWidth={1.5} /> {validityLabel(s, t)}</span>
+                  </div>
+                </div>
+
+                <span className={`schedule-card__status ${s.isActive ? 'is-active' : ''}`}>
+                  {s.isActive ? t('doctors.scheduleModal.statusActive') : t('doctors.scheduleModal.statusInactive')}
+                </span>
+              </div>
+            ))}
+          </div>
+        ))
+      )}
 
       {formError && <ErrorBox message={formError} />}
 
+      {rangeResult && (
+        <div className="range-result">
+          {rangeResult.succeededDays.length > 0 && (
+            <p className="range-result__success">
+              <Trans
+                i18nKey="doctors.scheduleModal.rangePartialSuccess"
+                ns="admin"
+                values={{
+                  count: rangeResult.succeededDays.length,
+                  total: rangeResult.succeededDays.length + rangeResult.failedDays.length,
+                }}
+                components={[<strong key="0" />]}
+              />
+            </p>
+          )}
+          <ul className="range-result__failures">
+            {rangeResult.failedDays.map(({ day, message }) => (
+              <li key={day}>
+                <strong>{weekdayName(day)}</strong>: {message}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <p className="doctor-form__section-title">{t('doctors.scheduleModal.addScheduleSectionTitle')}</p>
+
+      <div className="tabs" role="tablist" aria-label={t('doctors.scheduleModal.modeLabel')}>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={scheduleMode === 'single'}
+          className={`tab ${scheduleMode === 'single' ? 'is-active' : ''}`}
+          onClick={() => { setScheduleMode('single'); setRangeResult(null) }}
+        >
+          {t('doctors.scheduleModal.modeSingle')}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={scheduleMode === 'range'}
+          className={`tab ${scheduleMode === 'range' ? 'is-active' : ''}`}
+          onClick={() => { setScheduleMode('range'); setRangeResult(null) }}
+        >
+          {t('doctors.scheduleModal.modeRange')}
+        </button>
+      </div>
 
       <div className="field">
         <CustomSelect
@@ -918,26 +1086,33 @@ function DoctorScheduleModal({
         )}
       </div>
 
-      <div className="field">
-        <CustomSelect
-          label={t('doctors.scheduleModal.dayFieldLabel')}
-          options={dayOptions}
-          value={form.dayOfWeek}
-          onChange={(v) => updateField('dayOfWeek', v)}
-          open={openSelect === 'day'}
-          onOpenChange={(isOpen) => setOpenSelect(isOpen ? 'day' : null)}
-        />
-      </div>
+      {scheduleMode === 'single' ? (
+        <div className="field">
+          <CustomSelect
+            label={t('doctors.scheduleModal.dayFieldLabel')}
+            options={dayOptions}
+            value={form.dayOfWeek}
+            onChange={(v) => updateField('dayOfWeek', v)}
+            open={openSelect === 'day'}
+            onOpenChange={(isOpen) => setOpenSelect(isOpen ? 'day' : null)}
+          />
+        </div>
+      ) : (
+        <div className="field">
+          <label>{t('doctors.scheduleModal.daysLabel')}</label>
+          <WeekdayMultiSelect
+            selectedDays={form.selectedDays}
+            onChange={(days) => updateField('selectedDays', days)}
+            fromLabel={t('doctors.scheduleModal.rangeFromLabel')}
+            toLabel={t('doctors.scheduleModal.rangeToLabel')}
+            applyRangeCta={t('doctors.scheduleModal.rangeApplyCta')}
+          />
+        </div>
+      )}
 
       <div className="form-row">
-        <div className="field">
-          <label>{t('doctors.scheduleModal.startTimeLabel')}</label>
-          <input type="time" value={form.startTime} onChange={(e) => updateField('startTime', e.target.value)} />
-        </div>
-        <div className="field">
-          <label>{t('doctors.scheduleModal.endTimeLabel')}</label>
-          <input type="time" value={form.endTime} onChange={(e) => updateField('endTime', e.target.value)} />
-        </div>
+        <TimeField label={t('doctors.scheduleModal.startTimeLabel')} value={form.startTime} onChange={(v) => updateField('startTime', v)} />
+        <TimeField label={t('doctors.scheduleModal.endTimeLabel')} value={form.endTime} onChange={(v) => updateField('endTime', v)} />
       </div>
 
       <div className="field">
@@ -968,7 +1143,14 @@ function DoctorScheduleModal({
         disabled={saving || doctorBranches.length === 0}
         onClick={handleSubmit}
       >
-        {saving ? t('doctors.scheduleModal.savingCta') : (<><Plus size={16} strokeWidth={1.5} /> {t('doctors.scheduleModal.addScheduleCta')}</>)}
+        {saving ? (
+          t('doctors.scheduleModal.savingCta')
+        ) : (
+          <>
+            <Plus size={16} strokeWidth={1.5} />
+            {scheduleMode === 'single' ? t('doctors.scheduleModal.addScheduleCta') : t('doctors.scheduleModal.addRangeCta')}
+          </>
+        )}
       </button>
     </Modal>
   )

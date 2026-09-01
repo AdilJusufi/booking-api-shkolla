@@ -30,6 +30,7 @@ import type {
   Dependent,
   Doctor,
   DoctorAppointment,
+  DoctorBranch,
   DoctorDetails,
   DoctorWorkingSchedule,
   MedicalService,
@@ -367,6 +368,14 @@ export const api = {
     }),
 
   // --- Orari i punës i mjekut ---
+  /**
+   * Degët e vetë doktorit — E PAVARUR nga getWorkingSchedules. Përpara kësaj, dropdown-i i
+   * degëve nxirrej nga oraret ekzistuese, kështu që një doktor pa asnjë orar ende (rasti
+   * kur ky formular i duhet më shumë) shihte gjithmonë "asnjë degë" edhe pse kishte degë
+   * reale të caktuara nga admini i klinikës.
+   */
+  getMyBranches: () => request<DoctorBranch[]>('/api/doctor/branches', { auth: true }),
+
   getWorkingSchedules: () => request<DoctorWorkingSchedule[]>('/api/doctor/working-schedules', { auth: true }),
 
   createWorkingSchedule: (payload: CreateWorkingScheduleRequest) =>
@@ -552,6 +561,9 @@ export const api = {
 
   activateDoctor: (doctorId: string) =>
     request<AdminDoctorDetail>(`/api/admin/doctors/${doctorId}/activate`, { method: 'POST', auth: true }),
+
+  getDoctorSchedulesAsAdmin: (doctorId: string) =>
+    request<DoctorWorkingSchedule[]>(`/api/admin/doctors/${doctorId}/working-schedules`, { auth: true }),
 
   createDoctorScheduleAsAdmin: (doctorId: string, payload: CreateWorkingScheduleRequest) =>
     request<DoctorWorkingSchedule>(`/api/admin/doctors/${doctorId}/working-schedules`, {

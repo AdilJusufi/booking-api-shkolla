@@ -12,6 +12,7 @@ import {
   buildDependent,
   buildDoctor,
   buildDoctorAppointment,
+  buildDoctorBranch,
   buildDoctorDetails,
   buildAvailableSlot,
   buildWorkingSchedule,
@@ -52,6 +53,7 @@ export const handlers = [
   ),
   http.get(url('/api/patients/me/dependents'), () => HttpResponse.json([buildDependent()])),
 
+  http.get(url('/api/doctor/branches'), () => HttpResponse.json([buildDoctorBranch()])),
   http.get(url('/api/doctor/working-schedules'), () => HttpResponse.json([buildWorkingSchedule()])),
   http.get(url('/api/doctor/appointments'), () => HttpResponse.json(pagedResult([buildDoctorAppointment()]))),
   http.post(url('/api/doctor/appointments/:id/confirm'), () => HttpResponse.json(buildDoctorAppointment())),

@@ -30,6 +30,54 @@
     "emptyState": "Së shpejti do të mund t'i shihni këtu njoftimet për terminet tuaja.",
     "comingSoon": "Së shpejti"
   },
+  "dates": {
+    "weekdaysLong": [
+      "E Diel",
+      "E Hënë",
+      "E Martë",
+      "E Mërkurë",
+      "E Enjte",
+      "E Premte",
+      "E Shtunë"
+    ],
+    "weekdaysShort": [
+      "Die",
+      "Hën",
+      "Mar",
+      "Mër",
+      "Enj",
+      "Pre",
+      "Sht"
+    ],
+    "monthsLong": [
+      "Janar",
+      "Shkurt",
+      "Mars",
+      "Prill",
+      "Maj",
+      "Qershor",
+      "Korrik",
+      "Gusht",
+      "Shtator",
+      "Tetor",
+      "Nëntor",
+      "Dhjetor"
+    ],
+    "monthsShort": [
+      "Jan",
+      "Shk",
+      "Mar",
+      "Pri",
+      "Maj",
+      "Qer",
+      "Kor",
+      "Gus",
+      "Sht",
+      "Tet",
+      "Nën",
+      "Dhj"
+    ]
+  },
   "language": {
     "label": "Gjuha",
     "sq": "Shqip",
