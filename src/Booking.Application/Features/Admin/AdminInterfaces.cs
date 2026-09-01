@@ -29,7 +29,31 @@ public interface IClinicAdminService
     Task<MedicalServiceDto> AddServiceAsync(Guid clinicId, CreateMedicalServiceRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>Krijon user me rol Doctor + profil doktori + lidhjet me specializime/degë/shërbime.</summary>
-    Task<AdminDoctorDto> CreateDoctorAsync(Guid clinicId, CreateDoctorRequest request, CancellationToken cancellationToken = default);
+    Task<AdminDoctorDetailDto> CreateDoctorAsync(Guid clinicId, CreateDoctorRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Të gjithë doktorët e klinikës — përfshirë joaktivët, ndryshe nga GET /api/clinics/{id}/doctors
+    /// (publik), që i fsheh. Admini duhet t'i shohë për t'i riaktivizuar.
+    /// </summary>
+    Task<IReadOnlyList<AdminDoctorDetailDto>> GetDoctorsAsync(Guid clinicId, CancellationToken cancellationToken = default);
+
+    Task<AdminDoctorDetailDto> UpdateDoctorAsync(
+        Guid doctorId, UpdateDoctorRequest request, CancellationToken cancellationToken = default);
+
+    Task<AdminDoctorDetailDto> UpdateDoctorBranchesAsync(
+        Guid doctorId, UpdateDoctorBranchesRequest request, CancellationToken cancellationToken = default);
+
+    Task<AdminDoctorDetailDto> UpdateDoctorServicesAsync(
+        Guid doctorId, UpdateDoctorServicesRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 409 "doctor-has-future-appointments" nëse ka termine të ardhshme aktive dhe
+    /// request.CancelFutureAppointments është false — shih SetDoctorActiveRequest.
+    /// </summary>
+    Task<AdminDoctorDetailDto> DeactivateDoctorAsync(
+        Guid doctorId, SetDoctorActiveRequest request, CancellationToken cancellationToken = default);
+
+    Task<AdminDoctorDetailDto> ActivateDoctorAsync(Guid doctorId, CancellationToken cancellationToken = default);
 
     Task<WorkingScheduleDto> AddDoctorScheduleAsync(
         Guid doctorId, CreateWorkingScheduleRequest request, CancellationToken cancellationToken = default);

@@ -13,13 +13,23 @@ interface ToastContextValue {
 
 const ToastContext = createContext<ToastContextValue | null>(null)
 
+/** Cap on simultaneously visible toasts — a burst of distinct messages shouldn't fill the screen. */
+const MAX_VISIBLE_TOASTS = 4
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
   const counter = useRef(0)
 
   const notify = useCallback((message: string, tone: ToastTone = 'info') => {
     const id = ++counter.current
-    setToasts((prev) => [...prev, { id, message, tone }])
+    setToasts((prev) => {
+      // Same message+tone already showing (e.g. a double-click, or a repeated
+      // action): replace it instead of stacking a duplicate — moves it to the
+      // end and restarts its 4s timer rather than piling up identical toasts.
+      const deduped = prev.filter((t) => !(t.message === message && t.tone === tone))
+      const next = [...deduped, { id, message, tone }]
+      return next.length > MAX_VISIBLE_TOASTS ? next.slice(next.length - MAX_VISIBLE_TOASTS) : next
+    })
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000)
   }, [])
 

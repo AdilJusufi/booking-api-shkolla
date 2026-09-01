@@ -72,6 +72,52 @@ public sealed class CreateDoctorRequestValidator : AbstractValidator<CreateDocto
     }
 }
 
+public sealed class UpdateDoctorRequestValidator : AbstractValidator<UpdateDoctorRequest>
+{
+    public UpdateDoctorRequestValidator()
+    {
+        RuleFor(x => x.FirstName).NotEmpty().MaximumLength(100);
+        RuleFor(x => x.LastName).NotEmpty().MaximumLength(100);
+        RuleFor(x => x.PhoneNumber).NotEmpty().MaximumLength(30);
+        RuleFor(x => x.LicenseNumber).NotEmpty().MaximumLength(50);
+        RuleFor(x => x.Biography).MaximumLength(2000);
+        RuleFor(x => x.YearsOfExperience).InclusiveBetween(0, 70);
+        RuleFor(x => x.SpecialtyIds).NotEmpty();
+    }
+}
+
+public sealed class UpdateDoctorBranchesRequestValidator : AbstractValidator<UpdateDoctorBranchesRequest>
+{
+    public UpdateDoctorBranchesRequestValidator()
+    {
+        // Zero degë e bën doktorin të pamenaxhueshëm (EnsureCanManageDoctorAsync kalon
+        // nëpër DoctorClinicBranches) dhe të parezervueshëm — ndryshe nga shërbimet,
+        // këtu s'lejohet bosh as përkohësisht.
+        RuleFor(x => x.BranchIds).NotEmpty();
+    }
+}
+
+public sealed class DoctorServiceAssignmentValidator : AbstractValidator<DoctorServiceAssignment>
+{
+    public DoctorServiceAssignmentValidator()
+    {
+        RuleFor(x => x.MedicalServiceId).NotEmpty();
+        RuleFor(x => x.CustomDurationMinutes).InclusiveBetween(5, 480).When(x => x.CustomDurationMinutes.HasValue);
+        RuleFor(x => x.CustomPrice).GreaterThanOrEqualTo(0).When(x => x.CustomPrice.HasValue);
+    }
+}
+
+public sealed class UpdateDoctorServicesRequestValidator : AbstractValidator<UpdateDoctorServicesRequest>
+{
+    public UpdateDoctorServicesRequestValidator()
+    {
+        RuleForEach(x => x.Services).SetValidator(new DoctorServiceAssignmentValidator());
+        RuleFor(x => x.Services)
+            .Must(services => services.Select(s => s.MedicalServiceId).Distinct().Count() == services.Count)
+            .WithMessage("Të njëjtin shërbim s'mund ta jepni dy herë.");
+    }
+}
+
 public sealed class AssignClinicAdminRequestValidator : AbstractValidator<AssignClinicAdminRequest>
 {
     public AssignClinicAdminRequestValidator()

@@ -20,13 +20,14 @@ import {
 import { api, ApiError } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import type {
+  AdminDoctorDetail,
   ClinicBranch,
   CreateDoctorRequest,
   CreateWorkingScheduleRequest,
-  Doctor,
-  DoctorDetails,
+  DoctorServiceAssignment,
   MedicalService,
   Specialty,
+  UpdateDoctorRequest,
 } from '../lib/types'
 import { useToast } from '../context/ToastContext'
 import { useClinicContext } from '../components/ClinicDetailLayout'
@@ -103,8 +104,7 @@ export default function ClinicDoctorsPage() {
   const { clinic } = useClinicContext()
   const { notify } = useToast()
 
-  const [doctors, setDoctors] = useState<Doctor[]>([])
-  const [details, setDetails] = useState<Record<string, DoctorDetails>>({})
+  const [doctors, setDoctors] = useState<AdminDoctorDetail[]>([])
   const [branches, setBranches] = useState<ClinicBranch[]>([])
   const [specialties, setSpecialties] = useState<Specialty[]>([])
   const [services, setServices] = useState<MedicalService[]>([])
@@ -113,22 +113,22 @@ export default function ClinicDoctorsPage() {
 
   const [branchFilter, setBranchFilter] = useState('all')
   const [specialtyFilter, setSpecialtyFilter] = useState('all')
-  // The public doctor list carries no active/inactive flag (see load()) — the
-  // filter is real UI, but "Joaktiv" can only ever match zero doctors today.
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [openFilter, setOpenFilter] = useState<'branch' | 'specialty' | 'status' | null>(null)
 
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [createdDoctor, setCreatedDoctor] = useState<CreatedDoctorCredentials | null>(null)
-  const [scheduleTarget, setScheduleTarget] = useState<Doctor | null>(null)
+  const [scheduleTarget, setScheduleTarget] = useState<AdminDoctorDetail | null>(null)
+  const [editTarget, setEditTarget] = useState<AdminDoctorDetail | null>(null)
+  const [servicesTarget, setServicesTarget] = useState<AdminDoctorDetail | null>(null)
+  const [deactivateTarget, setDeactivateTarget] = useState<AdminDoctorDetail | null>(null)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
 
   const load = useCallback(() => {
-    // GET /api/clinics/{id}/doctors (and branches/services, fetched here too
-    // for the add-doctor modal) are public routes — they 404 for a clinic
-    // that isn't approved yet. Skip the fetch and let the pending branch
-    // below explain why the page is empty, rather than a confusing "not
-    // found" error.
+    // The admin doctor list (and branches/services, fetched here too for the
+    // add-doctor modal) 403 for a clinic that isn't approved yet. Skip the
+    // fetch and let the pending branch below explain why the page is empty,
+    // rather than a confusing permission error.
     if (!clinic.isApproved) {
       setLoading(false)
       return
@@ -136,28 +136,16 @@ export default function ClinicDoctorsPage() {
     setLoading(true)
     setError('')
     Promise.all([
-      api.getClinicDoctors(clinic.id),
+      api.getAdminClinicDoctors(clinic.id),
       api.getClinicBranches(clinic.id),
       api.getSpecialties(),
       api.getClinicServices(clinic.id),
     ])
-      .then(async ([doctorList, branchList, specialtyList, serviceList]) => {
+      .then(([doctorList, branchList, specialtyList, serviceList]) => {
         setDoctors(doctorList)
         setBranches(branchList)
         setSpecialties(specialtyList)
         setServices(serviceList)
-
-        // The list endpoint (GET /clinics/{id}/doctors) is deliberately thin —
-        // it has no branches/services. /api/doctors/{id} (DoctorDetailsDto) is
-        // the only place those live, so we hydrate each card individually.
-        const pairs = await Promise.all(
-          doctorList.map((d) => api.getDoctor(d.id).then((detail) => [d.id, detail] as const).catch(() => null)),
-        )
-        const map: Record<string, DoctorDetails> = {}
-        for (const pair of pairs) {
-          if (pair) map[pair[0]] = pair[1]
-        }
-        setDetails(map)
       })
       .catch((e) => setError(getErrorMessage(e)))
       .finally(() => setLoading(false))
@@ -168,18 +156,13 @@ export default function ClinicDoctorsPage() {
   const filtered = useMemo(
     () =>
       doctors.filter((d) => {
-        if (statusFilter === 'inactive') return false
-        if (specialtyFilter !== 'all') {
-          const specialty = specialties.find((s) => s.id === specialtyFilter)
-          if (!specialty || !d.specialties.includes(specialty.name)) return false
-        }
-        if (branchFilter !== 'all') {
-          const detail = details[d.id]
-          if (!detail || !detail.branches.some((b) => b.branchId === branchFilter)) return false
-        }
+        if (statusFilter === 'active' && !d.isActive) return false
+        if (statusFilter === 'inactive' && d.isActive) return false
+        if (specialtyFilter !== 'all' && !d.specialties.some((s) => s.id === specialtyFilter)) return false
+        if (branchFilter !== 'all' && !d.branches.some((b) => b.id === branchFilter)) return false
         return true
       }),
-    [doctors, details, branchFilter, specialtyFilter, statusFilter, specialties],
+    [doctors, branchFilter, specialtyFilter, statusFilter],
   )
 
   const branchOptions: CustomSelectOption[] = useMemo(
@@ -199,19 +182,29 @@ export default function ClinicDoctorsPage() {
     { value: 'inactive', label: t('doctors.filterInactive') },
   ]
 
-  function handleAction(action: string, doctor: Doctor) {
+  function handleAction(action: string, doctor: AdminDoctorDetail) {
     setOpenMenuId(null)
     if (action === 'schedule') {
       setScheduleTarget(doctor)
-      return
+    } else if (action === 'edit') {
+      setEditTarget(doctor)
+    } else if (action === 'services') {
+      setServicesTarget(doctor)
+    } else if (action === 'deactivate') {
+      setDeactivateTarget(doctor)
+    } else if (action === 'activate') {
+      api
+        .activateDoctor(doctor.id)
+        .then(() => {
+          notify(t('doctors.card.reactivatedToast', { firstName: doctor.firstName, lastName: doctor.lastName }), 'ok')
+          load()
+        })
+        .catch((e) => notify(getErrorMessage(e), 'error'))
     }
-    if (action === 'toggle') {
-      notify(t('doctors.featureInDevelopmentToast'), 'info')
-      return
-    }
-    if (action === 'edit') {
-      notify(t('doctors.featureInDevelopmentToast'), 'info')
-    }
+  }
+
+  function replaceDoctor(updated: AdminDoctorDetail) {
+    setDoctors((prev) => prev.map((d) => (d.id === updated.id ? updated : d)))
   }
 
   return (
@@ -287,7 +280,6 @@ export default function ClinicDoctorsPage() {
             <ClinicDoctorCard
               key={d.id}
               doctor={d}
-              detail={details[d.id]}
               menuOpen={openMenuId === d.id}
               onToggleMenu={() => setOpenMenuId((cur) => (cur === d.id ? null : d.id))}
               onCloseMenu={() => setOpenMenuId(null)}
@@ -324,8 +316,46 @@ export default function ClinicDoctorsPage() {
       {scheduleTarget && (
         <DoctorScheduleModal
           doctor={scheduleTarget}
-          detail={details[scheduleTarget.id]}
           onClose={() => setScheduleTarget(null)}
+        />
+      )}
+
+      {editTarget && (
+        <EditDoctorModal
+          doctor={editTarget}
+          branches={branches}
+          specialties={specialties}
+          onClose={() => setEditTarget(null)}
+          onSaved={(updated) => {
+            replaceDoctor(updated)
+            setEditTarget(null)
+            notify(t('doctors.editModal.savedToast'), 'ok')
+          }}
+        />
+      )}
+
+      {servicesTarget && (
+        <DoctorServicesModal
+          doctor={servicesTarget}
+          clinicServices={services}
+          onClose={() => setServicesTarget(null)}
+          onSaved={(updated) => {
+            replaceDoctor(updated)
+            setServicesTarget(null)
+            notify(t('doctors.servicesModal.savedToast'), 'ok')
+          }}
+        />
+      )}
+
+      {deactivateTarget && (
+        <DeactivateDoctorModal
+          doctor={deactivateTarget}
+          onClose={() => setDeactivateTarget(null)}
+          onDeactivated={(updated) => {
+            replaceDoctor(updated)
+            setDeactivateTarget(null)
+            notify(t('doctors.card.deactivatedToast', { firstName: updated.firstName, lastName: updated.lastName }), 'ok')
+          }}
         />
       )}
       </>
@@ -336,14 +366,12 @@ export default function ClinicDoctorsPage() {
 
 function ClinicDoctorCard({
   doctor,
-  detail,
   menuOpen,
   onToggleMenu,
   onCloseMenu,
   onAction,
 }: {
-  doctor: Doctor
-  detail?: DoctorDetails
+  doctor: AdminDoctorDetail
   menuOpen: boolean
   onToggleMenu: () => void
   onCloseMenu: () => void
@@ -361,11 +389,11 @@ function ClinicDoctorCard({
     return () => document.removeEventListener('mousedown', onClickOutside)
   }, [menuOpen, onCloseMenu])
 
-  const visibleServices = detail?.services.slice(0, 3) ?? []
-  const extraServiceCount = (detail?.services.length ?? 0) - visibleServices.length
+  const visibleServices = doctor.services.slice(0, 3)
+  const extraServiceCount = doctor.services.length - visibleServices.length
 
   return (
-    <div className="admin-card doctor-admin-card">
+    <div className={`admin-card doctor-admin-card ${doctor.isActive ? '' : 'doctor-admin-card--inactive'}`}>
       <div className="doctor-admin-card__top">
         <div className="doctor-admin-card__avatar" aria-hidden>
           {initials(doctor.firstName, doctor.lastName)}
@@ -373,11 +401,15 @@ function ClinicDoctorCard({
         <div className="doctor-admin-card__identity">
           <div className="doctor-admin-card__name-row">
             <h3 className="doctor-admin-card__name">Dr. {doctor.firstName} {doctor.lastName}</h3>
-            <span className="admin-card__status admin-card__status--approved admin-card__status--inline">{t('doctors.card.statusActive')}</span>
+            {doctor.isActive ? (
+              <span className="admin-card__status admin-card__status--approved admin-card__status--inline">{t('doctors.card.statusActive')}</span>
+            ) : (
+              <span className="admin-card__status admin-card__status--pending admin-card__status--inline">{t('doctors.card.statusInactive')}</span>
+            )}
           </div>
           <div className="doctor-admin-card__specialties">
             {doctor.specialties.map((s) => (
-              <span key={s} className="service-card__specialty">{s}</span>
+              <span key={s.id} className="service-card__specialty">{s.name}</span>
             ))}
           </div>
         </div>
@@ -394,46 +426,42 @@ function ClinicDoctorCard({
                 <button type="button" className="dropdown__option" onClick={() => onAction('edit')}>
                   {t('doctors.card.editMenuItem')}
                 </button>
+                <button type="button" className="dropdown__option" onClick={() => onAction('services')}>
+                  {t('doctors.card.manageServicesMenuItem')}
+                </button>
                 <button type="button" className="dropdown__option" onClick={() => onAction('schedule')}>
                   {t('doctors.card.manageScheduleMenuItem')}
                 </button>
                 <Link to={`/mjeku/${doctor.id}`} className="dropdown__option" onClick={onCloseMenu}>
                   {t('doctors.card.viewPublicProfile')}
                 </Link>
-                <button type="button" className="dropdown__option" onClick={() => onAction('toggle')}>
-                  {t('doctors.card.deactivateMenuItem')}
-                </button>
+                {doctor.isActive ? (
+                  <button type="button" className="dropdown__option dropdown__option--danger" onClick={() => onAction('deactivate')}>
+                    {t('doctors.card.deactivateMenuItem')}
+                  </button>
+                ) : (
+                  <button type="button" className="dropdown__option" onClick={() => onAction('activate')}>
+                    {t('doctors.card.activateMenuItem')}
+                  </button>
+                )}
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/*
-        No card here for license number / verification status: the list
-        endpoint (Doctor: id, firstName, lastName, yearsOfExperience,
-        specialties) never returns them, and no admin endpoint exposes them
-        for an existing doctor either — only the one-time creation response
-        (AdminDoctorDto) has licenseNumber/isVerified, and it's discarded
-        after that call. Showing a fake dash for missing data would be worse
-        than omitting the row.
-      */}
       <div className="doctor-admin-card__meta">
         <span><Clock size={13} strokeWidth={1.5} /> {t('doctors.card.yearsExperience', { count: doctor.yearsOfExperience })}</span>
       </div>
 
       <div className="doctor-admin-card__row">
         <span className="doctor-admin-card__row-label">{t('doctors.card.branchesLabel')}</span>
-        {detail ? (
-          detail.branches.length > 0 ? (
-            detail.branches.map((b) => (
-              <span key={b.branchId} className="chip chip--soft">{b.branchName}</span>
-            ))
-          ) : (
-            <span className="muted" style={{ fontSize: 12 }}>{t('doctors.card.noBranchAssigned')}</span>
-          )
+        {doctor.branches.length > 0 ? (
+          doctor.branches.map((b) => (
+            <span key={b.id} className="chip chip--soft">{b.name}</span>
+          ))
         ) : (
-          <span className="muted" style={{ fontSize: 12 }}>—</span>
+          <span className="muted" style={{ fontSize: 12 }}>{t('doctors.card.noBranchAssigned')}</span>
         )}
       </div>
 
@@ -447,7 +475,9 @@ function ClinicDoctorCard({
             {extraServiceCount > 0 && <span className="chip chip--soft">{t('doctors.card.moreServicesCount', { count: extraServiceCount })}</span>}
           </>
         ) : (
-          <span className="muted" style={{ fontSize: 12 }}>{t('doctors.card.noServiceAssigned')}</span>
+          <button type="button" className="chip chip--actionable" onClick={() => onAction('services')}>
+            <AlertTriangle size={12} strokeWidth={1.5} /> {t('doctors.card.noServiceAssignedCta')}
+          </button>
         )}
       </div>
 
@@ -800,11 +830,9 @@ const EMPTY_SCHEDULE_FORM = {
 
 function DoctorScheduleModal({
   doctor,
-  detail,
   onClose,
 }: {
-  doctor: Doctor
-  detail?: DoctorDetails
+  doctor: AdminDoctorDetail
   onClose: () => void
 }) {
   const { t } = useTranslation('admin')
@@ -814,16 +842,16 @@ function DoctorScheduleModal({
   const [formError, setFormError] = useState('')
   const [openSelect, setOpenSelect] = useState<'branch' | 'day' | null>(null)
 
-  const doctorBranches = detail?.branches ?? []
+  const doctorBranches = doctor.branches
   const branchOptions: CustomSelectOption[] = [
     { value: '', label: t('doctors.scheduleModal.selectBranchPlaceholder'), disabled: true },
-    ...doctorBranches.map((b) => ({ value: b.branchId, label: b.branchName })),
+    ...doctorBranches.map((b) => ({ value: b.id, label: b.name })),
   ]
   const dayOptions: CustomSelectOption[] = DAY_ORDER.map((d) => ({ value: String(d), label: weekdayName(d) }))
 
   useEffect(() => {
     if (doctorBranches.length > 0 && !form.clinicBranchId) {
-      setForm((prev) => ({ ...prev, clinicBranchId: doctorBranches[0].branchId }))
+      setForm((prev) => ({ ...prev, clinicBranchId: doctorBranches[0].id }))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doctorBranches])
@@ -942,6 +970,390 @@ function DoctorScheduleModal({
       >
         {saving ? t('doctors.scheduleModal.savingCta') : (<><Plus size={16} strokeWidth={1.5} /> {t('doctors.scheduleModal.addScheduleCta')}</>)}
       </button>
+    </Modal>
+  )
+}
+
+/** Emri, mbiemri, telefoni (ApplicationUser) + licenca/biografia/vitet/specializimet (Doctor) + degët (DoctorClinicBranch). */
+function EditDoctorModal({
+  doctor,
+  branches,
+  specialties,
+  onClose,
+  onSaved,
+}: {
+  doctor: AdminDoctorDetail
+  branches: ClinicBranch[]
+  specialties: Specialty[]
+  onClose: () => void
+  onSaved: (updated: AdminDoctorDetail) => void
+}) {
+  const { t } = useTranslation('admin')
+  const { t: tCommon } = useTranslation('common')
+  const [form, setForm] = useState(() => ({
+    firstName: doctor.firstName,
+    lastName: doctor.lastName,
+    phoneNumber: doctor.phoneNumber ?? '',
+    licenseNumber: doctor.licenseNumber,
+    biography: doctor.biography ?? '',
+    yearsOfExperience: doctor.yearsOfExperience,
+    specialtyIds: doctor.specialties.map((s) => s.id),
+    branchIds: doctor.branches.map((b) => b.id),
+  }))
+  const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState('')
+  const [licenseError, setLicenseError] = useState('')
+
+  function updateField<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
+    setForm((prev) => ({ ...prev, [key]: value }))
+  }
+
+  function toggleId(key: 'specialtyIds' | 'branchIds', id: string) {
+    setForm((prev) => {
+      const current = prev[key]
+      const next = current.includes(id) ? current.filter((x) => x !== id) : [...current, id]
+      return { ...prev, [key]: next }
+    })
+  }
+
+  async function handleSubmit() {
+    setLicenseError('')
+    setFormError('')
+
+    if (form.firstName.trim().length < 2) return setFormError(t('doctors.addModal.firstNameRequired'))
+    if (form.lastName.trim().length < 2) return setFormError(t('doctors.addModal.lastNameRequired'))
+    if (form.phoneNumber.trim().length === 0) return setFormError(t('doctors.addModal.phoneRequired'))
+    if (form.licenseNumber.trim().length < 2) return setFormError(t('doctors.addModal.licenseRequired'))
+    if (!form.yearsOfExperience || form.yearsOfExperience < 0) return setFormError(t('doctors.addModal.experienceRequired'))
+    if (form.specialtyIds.length === 0) return setFormError(t('doctors.addModal.specialtyRequired'))
+    if (form.branchIds.length === 0) return setFormError(t('doctors.addModal.branchRequired'))
+
+    setSaving(true)
+    try {
+      const updateRequest: UpdateDoctorRequest = {
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        phoneNumber: form.phoneNumber.trim(),
+        licenseNumber: form.licenseNumber.trim(),
+        biography: form.biography.trim() || undefined,
+        yearsOfExperience: form.yearsOfExperience,
+        specialtyIds: form.specialtyIds,
+      }
+      await api.updateDoctor(doctor.id, updateRequest)
+      // Degët janë endpoint i veçantë në backend (DoctorClinicBranch, jo Doctor) —
+      // përgjigja e fundit mbetet gjendja e plotë e konsistente për t'u shfaqur.
+      const updated = await api.updateDoctorBranches(doctor.id, { branchIds: form.branchIds })
+      onSaved(updated)
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 409) {
+        setLicenseError(t('doctors.addModal.licenseConflict'))
+      } else {
+        setFormError(getErrorMessage(e))
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal title={t('doctors.editModal.title', { firstName: doctor.firstName, lastName: doctor.lastName })} onClose={onClose} size="lg">
+      {formError && <ErrorBox message={formError} />}
+
+      <p className="doctor-form__section-title">{t('doctors.addModal.personalSectionTitle')}</p>
+      <div className="form-row">
+        <div className="field">
+          <label>{t('doctors.addModal.firstNameLabel')}</label>
+          <input type="text" value={form.firstName} onChange={(e) => updateField('firstName', e.target.value)} />
+        </div>
+        <div className="field">
+          <label>{t('doctors.addModal.lastNameLabel')}</label>
+          <input type="text" value={form.lastName} onChange={(e) => updateField('lastName', e.target.value)} />
+        </div>
+      </div>
+      <div className="form-row">
+        <div className="field">
+          <label>{t('doctors.addModal.emailLabel')}</label>
+          <input type="email" value={doctor.email} disabled />
+          <span className="field__note">{t('doctors.editModal.emailReadOnlyNote')}</span>
+        </div>
+        <div className="field">
+          <label>{t('doctors.addModal.phoneLabel')}</label>
+          <input type="tel" value={form.phoneNumber} onChange={(e) => updateField('phoneNumber', e.target.value)} />
+        </div>
+      </div>
+
+      <p className="doctor-form__section-title">{t('doctors.addModal.professionalSectionTitle')}</p>
+      <div className="form-row">
+        <div className="field">
+          <label>{t('doctors.addModal.licenseLabel')}</label>
+          <input
+            type="text"
+            value={form.licenseNumber}
+            onChange={(e) => { updateField('licenseNumber', e.target.value); setLicenseError('') }}
+          />
+          {licenseError && <span className="field__error">{licenseError}</span>}
+        </div>
+        <div className="field">
+          <label>{t('doctors.addModal.experienceLabel')}</label>
+          <input
+            type="number"
+            min={0}
+            value={form.yearsOfExperience}
+            onChange={(e) => updateField('yearsOfExperience', Number(e.target.value))}
+          />
+        </div>
+      </div>
+      <div className="field">
+        <label>{t('doctors.addModal.biographyLabel')} <span className="muted">{t('specialties.optional')}</span></label>
+        <textarea rows={3} value={form.biography} onChange={(e) => updateField('biography', e.target.value)} />
+      </div>
+
+      <p className="doctor-form__section-title">{t('doctors.addModal.assignmentSectionTitle')}</p>
+      <div className="field">
+        <label>{t('doctors.addModal.specialtiesLabel')}</label>
+        <MultiSelectPills options={specialties} selected={form.specialtyIds} onToggle={(id) => toggleId('specialtyIds', id)} />
+      </div>
+      <div className="field">
+        <label>{t('doctors.addModal.branchesFieldLabel')}</label>
+        <MultiSelectPills options={branches} selected={form.branchIds} onToggle={(id) => toggleId('branchIds', id)} />
+      </div>
+
+      <div className="clinic-settings__actions">
+        <button type="button" className="btn btn--primary btn--sm" disabled={saving} onClick={handleSubmit}>
+          {saving ? t('doctors.editModal.savingCta') : t('doctors.editModal.saveCta')}
+        </button>
+        <button type="button" className="btn btn--ghost btn--sm" onClick={onClose}>{tCommon('buttons.cancel')}</button>
+      </div>
+    </Modal>
+  )
+}
+
+interface DoctorServiceRow {
+  serviceId: string
+  name: string
+  baseDuration: number
+  basePrice: number
+  currency: string
+  enabled: boolean
+  customDurationMinutes: string
+  customPrice: string
+}
+
+/**
+ * Modal i veçantë, jo brenda EditDoctorModal — një doktor mund të ketë shumë
+ * shërbime dhe secili mund të mbajë override çmimi/kohëzgjatjeje, kështu që
+ * një multi-select me pilula (si te specializimet/degët) do të ishte i
+ * ngushtë për ta mbajtur këtë të dhënë.
+ */
+function DoctorServicesModal({
+  doctor,
+  clinicServices,
+  onClose,
+  onSaved,
+}: {
+  doctor: AdminDoctorDetail
+  clinicServices: MedicalService[]
+  onClose: () => void
+  onSaved: (updated: AdminDoctorDetail) => void
+}) {
+  const { t } = useTranslation('admin')
+  const { t: tCommon } = useTranslation('common')
+  const [rows, setRows] = useState<DoctorServiceRow[]>(() => {
+    const assigned = new Map(doctor.services.map((s) => [s.medicalServiceId, s]))
+    return clinicServices.map((service) => {
+      const existing = assigned.get(service.id)
+      return {
+        serviceId: service.id,
+        name: service.name,
+        baseDuration: service.durationMinutes,
+        basePrice: service.price,
+        currency: service.currency,
+        enabled: existing !== undefined,
+        customDurationMinutes: existing?.customDurationMinutes !== undefined ? String(existing.customDurationMinutes) : '',
+        customPrice: existing?.customPrice !== undefined ? String(existing.customPrice) : '',
+      }
+    })
+  })
+  const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState('')
+
+  function toggle(serviceId: string) {
+    setRows((prev) => prev.map((r) => (r.serviceId === serviceId ? { ...r, enabled: !r.enabled } : r)))
+  }
+
+  function updateOverride(serviceId: string, field: 'customDurationMinutes' | 'customPrice', value: string) {
+    setRows((prev) => prev.map((r) => (r.serviceId === serviceId ? { ...r, [field]: value } : r)))
+  }
+
+  async function handleSubmit() {
+    setFormError('')
+    setSaving(true)
+    try {
+      const services: DoctorServiceAssignment[] = rows
+        .filter((r) => r.enabled)
+        .map((r) => ({
+          medicalServiceId: r.serviceId,
+          customDurationMinutes: r.customDurationMinutes.trim() ? Number(r.customDurationMinutes) : undefined,
+          customPrice: r.customPrice.trim() ? Number(r.customPrice) : undefined,
+        }))
+      const updated = await api.updateDoctorServices(doctor.id, { services })
+      onSaved(updated)
+    } catch (e) {
+      setFormError(getErrorMessage(e))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const enabledCount = rows.filter((r) => r.enabled).length
+
+  return (
+    <Modal title={t('doctors.servicesModal.title', { firstName: doctor.firstName, lastName: doctor.lastName })} onClose={onClose} size="lg">
+      {formError && <ErrorBox message={formError} />}
+
+      {enabledCount === 0 && (
+        <div className="schedule-info-banner schedule-info-banner--warn">
+          <AlertTriangle size={16} strokeWidth={1.5} color="var(--warn)" />
+          <span>{t('doctors.servicesModal.noneWarning')}</span>
+        </div>
+      )}
+
+      {rows.length === 0 ? (
+        <p className="muted" style={{ fontSize: 13 }}>{t('doctors.servicesModal.noClinicServices')}</p>
+      ) : (
+        <div className="doctor-services-list">
+          {rows.map((row) => (
+            <div key={row.serviceId} className={`doctor-services-row ${row.enabled ? 'is-enabled' : ''}`}>
+              <label className="doctor-services-row__toggle">
+                <input type="checkbox" checked={row.enabled} onChange={() => toggle(row.serviceId)} />
+                <span>{row.name}</span>
+              </label>
+              {row.enabled && (
+                <div className="doctor-services-row__overrides">
+                  <div className="field">
+                    <label>{t('doctors.servicesModal.durationLabel')}</label>
+                    <input
+                      type="number"
+                      min={5}
+                      max={480}
+                      placeholder={String(row.baseDuration)}
+                      value={row.customDurationMinutes}
+                      onChange={(e) => updateOverride(row.serviceId, 'customDurationMinutes', e.target.value)}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>{t('doctors.servicesModal.priceLabel', { currency: row.currency })}</label>
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      placeholder={String(row.basePrice)}
+                      value={row.customPrice}
+                      onChange={(e) => updateOverride(row.serviceId, 'customPrice', e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="clinic-settings__actions" style={{ marginTop: 16 }}>
+        <button type="button" className="btn btn--primary btn--sm" disabled={saving} onClick={handleSubmit}>
+          {saving ? t('doctors.servicesModal.savingCta') : t('doctors.servicesModal.saveCta')}
+        </button>
+        <button type="button" className="btn btn--ghost btn--sm" onClick={onClose}>{tCommon('buttons.cancel')}</button>
+      </div>
+    </Modal>
+  )
+}
+
+/**
+ * Kërkesa e parë dërgohet gjithmonë pa anulim (cancelFutureAppointments: false).
+ * Nëse backend-i përgjigjet 409 (termine të ardhshme aktive), mesazhi i tij
+ * (numri i termineve) shfaqet dhe admini duhet ta kërkojë shprehimisht rrugën
+ * "anulo dhe çaktivizo" — çaktivizimi nuk anulon kurrë në heshtje.
+ */
+function DeactivateDoctorModal({
+  doctor,
+  onClose,
+  onDeactivated,
+}: {
+  doctor: AdminDoctorDetail
+  onClose: () => void
+  onDeactivated: (updated: AdminDoctorDetail) => void
+}) {
+  const { t } = useTranslation('admin')
+  const { t: tCommon } = useTranslation('common')
+  const [saving, setSaving] = useState(false)
+  const [conflictMessage, setConflictMessage] = useState('')
+  const [formError, setFormError] = useState('')
+
+  async function attempt(cancelFutureAppointments: boolean) {
+    setFormError('')
+    setSaving(true)
+    try {
+      const updated = await api.deactivateDoctor(doctor.id, { cancelFutureAppointments })
+      onDeactivated(updated)
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 409) {
+        setConflictMessage(e.message)
+      } else {
+        setFormError(getErrorMessage(e))
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal title={t('doctors.deactivateModal.title', { firstName: doctor.firstName, lastName: doctor.lastName })} onClose={onClose}>
+      {formError && <ErrorBox message={formError} />}
+
+      {conflictMessage ? (
+        <>
+          <div className="credentials-warning">
+            <AlertTriangle size={15} strokeWidth={1.5} />
+            <span>{conflictMessage}</span>
+          </div>
+          <p className="schedule-delete__text">{t('doctors.deactivateModal.cancelAppointmentsPrompt')}</p>
+          <div className="schedule-delete__actions">
+            <button type="button" className="btn btn--ghost btn--sm" style={{ flex: 1 }} onClick={onClose} disabled={saving}>
+              {tCommon('buttons.cancel')}
+            </button>
+            <button
+              type="button"
+              className="btn btn--sm"
+              style={{ flex: 1, background: 'var(--danger)', color: '#fff' }}
+              disabled={saving}
+              onClick={() => attempt(true)}
+            >
+              {saving ? t('doctors.deactivateModal.deactivatingCta') : t('doctors.deactivateModal.cancelAndDeactivateCta')}
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="schedule-delete__text">
+            {t('doctors.deactivateModal.confirmText', { firstName: doctor.firstName, lastName: doctor.lastName })}
+          </p>
+          <div className="schedule-delete__actions">
+            <button type="button" className="btn btn--ghost btn--sm" style={{ flex: 1 }} onClick={onClose} disabled={saving}>
+              {tCommon('buttons.cancel')}
+            </button>
+            <button
+              type="button"
+              className="btn btn--sm"
+              style={{ flex: 1, background: 'var(--danger)', color: '#fff' }}
+              disabled={saving}
+              onClick={() => attempt(false)}
+            >
+              {saving ? t('doctors.deactivateModal.deactivatingCta') : t('doctors.deactivateModal.deactivateCta')}
+            </button>
+          </div>
+        </>
+      )}
     </Modal>
   )
 }

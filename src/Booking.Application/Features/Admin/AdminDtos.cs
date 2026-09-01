@@ -113,16 +113,92 @@ public sealed record CreateDoctorRequest
     public IReadOnlyList<Guid> ServiceIds { get; init; } = [];
 }
 
-public sealed record AdminDoctorDto
+public sealed record UpdateDoctorRequest
+{
+    public required string FirstName { get; init; }
+    public required string LastName { get; init; }
+    public required string PhoneNumber { get; init; }
+    public required string LicenseNumber { get; init; }
+    public string? Biography { get; init; }
+    public required int YearsOfExperience { get; init; }
+    public required IReadOnlyList<Guid> SpecialtyIds { get; init; }
+}
+
+/// <summary>Zëvendëson tërësisht degët e doktorit — jo shtim/heqje inkrementale.</summary>
+public sealed record UpdateDoctorBranchesRequest
+{
+    public required IReadOnlyList<Guid> BranchIds { get; init; }
+}
+
+/// <summary>Override-et janë opsionale: null = përdoret çmimi/kohëzgjatja bazë e MedicalService.</summary>
+public sealed record DoctorServiceAssignment
+{
+    public required Guid MedicalServiceId { get; init; }
+    public int? CustomDurationMinutes { get; init; }
+    public decimal? CustomPrice { get; init; }
+}
+
+/// <summary>Zëvendëson tërësisht shërbimet e doktorit — jo shtim/heqje inkrementale.</summary>
+public sealed record UpdateDoctorServicesRequest
+{
+    public required IReadOnlyList<DoctorServiceAssignment> Services { get; init; }
+}
+
+public sealed record SetDoctorActiveRequest
+{
+    /// <summary>
+    /// Vetëm për çaktivizim: nëse doktori ka termine të ardhshme aktive (Pending/Confirmed/
+    /// CheckedIn/InProgress) dhe kjo fushë është false, çaktivizimi refuzohet me 409 —
+    /// admini duhet ta kërkojë shprehimisht anulimin. true = ato anulohen automatikisht
+    /// (CancelledByClinic) dhe pacientët njoftohen.
+    /// </summary>
+    public bool CancelFutureAppointments { get; init; }
+}
+
+public sealed record AdminDoctorSpecialtyDto
+{
+    public required Guid Id { get; init; }
+    public required string Name { get; init; }
+}
+
+public sealed record AdminDoctorBranchDto
+{
+    public required Guid Id { get; init; }
+    public required string Name { get; init; }
+}
+
+/// <summary>Kohëzgjatja/çmimi janë EFEKTIVE (override i doktorit kur ekziston, përndryshe vlera bazë e shërbimit).</summary>
+public sealed record AdminDoctorServiceDto
+{
+    public required Guid MedicalServiceId { get; init; }
+    public required string Name { get; init; }
+    public required int DurationMinutes { get; init; }
+    public required decimal Price { get; init; }
+    public required string Currency { get; init; }
+    public int? CustomDurationMinutes { get; init; }
+    public decimal? CustomPrice { get; init; }
+}
+
+/// <summary>
+/// Pamja e plotë administrative e një doktori — për listë (përfshin doktorë joaktivë, që
+/// admini duhet t'i shohë për t'i riaktivizuar) dhe si përgjigje e çdo update/deactivate/activate.
+/// </summary>
+public sealed record AdminDoctorDetailDto
 {
     public required Guid Id { get; init; }
     public required Guid UserId { get; init; }
     public required string FirstName { get; init; }
     public required string LastName { get; init; }
     public required string Email { get; init; }
+    public string? PhoneNumber { get; init; }
     public required string LicenseNumber { get; init; }
+    public string? Biography { get; init; }
+    public required int YearsOfExperience { get; init; }
     public required bool IsVerified { get; init; }
     public required bool IsActive { get; init; }
+    public required IReadOnlyList<AdminDoctorSpecialtyDto> Specialties { get; init; }
+    public required IReadOnlyList<AdminDoctorBranchDto> Branches { get; init; }
+    public required IReadOnlyList<AdminDoctorServiceDto> Services { get; init; }
 }
 
 // ---------- SuperAdmin ----------

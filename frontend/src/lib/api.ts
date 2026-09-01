@@ -3,7 +3,7 @@ import type {
   AdminAppointmentsQuery,
   AdminClinic,
   AdminClinicDetail,
-  AdminDoctor,
+  AdminDoctorDetail,
   AdminUser,
   AdminUsersQuery,
   Appointment,
@@ -38,9 +38,13 @@ import type {
   RegisterClinicRequest,
   RegisterClinicResponse,
   RegisterRequest,
+  SetDoctorActiveRequest,
   Specialty,
   UnavailabilityDto,
   UpdateClinicRequest,
+  UpdateDoctorBranchesRequest,
+  UpdateDoctorRequest,
+  UpdateDoctorServicesRequest,
   UpdatePatientProfileRequest,
   UpdateSpecialtyRequest,
 } from './types'
@@ -504,11 +508,50 @@ export const api = {
     }),
 
   createClinicDoctor: (clinicId: string, payload: CreateDoctorRequest) =>
-    request<AdminDoctor>(`/api/admin/clinics/${clinicId}/doctors`, {
+    request<AdminDoctorDetail>(`/api/admin/clinics/${clinicId}/doctors`, {
       method: 'POST',
       body: payload,
       auth: true,
     }),
+
+  /**
+   * Ndryshe nga getClinicDoctors (publik, filtron IsActive/IsVerified dhe s'ka
+   * userId/licenseNumber/isVerified/isActive/telefon), kjo kthen çdo doktor të
+   * klinikës — përfshirë joaktivë, që admini t'i riaktivizojë.
+   */
+  getAdminClinicDoctors: (clinicId: string) =>
+    request<AdminDoctorDetail[]>(`/api/admin/clinics/${clinicId}/doctors`, { auth: true }),
+
+  updateDoctor: (doctorId: string, payload: UpdateDoctorRequest) =>
+    request<AdminDoctorDetail>(`/api/admin/doctors/${doctorId}`, {
+      method: 'PUT',
+      body: payload,
+      auth: true,
+    }),
+
+  updateDoctorBranches: (doctorId: string, payload: UpdateDoctorBranchesRequest) =>
+    request<AdminDoctorDetail>(`/api/admin/doctors/${doctorId}/branches`, {
+      method: 'PUT',
+      body: payload,
+      auth: true,
+    }),
+
+  updateDoctorServices: (doctorId: string, payload: UpdateDoctorServicesRequest) =>
+    request<AdminDoctorDetail>(`/api/admin/doctors/${doctorId}/services`, {
+      method: 'PUT',
+      body: payload,
+      auth: true,
+    }),
+
+  deactivateDoctor: (doctorId: string, payload: SetDoctorActiveRequest) =>
+    request<AdminDoctorDetail>(`/api/admin/doctors/${doctorId}/deactivate`, {
+      method: 'POST',
+      body: payload,
+      auth: true,
+    }),
+
+  activateDoctor: (doctorId: string) =>
+    request<AdminDoctorDetail>(`/api/admin/doctors/${doctorId}/activate`, { method: 'POST', auth: true }),
 
   createDoctorScheduleAsAdmin: (doctorId: string, payload: CreateWorkingScheduleRequest) =>
     request<DoctorWorkingSchedule>(`/api/admin/doctors/${doctorId}/working-schedules`, {

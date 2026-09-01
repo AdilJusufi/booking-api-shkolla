@@ -126,7 +126,6 @@
     "filterAll": "All",
     "filterActive": "Active",
     "filterInactive": "Inactive",
-    "featureInDevelopmentToast": "Feature in development.",
     "card": {
       "statusActive": "ACTIVE",
       "editAria": "Edit details",
@@ -140,10 +139,15 @@
       "branchesLabel": "BRANCHES:",
       "noBranchAssigned": "No branch assigned",
       "servicesLabel": "SERVICES:",
-      "noServiceAssigned": "No service assigned",
       "moreServicesCount": "+{{count}} more",
       "idLabel": "ID: {{id}}",
-      "manageScheduleCta": "Manage Schedule"
+      "manageScheduleCta": "Manage Schedule",
+      "statusInactive": "INACTIVE",
+      "manageServicesMenuItem": "Manage services",
+      "activateMenuItem": "Reactivate",
+      "deactivatedToast": "Dr. {{firstName}} {{lastName}} was deactivated.",
+      "reactivatedToast": "Dr. {{firstName}} {{lastName}} was reactivated.",
+      "noServiceAssignedCta": "Assign services"
     },
     "multiSelect": {
       "noOptions": "No options available."
@@ -215,7 +219,32 @@
       "addedToast": "Schedule added."
     },
     "pendingTitle": "The clinic is still awaiting approval",
-    "pendingHint": "Doctor management opens up as soon as a SuperAdmin approves the clinic."
+    "pendingHint": "Doctor management opens up as soon as a SuperAdmin approves the clinic.",
+    "editModal": {
+      "title": "Edit Details — Dr. {{firstName}} {{lastName}}",
+      "emailReadOnlyNote": "Email can’t be changed here — contact a SuperAdmin if it’s wrong.",
+      "saveCta": "Save Changes",
+      "savingCta": "Saving…",
+      "savedToast": "Details saved."
+    },
+    "servicesModal": {
+      "title": "Services — Dr. {{firstName}} {{lastName}}",
+      "durationLabel": "Duration (min)",
+      "priceLabel": "Price ({{currency}})",
+      "noneWarning": "This doctor has no services assigned — they can’t be booked until you select at least one.",
+      "noClinicServices": "The clinic has no services yet. Add services under the \"Services\" tab first.",
+      "saveCta": "Save Services",
+      "savingCta": "Saving…",
+      "savedToast": "Services updated."
+    },
+    "deactivateModal": {
+      "title": "Deactivate — Dr. {{firstName}} {{lastName}}",
+      "confirmText": "Dr. {{firstName}} {{lastName}} will be removed from public search and won’t be able to accept new bookings. Continue?",
+      "deactivateCta": "Deactivate",
+      "deactivatingCta": "Deactivating…",
+      "cancelAppointmentsPrompt": "To deactivate anyway, the upcoming appointments must be cancelled first — affected patients are notified automatically.",
+      "cancelAndDeactivateCta": "Cancel Appointments and Deactivate"
+    }
   },
   "services": {
     "pageTitle": "Clinic Services",
