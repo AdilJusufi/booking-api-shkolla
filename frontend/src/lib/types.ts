@@ -611,6 +611,10 @@ export interface CloudinarySignature {
   apiKey: string
   cloudName: string
   folder: string
+  /** Pjesë e vargut të nënshkruar — dërgohet si fushë e formës, përndryshe nënshkrimi s'përputhet. */
+  allowedFormats: string
+  /** Po ashtu i nënshkruar; kufiri i vërtetë, i zbatuar nga Cloudinary, jo vetëm nga UI-ja. */
+  maxFileSizeBytes: number
 }
 
 /** Pasqyron CreateClinicRequest — POST /api/admin/clinics (vetëm SuperAdmin). */

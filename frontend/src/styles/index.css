@@ -3356,6 +3356,19 @@ textarea {
   line-height: 1.5;
 }
 
+/*
+ * A generic .btn keeps white-space: nowrap for its usual single-line
+ * icon+label case, but the 300px-wide sidebar column here is tight enough
+ * that longer CTA labels (e.g. sq "Konfirmo rezervimin") sit right at that
+ * width and can overflow — and .card's overflow: hidden then clips it
+ * instead of letting it wrap, unlike the page's own apptdetail-btn-primary
+ * buttons elsewhere, which never set nowrap in the first place.
+ */
+.apptdetail-action .btn {
+  white-space: normal;
+  text-align: center;
+}
+
 .apptdetail-infobox {
   display: flex;
   gap: 10px;

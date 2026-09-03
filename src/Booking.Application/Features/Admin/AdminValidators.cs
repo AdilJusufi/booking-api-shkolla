@@ -252,3 +252,31 @@ public sealed class AdminCreatePatientRequestValidator : AbstractValidator<Admin
         RuleFor(x => x.City).MaximumLength(100);
     }
 }
+
+/// <summary>
+/// Pasqyron RescheduleAppointmentRequestValidator (rruga e pacientit). I njëjti kufi 180-ditësh:
+/// pa të, riplanifikimi nga administrata pranonte çdo datë të ardhshme — jo shkelje sigurie,
+/// sepse ndalimi për të kaluarën zbatohet te AdminAppointmentService, por një termin i vendosur
+/// dhjetëra vjet përpara është e dhënë e prishur që s'ka pse të hyjë fare.
+/// </summary>
+public sealed class AdminRescheduleAppointmentRequestValidator : AbstractValidator<AdminRescheduleAppointmentRequest>
+{
+    public AdminRescheduleAppointmentRequestValidator()
+    {
+        RuleFor(x => x.NewStartDateTime)
+            .Must(start => start > DateTime.UtcNow.AddDays(-2))
+            .WithMessage("Data e re është në të kaluarën.")
+            .Must(start => start < DateTime.UtcNow.AddDays(181))
+            .WithMessage("Terminet mund të riplanifikohen maksimum 180 ditë përpara.");
+    }
+}
+
+/// <summary>
+/// SetDoctorActiveRequest mban një bool të vetëm — s'ka çfarë të validohet, dhe çdo vlerë
+/// është e ligjshme. Ekziston vetëm që kontrolli i nisjes (ValidatorCoverage) të mos ketë
+/// nevojë për një listë përjashtimesh: një DTO pa validator është ose ky rast i padëmshëm,
+/// ose një hendek i vërtetë, dhe nga jashtë të dyja duken njësoj.
+/// </summary>
+public sealed class SetDoctorActiveRequestValidator : AbstractValidator<SetDoctorActiveRequest>
+{
+}

@@ -21,11 +21,8 @@ function validityLabel(s: DoctorWorkingSchedule, t: (key: string, opts?: Record<
   return t('workingSchedule.validUntilOnly', { date: formatDatePill(s.validUntil) })
 }
 
-type ScheduleFormMode = 'single' | 'range'
-
 interface FormState {
   clinicBranchId: string
-  dayOfWeek: string
   selectedDays: number[]
   startTime: string
   endTime: string
@@ -36,7 +33,6 @@ interface FormState {
 
 const EMPTY_FORM: FormState = {
   clinicBranchId: '',
-  dayOfWeek: '1',
   selectedDays: [],
   startTime: '09:00',
   endTime: '17:00',
@@ -62,20 +58,14 @@ export default function WorkingSchedulePage() {
   const [error, setError] = useState('')
 
   const [showAddModal, setShowAddModal] = useState(false)
-  const [scheduleMode, setScheduleMode] = useState<ScheduleFormMode>('single')
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
-  const [openField, setOpenField] = useState<'branch' | 'day' | null>(null)
+  const [openField, setOpenField] = useState<'branch' | null>(null)
   const [rangeResult, setRangeResult] = useState<RangeSubmitResult | null>(null)
 
   const [deleteTarget, setDeleteTarget] = useState<DoctorWorkingSchedule | null>(null)
   const [actingId, setActingId] = useState('')
-
-  // Recomputed on every render (not module-level) so a language switch
-  // relabels these immediately — weekdayName() reads the active i18n
-  // language at call time.
-  const dayOptions = DAY_ORDER.map((d) => ({ value: String(d), label: weekdayName(d) }))
 
   function load() {
     setLoading(true)
@@ -114,7 +104,6 @@ export default function WorkingSchedulePage() {
   function openAddModal() {
     setForm({ ...EMPTY_FORM, clinicBranchId: branchOptions[0]?.id ?? '' })
     setFormError('')
-    setScheduleMode('single')
     setRangeResult(null)
     setShowAddModal(true)
   }
@@ -123,7 +112,7 @@ export default function WorkingSchedulePage() {
     setForm((prev) => ({ ...prev, [key]: value }))
   }
 
-  /** Shared per-day validation — same rules for single-day and every day in range mode. */
+  /** Same rules apply to every selected day, whether there's one or several. */
   function validateCommonFields(): string | null {
     if (!form.clinicBranchId) return t('workingSchedule.validation.branchRequired')
     if (form.endTime <= form.startTime) return t('workingSchedule.validation.endAfterStart')
@@ -152,31 +141,15 @@ export default function WorkingSchedulePage() {
     setRangeResult(null)
     const validationError = validateCommonFields()
     if (validationError) return setFormError(validationError)
-
-    if (scheduleMode === 'single') {
-      setSaving(true)
-      try {
-        await api.createWorkingSchedule(buildPayload(Number(form.dayOfWeek)))
-        setShowAddModal(false)
-        notify(t('workingSchedule.createdToast'), 'ok')
-        load()
-      } catch (e) {
-        setFormError(getErrorMessage(e))
-      } finally {
-        setSaving(false)
-      }
-      return
-    }
-
-    // Range mode: each day is its own independent request, not a new bulk
-    // endpoint — the backend's overlap check is already scoped per (doctor,
-    // branch, dayOfWeek), so different days structurally can't conflict with
-    // each other in one submission, and the desired UX (partial success, no
-    // rollback) is exactly what N independent calls give for free. Fired in
-    // parallel via allSettled rather than sequentially — same round trips
-    // either way, but faster and simpler than threading an abort-on-first-
-    // failure loop.
     if (form.selectedDays.length === 0) return setFormError(t('workingSchedule.validation.daysRequired'))
+
+    // Each selected day is its own independent request, not a bulk endpoint —
+    // the backend's overlap check is already scoped per (doctor, branch,
+    // dayOfWeek), so different days structurally can't conflict with each
+    // other in one submission, and the desired UX (partial success, no
+    // rollback) is exactly what N independent calls give for free. Fired in
+    // parallel via allSettled — same round trips either way (even for a
+    // single day), but faster and simpler than a sequential loop.
 
     setSaving(true)
     const results = await Promise.allSettled(
@@ -349,27 +322,6 @@ export default function WorkingSchedulePage() {
             </div>
           )}
 
-          <div className="tabs" role="tablist" aria-label={t('workingSchedule.modeLabel')}>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={scheduleMode === 'single'}
-              className={`tab ${scheduleMode === 'single' ? 'is-active' : ''}`}
-              onClick={() => { setScheduleMode('single'); setRangeResult(null) }}
-            >
-              {t('workingSchedule.modeSingle')}
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={scheduleMode === 'range'}
-              className={`tab ${scheduleMode === 'range' ? 'is-active' : ''}`}
-              onClick={() => { setScheduleMode('range'); setRangeResult(null) }}
-            >
-              {t('workingSchedule.modeRange')}
-            </button>
-          </div>
-
           {branchOptions.length === 0 ? (
             <div className="field">
               <label>{t('workingSchedule.branchLabel')}</label>
@@ -390,29 +342,16 @@ export default function WorkingSchedulePage() {
             </div>
           )}
 
-          {scheduleMode === 'single' ? (
-            <div className="field">
-              <CustomSelect
-                label={t('workingSchedule.dayOfWeekLabel')}
-                options={dayOptions}
-                value={form.dayOfWeek}
-                onChange={(v) => updateField('dayOfWeek', v)}
-                open={openField === 'day'}
-                onOpenChange={(isOpen) => setOpenField(isOpen ? 'day' : null)}
-              />
-            </div>
-          ) : (
-            <div className="field">
-              <label>{t('workingSchedule.daysLabel')}</label>
-              <WeekdayMultiSelect
-                selectedDays={form.selectedDays}
-                onChange={(days) => updateField('selectedDays', days)}
-                fromLabel={t('workingSchedule.rangeFromLabel')}
-                toLabel={t('workingSchedule.rangeToLabel')}
-                applyRangeCta={t('workingSchedule.rangeApplyCta')}
-              />
-            </div>
-          )}
+          <div className="field">
+            <label>{t('workingSchedule.daysLabel')}</label>
+            <WeekdayMultiSelect
+              selectedDays={form.selectedDays}
+              onChange={(days) => updateField('selectedDays', days)}
+              fromLabel={t('workingSchedule.rangeFromLabel')}
+              toLabel={t('workingSchedule.rangeToLabel')}
+              applyRangeCta={t('workingSchedule.rangeApplyCta')}
+            />
+          </div>
 
           <div className="form-row">
             <TimeField label={t('workingSchedule.startTimeLabel')} value={form.startTime} onChange={(v) => updateField('startTime', v)} />
@@ -447,11 +386,7 @@ export default function WorkingSchedulePage() {
             disabled={saving || branchOptions.length === 0}
             onClick={handleCreate}
           >
-            {saving
-              ? t('workingSchedule.saving')
-              : scheduleMode === 'single'
-                ? t('workingSchedule.addScheduleSubmit')
-                : t('workingSchedule.addRangeSubmit')}
+            {saving ? t('workingSchedule.saving') : t('workingSchedule.addRangeSubmit')}
           </button>
         </Modal>
       )}
