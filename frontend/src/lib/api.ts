@@ -50,6 +50,8 @@ import type {
   UpdateSpecialtyRequest,
 } from './types'
 
+import { withRefreshLock } from './crossTabLock'
+
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5080'
 
 const TOKEN_KEY = 'rezervo.accessToken'
@@ -98,7 +100,7 @@ export class ApiError extends Error {
 
 /** Raw, non-intercepted call — used only by the refresh itself so a failed
  * refresh can never recursively trigger another refresh attempt. */
-async function refreshAccessToken(): Promise<string> {
+async function postRefreshToken(): Promise<string> {
   const refreshToken = getRefreshToken()
   if (!refreshToken) throw new ApiError('Sesioni juaj ka skaduar.', 401)
 
@@ -116,6 +118,34 @@ async function refreshAccessToken(): Promise<string> {
   setToken(data.accessToken)
   setRefreshToken(data.refreshToken)
   return data.accessToken
+}
+
+/**
+ * Rifreskim i koordinuar mes skedave.
+ *
+ * `refreshInFlight` më poshtë dedupikon brenda NJË skede. Refresh token-i, ndërkaq, jeton
+ * në localStorage dhe e ndajnë të gjitha skedat — pra dy skeda paraqisnin të njëjtin token,
+ * e para e rrotullonte, dhe e dyta paraqiste një token të revokuar. Backend-i e lexon këtë
+ * si vjedhje token-i dhe i revokon të gjitha sesionet: të dyja skedat dilnin nga llogaria,
+ * për faktin krejt të pafajshëm se dikush kishte dy skeda hapur.
+ *
+ * Bllokimi e serializon rifreskimin nëpër skeda; kontrolli brenda tij e bën të panevojshme
+ * thirrjen e dytë. Skeda që pret e merr bllokimit VETËM pasi e para ka mbaruar, e sheh
+ * token-in tashmë të ndryshuar, dhe e kthen atë pa prekur fare rrjetin. Backend-i sheh
+ * saktësisht një rifreskim për rotacion, ndaj s'ka më asgjë që i ngjan ripërdorimit —
+ * pa e prekur aspak zbulimin e vjedhjes, i cili vazhdon të mbrojë rastin e vërtetë.
+ */
+async function refreshAccessToken(): Promise<string> {
+  const tokenBeforeWaiting = getToken()
+
+  return withRefreshLock(async () => {
+    const tokenNow = getToken()
+    if (tokenNow && tokenNow !== tokenBeforeWaiting) {
+      // Një skedë tjetër e rrotulloi ndërsa prisnim — ky është pikërisht rasti i garës.
+      return tokenNow
+    }
+    return postRefreshToken()
+  })
 }
 
 // Concurrent 401s share one in-flight refresh instead of each racing the backend.

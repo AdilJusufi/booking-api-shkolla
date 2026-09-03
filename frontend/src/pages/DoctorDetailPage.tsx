@@ -110,7 +110,12 @@ export default function DoctorDetailPage() {
   function handleConfirm() {
     if (!id || !doctor || !selectedService || !selectedBranch || !selectedDate || !selectedSlot) return
     if (!isAuthenticated) {
-      navigate(`/hyr?redirect=/mjeku/${id}`)
+      // `state`, jo `?redirect=` në URL: LoginPage lexon vetëm location.state (shih
+      // ProtectedRoute dhe thirrësit e tjerë), kështu që parametri i vjetër i query-t
+      // injorohej në heshtje — përdoruesi kthehej te faqja kryesore dhe e humbte
+      // zgjedhjen e slotit. State-i s'mund të mbushet nga një link i krijuar nga jashtë,
+      // ndaj s'ka as sipërfaqe për ridrejtim të hapur.
+      navigate('/hyr', { state: { from: `/mjeku/${id}` } })
       return
     }
     sessionStorage.setItem(
@@ -350,7 +355,7 @@ export default function DoctorDetailPage() {
             {!isAuthenticated && (
               <p className="booking__hint booking-widget__login">
                 {t('doctorDetail.loginRequiredHint')}{' '}
-                <Link to={`/hyr?redirect=/mjeku/${id}`} className="booking-widget__login-link">{t('doctorDetail.loginCta')} <ArrowRight size={13} strokeWidth={1.5} /></Link>
+                <Link to="/hyr" state={{ from: `/mjeku/${id}` }} className="booking-widget__login-link">{t('doctorDetail.loginCta')} <ArrowRight size={13} strokeWidth={1.5} /></Link>
               </p>
             )}
           </div>

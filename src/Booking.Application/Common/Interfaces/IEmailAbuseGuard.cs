@@ -8,7 +8,7 @@ public enum EmailSendDecision
     Allowed,
     BlockedByCooldown,
     BlockedByAddressDailyLimit,
-    BlockedByGlobalDailyLimit
+    BlockedByPurposeWindowLimit
 }
 
 /// <summary>

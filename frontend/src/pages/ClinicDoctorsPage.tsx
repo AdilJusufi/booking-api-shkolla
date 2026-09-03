@@ -816,11 +816,8 @@ function DoctorCredentialsModal({
   )
 }
 
-type ScheduleFormMode = 'single' | 'range'
-
 const EMPTY_SCHEDULE_FORM = {
   clinicBranchId: '',
-  dayOfWeek: '1',
   selectedDays: [] as number[],
   startTime: '09:00',
   endTime: '17:00',
@@ -858,11 +855,10 @@ function DoctorScheduleModal({
 }) {
   const { t } = useTranslation('admin')
   const { notify } = useToast()
-  const [scheduleMode, setScheduleMode] = useState<ScheduleFormMode>('single')
   const [form, setForm] = useState(EMPTY_SCHEDULE_FORM)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
-  const [openSelect, setOpenSelect] = useState<'branch' | 'day' | null>(null)
+  const [openSelect, setOpenSelect] = useState<'branch' | null>(null)
   const [rangeResult, setRangeResult] = useState<RangeSubmitResult | null>(null)
 
   const [schedules, setSchedules] = useState<DoctorWorkingSchedule[]>([])
@@ -874,7 +870,6 @@ function DoctorScheduleModal({
     { value: '', label: t('doctors.scheduleModal.selectBranchPlaceholder'), disabled: true },
     ...doctorBranches.map((b) => ({ value: b.id, label: b.name })),
   ]
-  const dayOptions: CustomSelectOption[] = DAY_ORDER.map((d) => ({ value: String(d), label: weekdayName(d) }))
 
   const loadSchedules = useCallback(() => {
     setSchedulesLoading(true)
@@ -929,29 +924,14 @@ function DoctorScheduleModal({
     if (!form.clinicBranchId) return setFormError(t('doctors.scheduleModal.branchRequired'))
     if (!form.startTime || !form.endTime) return setFormError(t('doctors.scheduleModal.timeRequired'))
     if (!form.slotDurationMinutes || form.slotDurationMinutes <= 0) return setFormError(t('doctors.scheduleModal.slotDurationInvalid'))
+    if (form.selectedDays.length === 0) return setFormError(t('doctors.scheduleModal.daysRequired'))
     setFormError('')
 
-    if (scheduleMode === 'single') {
-      setSaving(true)
-      try {
-        await api.createDoctorScheduleAsAdmin(doctor.id, buildSchedulePayload(Number(form.dayOfWeek)))
-        notify(t('doctors.scheduleModal.addedToast'), 'ok')
-        setForm({ ...EMPTY_SCHEDULE_FORM, clinicBranchId: form.clinicBranchId })
-        loadSchedules()
-      } catch (e) {
-        setFormError(getErrorMessage(e))
-      } finally {
-        setSaving(false)
-      }
-      return
-    }
-
-    // Range mode: N independent requests to the same existing endpoint, not a
-    // new bulk endpoint — see WorkingSchedulePage's identical comment. Days
-    // can't conflict with each other (the backend's overlap check is scoped
-    // per dayOfWeek), so there's nothing atomicity would buy here, and
-    // partial success is the explicitly desired UX.
-    if (form.selectedDays.length === 0) return setFormError(t('doctors.scheduleModal.daysRequired'))
+    // N independent requests to the same existing endpoint, not a new bulk
+    // endpoint — see WorkingSchedulePage's identical comment. Days can't
+    // conflict with each other (the backend's overlap check is scoped per
+    // dayOfWeek), so there's nothing atomicity would buy here, and partial
+    // success is the explicitly desired UX.
 
     setSaving(true)
     const results = await Promise.allSettled(
@@ -1051,27 +1031,6 @@ function DoctorScheduleModal({
 
       <p className="doctor-form__section-title">{t('doctors.scheduleModal.addScheduleSectionTitle')}</p>
 
-      <div className="tabs" role="tablist" aria-label={t('doctors.scheduleModal.modeLabel')}>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={scheduleMode === 'single'}
-          className={`tab ${scheduleMode === 'single' ? 'is-active' : ''}`}
-          onClick={() => { setScheduleMode('single'); setRangeResult(null) }}
-        >
-          {t('doctors.scheduleModal.modeSingle')}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={scheduleMode === 'range'}
-          className={`tab ${scheduleMode === 'range' ? 'is-active' : ''}`}
-          onClick={() => { setScheduleMode('range'); setRangeResult(null) }}
-        >
-          {t('doctors.scheduleModal.modeRange')}
-        </button>
-      </div>
-
       <div className="field">
         <CustomSelect
           label={t('doctors.scheduleModal.branchFieldLabel')}
@@ -1086,29 +1045,16 @@ function DoctorScheduleModal({
         )}
       </div>
 
-      {scheduleMode === 'single' ? (
-        <div className="field">
-          <CustomSelect
-            label={t('doctors.scheduleModal.dayFieldLabel')}
-            options={dayOptions}
-            value={form.dayOfWeek}
-            onChange={(v) => updateField('dayOfWeek', v)}
-            open={openSelect === 'day'}
-            onOpenChange={(isOpen) => setOpenSelect(isOpen ? 'day' : null)}
-          />
-        </div>
-      ) : (
-        <div className="field">
-          <label>{t('doctors.scheduleModal.daysLabel')}</label>
-          <WeekdayMultiSelect
-            selectedDays={form.selectedDays}
-            onChange={(days) => updateField('selectedDays', days)}
-            fromLabel={t('doctors.scheduleModal.rangeFromLabel')}
-            toLabel={t('doctors.scheduleModal.rangeToLabel')}
-            applyRangeCta={t('doctors.scheduleModal.rangeApplyCta')}
-          />
-        </div>
-      )}
+      <div className="field">
+        <label>{t('doctors.scheduleModal.daysLabel')}</label>
+        <WeekdayMultiSelect
+          selectedDays={form.selectedDays}
+          onChange={(days) => updateField('selectedDays', days)}
+          fromLabel={t('doctors.scheduleModal.rangeFromLabel')}
+          toLabel={t('doctors.scheduleModal.rangeToLabel')}
+          applyRangeCta={t('doctors.scheduleModal.rangeApplyCta')}
+        />
+      </div>
 
       <div className="form-row">
         <TimeField label={t('doctors.scheduleModal.startTimeLabel')} value={form.startTime} onChange={(v) => updateField('startTime', v)} />
@@ -1148,7 +1094,7 @@ function DoctorScheduleModal({
         ) : (
           <>
             <Plus size={16} strokeWidth={1.5} />
-            {scheduleMode === 'single' ? t('doctors.scheduleModal.addScheduleCta') : t('doctors.scheduleModal.addRangeCta')}
+            {t('doctors.scheduleModal.addRangeCta')}
           </>
         )}
       </button>

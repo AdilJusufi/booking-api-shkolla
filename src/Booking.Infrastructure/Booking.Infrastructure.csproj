@@ -14,12 +14,21 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.13" />
-    <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="8.0.13" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.13" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.13" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.30" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="8.0.30" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.30" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.30" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.13">
+    <!--
+      Referencë e drejtpërdrejtë vetëm për ta MBIVENDOSUR versionin tranzitiv:
+      Microsoft.AspNetCore.DataProtection.EntityFrameworkCore tërheq 8.0.2, i cili ka 8
+      këshillime sigurie High (GHSA-37gx-xxp4-5rgx dhe të tjera). Nuk është i papërdorur —
+      DataProtection e përdor për key ring-un XML që ruhet në Postgres (shih
+      AddDataProtectionWithPersistedKeys), pra preket nga çdo token konfirmimi/rivendosjeje.
+      Hiqe vetëm kur paketa prind të tërheqë vetë një version >= 8.0.4.
+    -->
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="8.0.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.30">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

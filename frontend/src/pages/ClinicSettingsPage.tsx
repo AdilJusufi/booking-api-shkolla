@@ -254,6 +254,12 @@ function ClinicLogoUpload() {
       formData.append('timestamp', String(signature.timestamp))
       formData.append('signature', signature.signature)
       formData.append('folder', signature.folder)
+      // Pjesë e vargut të nënshkruar nga serveri — duhen dërguar fjalë për fjalë ashtu siç
+      // erdhën. Po t'i heqësh ose t'i ndryshosh, nënshkrimi s'përputhet dhe Cloudinary e
+      // refuzon ngarkimin; pra kufijtë e formatit dhe madhësisë s'anashkalohen dot nga
+      // klienti, edhe nëse dikush e thërret këtë endpoint jashtë UI-së.
+      formData.append('allowed_formats', signature.allowedFormats)
+      formData.append('max_file_size', String(signature.maxFileSizeBytes))
 
       const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${signature.cloudName}/image/upload`, {
         method: 'POST',
