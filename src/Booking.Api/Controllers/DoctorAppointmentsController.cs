@@ -38,12 +38,6 @@ public class DoctorAppointmentsController : ControllerBase
     public async Task<ActionResult<DoctorAppointmentDto>> GetById(Guid id, CancellationToken cancellationToken) =>
         Ok(await _doctorAppointmentService.GetByIdAsync(UserId, id, cancellationToken));
 
-    [HttpPost("{id:guid}/confirm")]
-    [ProducesResponseType(typeof(DoctorAppointmentDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<ActionResult<DoctorAppointmentDto>> Confirm(Guid id, CancellationToken cancellationToken) =>
-        Ok(await _doctorAppointmentService.ConfirmAsync(UserId, id, cancellationToken));
-
     [HttpPost("{id:guid}/complete")]
     [ProducesResponseType(typeof(DoctorAppointmentDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]

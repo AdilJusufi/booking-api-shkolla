@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   CalendarX,
-  Check,
   CheckCircle,
   ChevronLeft,
   Clock,
@@ -87,7 +86,7 @@ function statusBadge(status: AppointmentStatus, t: (key: string) => string) {
   }
 }
 
-type ConfirmAction = 'confirm' | 'complete' | 'no-show' | null
+type ConfirmAction = 'complete' | 'no-show' | null
 
 export default function DoctorAppointmentDetailPage() {
   const { t } = useTranslation('doctor')
@@ -138,12 +137,7 @@ export default function DoctorAppointmentDetailPage() {
     if (!id) return
     setActing(true)
     try {
-      const updated =
-        action === 'confirm'
-          ? await api.confirmDoctorAppointment(id)
-          : action === 'complete'
-            ? await api.completeDoctorAppointment(id)
-            : await api.markDoctorAppointmentNoShow(id)
+      const updated = action === 'complete' ? await api.completeDoctorAppointment(id) : await api.markDoctorAppointmentNoShow(id)
       setAppointment(updated)
       setPendingAction(null)
       notify(t('appointmentDetail.updatedToast'), 'ok')
@@ -206,10 +200,9 @@ export default function DoctorAppointmentDetailPage() {
   const durationMinutes = Math.round(
     (parseLocal(appointment.endDateTime).getTime() - parseLocal(appointment.startDateTime).getTime()) / 60000,
   )
-  const canConfirm = appointment.status === AppointmentStatus.Pending
   const canComplete = appointment.status === AppointmentStatus.Confirmed
-  const canNoShow = canConfirm || canComplete
-  const isReadOnly = !canConfirm && !canComplete
+  const canNoShow = canComplete
+  const isReadOnly = !canComplete
 
   return (
     <div className="detail-page">
@@ -318,13 +311,7 @@ export default function DoctorAppointmentDetailPage() {
             <>
               {pendingAction ? (
                 <div className="apptdetail-cancel-confirm">
-                  <p>
-                    {pendingAction === 'confirm'
-                      ? t('appointmentDetail.confirmPrompt')
-                      : pendingAction === 'complete'
-                        ? t('appointmentDetail.completePrompt')
-                        : t('appointmentDetail.noShowPrompt')}
-                  </p>
+                  <p>{pendingAction === 'complete' ? t('appointmentDetail.completePrompt') : t('appointmentDetail.noShowPrompt')}</p>
                   <div className="apptdetail-cancel-confirm__row">
                     <button type="button" className="btn btn--ghost btn--sm" style={{ flex: 1 }} onClick={() => setPendingAction(null)}>
                       {tCommon('appointment.actions.cancel')}
@@ -342,11 +329,6 @@ export default function DoctorAppointmentDetailPage() {
                 </div>
               ) : (
                 <>
-                  {canConfirm && (
-                    <button type="button" className="apptdetail-btn-primary" onClick={() => setPendingAction('confirm')}>
-                      <Check size={16} strokeWidth={1.5} /> {t('appointmentDetail.confirmCta')}
-                    </button>
-                  )}
                   {canComplete && (
                     <button type="button" className="apptdetail-btn-primary" onClick={() => setPendingAction('complete')}>
                       <CheckCircle size={16} strokeWidth={1.5} /> {t('appointmentDetail.completeCta')}

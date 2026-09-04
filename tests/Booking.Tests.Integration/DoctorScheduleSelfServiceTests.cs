@@ -1,9 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
 using Booking.Application.Features.Admin;
+using Booking.Application.Features.Appointments;
 using Booking.Application.Features.Auth;
 using Booking.Application.Features.Doctors;
 using Booking.Application.Features.Schedules;
+using Booking.Domain.Enums;
+using Booking.Infrastructure.Notifications;
 using Booking.Infrastructure.Persistence;
 using FluentAssertions;
 using Xunit;
@@ -76,5 +79,52 @@ public class DoctorScheduleSelfServiceTests
         var response = await patientClient.GetAsync("/api/doctor/branches");
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    /// <summary>
+    /// Re-verifies a prior-session behavior after the instant-confirmation change: bookings
+    /// now reach AppointmentStatus.Confirmed immediately (no Pending review step), so this
+    /// is the common path for the conflict check to matter, not a subset of bookings that
+    /// happened to get past a pending stage. The filter in
+    /// ScheduleService.NotifyConflictingAppointmentsSafeAsync already targeted Confirmed
+    /// specifically — confirm it still fires correctly rather than assuming so.
+    /// </summary>
+    [Fact]
+    public async Task AddUnavailability_OverlapsConfirmedAppointment_NotifiesPatient()
+    {
+        var patientEmail = $"pacient-konflikt-{Guid.NewGuid():N}@test.dev";
+        var patientClient = _factory.CreateClient();
+        var patientAuth = await TestHelpers.RegisterPatientAsync(patientClient, patientEmail);
+        patientClient.WithToken(patientAuth.AccessToken);
+
+        var slotTime = new TimeOnly(11, 30);
+        var bookingResponse = await patientClient.PostAsJsonAsync("/api/appointments", new CreateAppointmentRequest
+        {
+            DoctorId = DbSeeder.Ids.DoctorArben,
+            ClinicBranchId = DbSeeder.Ids.BranchDardania,
+            MedicalServiceId = DbSeeder.Ids.ServiceDentalCleaning,
+            StartDateTime = TestHelpers.NextMonday().ToDateTime(slotTime)
+        }, TestHelpers.Json);
+        bookingResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        var appointment = await bookingResponse.Content.ReadFromJsonAsync<AppointmentDto>(TestHelpers.Json);
+        appointment!.Status.Should().Be(AppointmentStatus.Confirmed);
+
+        var doctorClient = _factory.CreateClient();
+        var doctorAuth = await TestHelpers.LoginAsync(doctorClient, DbSeeder.DoctorEmails[0], BookingApiFactory.DefaultUserPassword);
+        doctorClient.WithToken(doctorAuth.AccessToken);
+
+        var unavailabilityResponse = await doctorClient.PostAsJsonAsync("/api/doctor/unavailability", new CreateUnavailabilityRequest
+        {
+            ClinicBranchId = DbSeeder.Ids.BranchDardania,
+            StartDateTime = TestHelpers.NextMonday().ToDateTime(new TimeOnly(11, 0)),
+            EndDateTime = TestHelpers.NextMonday().ToDateTime(new TimeOnly(12, 0)),
+            Reason = "Test — mbivendos terminin e konfirmuar"
+        }, TestHelpers.Json);
+        unavailabilityResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var emailsResponse = await patientClient.GetAsync($"/api/dev/emails?toEmail={Uri.EscapeDataString(patientEmail)}");
+        emailsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var messages = await emailsResponse.Content.ReadFromJsonAsync<List<DevEmail>>(TestHelpers.Json);
+        messages.Should().Contain(m => m.Subject == "Mundësi konflikti me terminin tuaj");
     }
 }

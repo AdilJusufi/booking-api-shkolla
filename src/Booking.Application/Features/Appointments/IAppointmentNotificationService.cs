@@ -43,7 +43,10 @@ public sealed record AppointmentStaffNotificationContext
 /// </summary>
 public interface IAppointmentNotificationService
 {
-    Task AppointmentCreatedAsync(AppointmentNotificationContext context, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Rezervimi konfirmohet direkt në momentin e krijimit (s'ka hap të veçantë rishikimi) —
+    /// përdoret si për rezervim të ri, ashtu edhe për riplanifikim.
+    /// </summary>
     Task AppointmentConfirmedAsync(AppointmentNotificationContext context, CancellationToken cancellationToken = default);
     Task AppointmentCancelledAsync(AppointmentNotificationContext context, CancellationToken cancellationToken = default);
     Task AppointmentRescheduledAsync(AppointmentNotificationContext context, CancellationToken cancellationToken = default);

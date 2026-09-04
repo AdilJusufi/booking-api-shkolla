@@ -34,7 +34,7 @@ public class AppointmentsTests
     };
 
     [Fact]
-    public async Task CreateAppointment_ValidSlot_Returns201Pending()
+    public async Task CreateAppointment_ValidSlot_Returns201Confirmed()
     {
         var client = _factory.CreateClient();
         var auth = await TestHelpers.RegisterPatientAsync(client);
@@ -44,7 +44,8 @@ public class AppointmentsTests
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var appointment = await response.Content.ReadFromJsonAsync<AppointmentDto>(TestHelpers.Json);
-        appointment!.Status.Should().Be(AppointmentStatus.Pending);
+        // Nuk ka hap rishikimi — orari i publikuar i doktorit ËSHTË angazhimi, rezervimi konfirmohet menjëherë.
+        appointment!.Status.Should().Be(AppointmentStatus.Confirmed);
         appointment.DoctorName.Should().Be("Arben Gashi");
         appointment.StartDateTime.TimeOfDay.Should().Be(TimeSpan.FromHours(8));
     }
@@ -97,7 +98,7 @@ public class AppointmentsTests
     }
 
     [Fact]
-    public async Task RescheduleAppointment_CreatesNewPendingAndMarksOldRescheduled()
+    public async Task RescheduleAppointment_CreatesNewConfirmedAndMarksOldRescheduled()
     {
         var client = _factory.CreateClient();
         client.WithToken((await TestHelpers.RegisterPatientAsync(client)).AccessToken);
@@ -115,7 +116,7 @@ public class AppointmentsTests
         rescheduleResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var replacement = await rescheduleResponse.Content.ReadFromJsonAsync<AppointmentDto>(TestHelpers.Json);
         replacement!.Id.Should().NotBe(original.Id);
-        replacement.Status.Should().Be(AppointmentStatus.Pending);
+        replacement.Status.Should().Be(AppointmentStatus.Confirmed);
         replacement.StartDateTime.TimeOfDay.Should().Be(new TimeSpan(13, 30, 0));
 
         // Origjinali mbetet si histori me status Rescheduled.

@@ -26,11 +26,6 @@ public class LoggingAppointmentNotificationService : IAppointmentNotificationSer
         _logger = logger;
     }
 
-    public Task AppointmentCreatedAsync(AppointmentNotificationContext context, CancellationToken cancellationToken = default) =>
-        SendAsync(context, "U krijua rezervimi",
-            $"Termini juaj te {context.DoctorName} ({context.ClinicName}) më {context.StartDateTimeLocal:dd.MM.yyyy HH:mm} u pranua dhe pret konfirmim.",
-            cancellationToken);
-
     public Task AppointmentConfirmedAsync(AppointmentNotificationContext context, CancellationToken cancellationToken = default) =>
         SendAsync(context, "Termini u konfirmua",
             $"Termini juaj te {context.DoctorName} më {context.StartDateTimeLocal:dd.MM.yyyy HH:mm} u konfirmua.",
@@ -60,7 +55,7 @@ public class LoggingAppointmentNotificationService : IAppointmentNotificationSer
     public Task AppointmentCreatedForStaffAsync(AppointmentStaffNotificationContext context, CancellationToken cancellationToken = default) =>
         SendStaffAsync(context, "Rezervim i ri",
             $"{context.PatientName} rezervoi një termin te {context.DoctorName} ({context.ClinicName}) më " +
-            $"{context.StartDateTimeLocal:dd.MM.yyyy HH:mm}. Pret konfirmim.",
+            $"{context.StartDateTimeLocal:dd.MM.yyyy HH:mm}.",
             cancellationToken);
 
     public Task AppointmentCancelledForStaffAsync(AppointmentStaffNotificationContext context, CancellationToken cancellationToken = default) =>

@@ -211,7 +211,7 @@ public class AdminDoctorsTests
         bookingResponse.StatusCode.Should().Be(HttpStatusCode.Created);
         var booked = await bookingResponse.Content.ReadFromJsonAsync<AppointmentDto>(TestHelpers.Json);
         booked!.DoctorId.Should().Be(doctorId);
-        booked.Status.Should().Be(AppointmentStatus.Pending);
+        booked.Status.Should().Be(AppointmentStatus.Confirmed);
 
         // Heqja e shërbimit e kthen sërish të parezervueshëm.
         var clearResponse = await client.PutAsJsonAsync($"/api/admin/doctors/{doctorId}/services",

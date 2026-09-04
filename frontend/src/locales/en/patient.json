@@ -252,7 +252,6 @@
     "newAppointmentCta": "Book a new appointment",
     "statsActive": "Active",
     "statsCompleted": "Completed",
-    "statsPending": "Pending",
     "statsCancelled": "Cancelled",
     "filterAll": "All",
     "filterActive": "Active",
@@ -316,7 +315,7 @@
     "bookedEventLabel": "Booked",
     "statusDescriptionFallback": "This appointment's status is unrecognized.",
     "statusDescriptions": {
-      "pending": "Your appointment is waiting for confirmation from the clinic.",
+      "pending": "Your appointment was confirmed automatically the moment you booked it.",
       "confirmed": "Your appointment is confirmed. Please arrive 10 minutes early.",
       "checkedIn": "You've been marked as checked in at the clinic.",
       "inProgress": "Your appointment is in progress.",

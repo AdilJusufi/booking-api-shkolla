@@ -21,7 +21,7 @@ public class Appointment : AuditableEntity
 
     public DateTime StartDateTime { get; set; }
     public DateTime EndDateTime { get; set; }
-    public AppointmentStatus Status { get; set; } = AppointmentStatus.Pending;
+    public AppointmentStatus Status { get; set; } = AppointmentStatus.Confirmed;
 
     /// <summary>
     /// Concurrency token — mapohet te kolona e sistemit xmin e PostgreSQL (asnjë kolonë shtesë).
