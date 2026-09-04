@@ -6,13 +6,11 @@ import {
   CheckCircle,
   ChevronLeft,
   ChevronRight,
-  Clock,
   LayoutGrid,
   List,
   MoreVertical,
   TrendingUp,
   UserX,
-  X,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
@@ -145,7 +143,6 @@ export default function DoctorCalendarPage() {
   ]
   const STATUS_TABS: { value: string; label: string }[] = [
     { value: 'all', label: t('calendar.statusTabAll') },
-    { value: String(AppointmentStatus.Pending), label: t('calendar.statusTabPending') },
     { value: String(AppointmentStatus.Confirmed), label: t('calendar.statusTabConfirmed') },
     { value: String(AppointmentStatus.Completed), label: t('calendar.statusTabCompleted') },
   ]
@@ -201,27 +198,13 @@ export default function DoctorCalendarPage() {
     const today = new Date()
     const todayAppts = appointments.filter((a) => isToday(a.startDateTime))
     const todayCompleted = todayAppts.filter((a) => a.status === AppointmentStatus.Completed).length
-    const pending = appointments.filter((a) => a.status === AppointmentStatus.Pending).length
     const confirmedToday = todayAppts.filter((a) => a.status === AppointmentStatus.Confirmed).length
     const thisMonth = appointments.filter((a) => {
       const d = parseLocal(a.startDateTime)
       return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear()
     }).length
-    return { today: todayAppts.length, todayCompleted, pending, confirmedToday, thisMonth }
+    return { today: todayAppts.length, todayCompleted, confirmedToday, thisMonth }
   }, [appointments])
-
-  async function handleConfirm(id: string) {
-    setActingId(id)
-    setAppointments((prev) => prev.map((a) => (a.id === id ? { ...a, status: AppointmentStatus.Confirmed } : a)))
-    try {
-      await api.confirmDoctorAppointment(id)
-      notify(t('calendar.confirmedToast'), 'ok')
-    } catch (e) {
-      notify(getErrorMessage(e), 'error')
-    } finally {
-      setActingId('')
-    }
-  }
 
   async function handleComplete(id: string) {
     setActingId(id)
@@ -295,16 +278,6 @@ export default function DoctorCalendarPage() {
             </div>
             <div className="doctor-stat__icon" style={{ background: 'var(--primary-050)' }}>
               <Calendar size={20} strokeWidth={1.5} color="var(--primary)" />
-            </div>
-          </div>
-          <div className="card doctor-stat">
-            <div>
-              <div className="doctor-stat__label">{t('calendar.statPendingLabel')}</div>
-              <div className="doctor-stat__count" style={{ color: 'var(--warn)' }}>{stats.pending}</div>
-              <div className="doctor-stat__sub">{t('calendar.statPendingSub')}</div>
-            </div>
-            <div className="doctor-stat__icon" style={{ background: 'var(--warn-bg)' }}>
-              <Clock size={20} strokeWidth={1.5} color="var(--warn)" />
             </div>
           </div>
           <div className="card doctor-stat">
@@ -399,21 +372,6 @@ export default function DoctorCalendarPage() {
                     </div>
 
                     <div className="doctor-appt-row__actions">
-                      {a.status === AppointmentStatus.Pending && (
-                        <>
-                          <button
-                            type="button"
-                            className="btn btn--primary btn--sm"
-                            disabled={actingId === a.id}
-                            onClick={() => handleConfirm(a.id)}
-                          >
-                            {t('calendar.confirmCta')}
-                          </button>
-                          <span title={t('calendar.markCancelledTitle')} style={{ cursor: 'pointer', display: 'inline-flex' }}>
-                            <X size={18} strokeWidth={1.5} color="var(--muted)" />
-                          </span>
-                        </>
-                      )}
                       {a.status === AppointmentStatus.Confirmed && !startInFuture && (
                         <>
                           <button
@@ -543,13 +501,11 @@ function DitoreView({
             )
             const height = Math.max(52, (durationMinutes / 60) * HOUR_HEIGHT)
             const statusClass =
-              a.status === AppointmentStatus.Pending
-                ? 'is-pending'
-                : a.status === AppointmentStatus.Confirmed
-                  ? 'is-confirmed'
-                  : a.status === AppointmentStatus.Completed
-                    ? 'is-completed'
-                    : 'is-cancelled'
+              a.status === AppointmentStatus.Confirmed
+                ? 'is-confirmed'
+                : a.status === AppointmentStatus.Completed
+                  ? 'is-completed'
+                  : 'is-cancelled'
             return (
               <div
                 key={a.id}

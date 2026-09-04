@@ -381,9 +381,6 @@ export const api = {
   getDoctorAppointmentDetail: (id: string) =>
     request<DoctorAppointment>(`/api/doctor/appointments/${id}`, { auth: true }),
 
-  confirmDoctorAppointment: (id: string) =>
-    request<DoctorAppointment>(`/api/doctor/appointments/${id}/confirm`, { method: 'POST', auth: true }),
-
   completeDoctorAppointment: (id: string) =>
     request<DoctorAppointment>(`/api/doctor/appointments/${id}/complete`, { method: 'POST', auth: true }),
 
