@@ -24,7 +24,9 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     [EnableRateLimiting("auth")]
     [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status201Created)]
-    public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<AuthResponse>> Register(
+        RegisterRequest request,
+        CancellationToken cancellationToken)
     {
         var response = await _authService.RegisterPatientAsync(request, cancellationToken);
         return StatusCode(StatusCodes.Status201Created, response);
@@ -42,7 +44,8 @@ public class AuthController : ControllerBase
     [EnableRateLimiting("auth")]
     [ProducesResponseType(typeof(RegisterClinicResponse), StatusCodes.Status201Created)]
     public async Task<ActionResult<RegisterClinicResponse>> RegisterClinic(
-        RegisterClinicRequest request, CancellationToken cancellationToken)
+        RegisterClinicRequest request,
+        CancellationToken cancellationToken)
     {
         var response = await _authService.RegisterClinicAsync(request, cancellationToken);
         return StatusCode(StatusCodes.Status201Created, response);
@@ -52,20 +55,26 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     [EnableRateLimiting("auth")]
     [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
-    public async Task<ActionResult<AuthResponse>> Login(LoginRequest request, CancellationToken cancellationToken) =>
+    public async Task<ActionResult<AuthResponse>> Login(
+        LoginRequest request,
+        CancellationToken cancellationToken) =>
         Ok(await _authService.LoginAsync(request, cancellationToken));
 
     [HttpPost("refresh-token")]
     [AllowAnonymous]
     [EnableRateLimiting("auth")]
     [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
-    public async Task<ActionResult<AuthResponse>> RefreshToken(RefreshTokenRequest request, CancellationToken cancellationToken) =>
+    public async Task<ActionResult<AuthResponse>> RefreshToken(
+        RefreshTokenRequest request,
+        CancellationToken cancellationToken) =>
         Ok(await _authService.RefreshAsync(request, cancellationToken));
 
     [HttpPost("revoke-token")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<IActionResult> RevokeToken(RevokeTokenRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> RevokeToken(
+        RevokeTokenRequest request,
+        CancellationToken cancellationToken)
     {
         await _authService.RevokeAsync(request, cancellationToken);
         return NoContent();
@@ -81,7 +90,9 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     [EnableRateLimiting("email-send")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> ForgotPassword(
+        ForgotPasswordRequest request,
+        CancellationToken cancellationToken)
     {
         await _authService.ForgotPasswordAsync(request, cancellationToken);
         return NoContent();
@@ -91,7 +102,9 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     [EnableRateLimiting("auth")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<IActionResult> ResetPassword(ResetPasswordRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> ResetPassword(
+        ResetPasswordRequest request,
+        CancellationToken cancellationToken)
     {
         await _authService.ResetPasswordAsync(request, cancellationToken);
         return NoContent();
@@ -100,7 +113,9 @@ public class AuthController : ControllerBase
     [HttpPost("change-password")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<IActionResult> ChangePassword(ChangePasswordRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> ChangePassword(
+        ChangePasswordRequest request,
+        CancellationToken cancellationToken)
     {
         var userId = _currentUser.UserId ?? throw new AuthenticationFailedException();
         await _authService.ChangePasswordAsync(userId, request, cancellationToken);
@@ -111,18 +126,24 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     [EnableRateLimiting("auth")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<IActionResult> ConfirmEmail(ConfirmEmailRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> ConfirmEmail(
+        ConfirmEmailRequest request,
+        CancellationToken cancellationToken)
     {
         await _authService.ConfirmEmailAsync(request, cancellationToken);
         return NoContent();
     }
 
-    /// <summary>Shih koment mbi ForgotPassword: e njëjta arsye për "email-send" në vend të "auth".</summary>
+    /// <summary>
+    /// Shih koment mbi ForgotPassword: e njëjta arsye për "email-send" në vend të "auth".
+    /// </summary>
     [HttpPost("resend-confirmation")]
     [AllowAnonymous]
     [EnableRateLimiting("email-send")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<IActionResult> ResendConfirmation(ResendConfirmationRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> ResendConfirmation(
+        ResendConfirmationRequest request,
+        CancellationToken cancellationToken)
     {
         await _authService.ResendConfirmationEmailAsync(request, cancellationToken);
         return NoContent();

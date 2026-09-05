@@ -116,6 +116,18 @@ export function isWrongCurrentPasswordError(error: unknown): boolean {
   return Object.keys(data.errors).some((key) => /passwordmismatch/i.test(key))
 }
 
+/**
+ * The `code` a 409 carries (ConflictException.ErrorCode on the backend, e.g.
+ * 'email-exists' / 'clinic-exists'). Needed wherever one endpoint can conflict
+ * on more than one thing and the two need different copy — a bare status code
+ * can't tell them apart.
+ */
+export function getConflictCode(error: unknown): string | null {
+  if (!(error instanceof ApiError) || error.status !== 409) return null
+  const data = error.data as { code?: unknown } | null | undefined
+  return typeof data?.code === 'string' ? data.code : null
+}
+
 export type ErrorMessageOverrides = Partial<{
   network: string
   400: string

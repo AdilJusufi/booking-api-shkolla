@@ -14,7 +14,9 @@ public interface IAuthService
     /// e paaprovuar, lidhjen ClinicAdministrator dhe degët — ose asgjë. Njofton
     /// SuperAdmin-ët dhe mbajtësin e llogarisë, dhe e kyç mbajtësin menjëherë.
     /// </summary>
-    Task<RegisterClinicResponse> RegisterClinicAsync(RegisterClinicRequest request, CancellationToken cancellationToken = default);
+    Task<RegisterClinicResponse> RegisterClinicAsync(
+        RegisterClinicRequest request,
+        CancellationToken cancellationToken = default);
 
     Task<AuthResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default);
 
@@ -28,7 +30,10 @@ public interface IAuthService
 
     Task ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken = default);
 
-    Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request, CancellationToken cancellationToken = default);
+    Task ChangePasswordAsync(
+        Guid userId,
+        ChangePasswordRequest request,
+        CancellationToken cancellationToken = default);
 
     Task ConfirmEmailAsync(ConfirmEmailRequest request, CancellationToken cancellationToken = default);
 
@@ -36,5 +41,7 @@ public interface IAuthService
     /// Kthen gjithmonë sukses — nuk zbulon nëse email-i ekziston, është tashmë i
     /// konfirmuar, apo u kufizua nga limitet e abuzimit. Shih EmailAbuseGuard.
     /// </summary>
-    Task ResendConfirmationEmailAsync(ResendConfirmationRequest request, CancellationToken cancellationToken = default);
+    Task ResendConfirmationEmailAsync(
+        ResendConfirmationRequest request,
+        CancellationToken cancellationToken = default);
 }

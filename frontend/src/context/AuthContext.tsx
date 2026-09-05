@@ -57,6 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function applyAuth(res: AuthResponse): AuthUser {
     setToken(res.accessToken)
     setRefreshToken(res.refreshToken)
+
     const authUser: AuthUser = {
       userId: res.userId,
       firstName: res.firstName,
@@ -64,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: res.email,
       roles: res.roles,
     }
+
     setUser(authUser)
     return authUser
   }
@@ -82,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     function handleSessionExpired() {
       clearSession()
+
       // Identical wording to common:errors.401 (this *is* that case — a
       // silent-refresh failure means the session is gone) — reused via i18n
       // directly rather than useTranslation(), since this handler is
@@ -89,7 +92,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // across a language switch the same way errors.ts's helpers do.
       notify(i18n.t('errors.401', { ns: 'common' }), 'error')
     }
+
     registerSessionExpiredHandler(handleSessionExpired)
+
     return () => registerSessionExpiredHandler(() => undefined)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -98,10 +103,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       user,
       isAuthenticated: !!user,
-      login: async (email, password) => applyAuth(await api.login(email, password)),
-      register: async (payload) => applyAuth(await api.register(payload)),
+
+      login: async (email, password) =>
+        applyAuth(await api.login(email, password)),
+
+      register: async (payload) =>
+        applyAuth(await api.register(payload)),
+
       registerClinic: async (payload) => {
         const res = await api.registerClinic(payload)
+
         return {
           user: applyAuth(res.auth),
           clinicId: res.clinicId,
@@ -109,23 +120,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           isApproved: res.isApproved,
         }
       },
+
       logout: () => {
         const refreshToken = getRefreshToken()
+
         clearSession()
+
         // Best-effort — the user is logged out client-side regardless of
         // whether the server-side revoke succeeds.
-        if (refreshToken) api.revokeToken(refreshToken).catch(() => undefined)
+        if (refreshToken) {
+          api.revokeToken(refreshToken).catch(() => undefined)
+        }
       },
     }),
     [user],
   )
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth duhet përdorur brenda AuthProvider')
+
+  if (!ctx) {
+    throw new Error('useAuth duhet përdorur brenda AuthProvider')
+  }
+
   return ctx
 }

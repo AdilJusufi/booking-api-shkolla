@@ -35,12 +35,16 @@ public sealed record RegisterClinicRequest
     public string? Description { get; init; }
     public required string ClinicPhoneNumber { get; init; }
 
-    /// <summary>Email-i publik i klinikës — mund të jetë tjetër nga ai i mbajtësit të llogarisë.</summary>
+    /// <summary>
+    /// Email-i publik i klinikës — mund të jetë tjetër nga ai i mbajtësit të llogarisë.
+    /// </summary>
     public string? ClinicEmail { get; init; }
 
     public string? Website { get; init; }
 
-    /// <summary>Së paku një degë — pa lokacion klinika s'do të dilte kurrë në kërkim.</summary>
+    /// <summary>
+    /// Së paku një degë — pa lokacion klinika s'do të dilte kurrë në kërkim.
+    /// </summary>
     public required IReadOnlyList<RegisterClinicBranchRequest> Branches { get; init; }
 }
 
@@ -63,7 +67,9 @@ public sealed record RegisterClinicResponse
     public required Guid ClinicId { get; init; }
     public required string ClinicName { get; init; }
 
-    /// <summary>Gjithmonë false në regjistrim — e vendos SuperAdmin-i me aprovim.</summary>
+    /// <summary>
+    /// Gjithmonë false në regjistrim — e vendos SuperAdmin-i me aprovim.
+    /// </summary>
     public required bool IsApproved { get; init; }
 }
 
@@ -75,11 +81,18 @@ public sealed record RevokeTokenRequest(string RefreshToken);
 
 public sealed record ForgotPasswordRequest(string Email);
 
-public sealed record ResetPasswordRequest(string Email, string Token, string NewPassword);
+public sealed record ResetPasswordRequest(
+    string Email,
+    string Token,
+    string NewPassword);
 
-public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword);
+public sealed record ChangePasswordRequest(
+    string CurrentPassword,
+    string NewPassword);
 
-public sealed record ConfirmEmailRequest(string Email, string Token);
+public sealed record ConfirmEmailRequest(
+    string Email,
+    string Token);
 
 public sealed record ResendConfirmationRequest(string Email);
 

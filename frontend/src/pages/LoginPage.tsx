@@ -16,16 +16,24 @@ import {
 import { useCooldown } from "../lib/useCooldown";
 import { ErrorBox } from "../components/ui";
 import { ROLE_HOME } from "../components/ProtectedRoute";
+import AuthModeTabs from "../components/AuthModeTabs";
 import Logo from "../components/Logo";
+import {
+  authModeSearch,
+  readAuthMode,
+  rolesMatchMode,
+  type AuthMode,
+} from "../lib/authMode";
 
 export default function LoginPage() {
   const { t: tCommon } = useTranslation("common");
   const { t } = useTranslation("auth");
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string })?.from;
+  const [mode, setMode] = useState<AuthMode>(() => readAuthMode(location.search));
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,12 +42,34 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { secondsLeft, startCooldown } = useCooldown();
 
+  // Keep the choice in the URL so a reload, a bookmark or a shared link lands
+  // on the same side of the toggle. replace, not push: flipping tabs isn't a
+  // navigation step the back button should have to walk through.
+  function changeMode(next: AuthMode) {
+    setMode(next);
+    setError("");
+    navigate({ pathname: location.pathname, search: authModeSearch(next) }, {
+      replace: true,
+      state: location.state,
+    });
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
       const authUser = await login(email, password);
+      // The tab was a deliberate choice, so a mismatch is an error rather than
+      // a silent redirect to the other portal: staff typing into the patient
+      // form (or the reverse) should learn which door they picked, not be
+      // teleported. Drop the session too — a half-signed-in state whose UI
+      // says "wrong account" is worse than starting over.
+      if (!rolesMatchMode(authUser.roles, mode)) {
+        logout();
+        setError(t(`login.wrongMode.${mode}`));
+        return;
+      }
       // Honor an explicit redirect (e.g. bounced here from a protected page)
       // over the role default, but only if it's not the generic patient home
       // some other role would otherwise be wrongly sent to.
@@ -123,13 +153,23 @@ export default function LoginPage() {
                 <Moon size={18} strokeWidth={1.5} />
               )}
             </button>
-            <Link to="/regjistrohu">{tCommon("nav.register")}</Link>
+            <Link to={`/regjistrohu${authModeSearch(mode)}`}>
+              {mode === "clinic" ? t("mode.registerClinicLink") : tCommon("nav.register")}
+            </Link>
             <span>{t("login.noAccount")}</span>
           </div>
           <h1>{t("login.title")}</h1>
-          <p className="auth-sub">{t("login.subtitle")}</p>
+          <p className="auth-sub">{t(`login.subtitle.${mode}`)}</p>
 
-          <form onSubmit={handleSubmit} className="form">
+          <AuthModeTabs value={mode} onChange={changeMode} idPrefix="login" />
+
+          <form
+            onSubmit={handleSubmit}
+            className="form"
+            role="tabpanel"
+            id={`login-panel-${mode}`}
+            aria-labelledby={`login-tab-${mode}`}
+          >
             {error && <ErrorBox message={error} />}
             <div className="field field--icon">
               <label>{t("fields.email.label")}</label>
