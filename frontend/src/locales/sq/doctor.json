@@ -22,13 +22,10 @@
       "3months": "3 muajt e fundit"
     },
     "statusTabAll": "Të gjitha",
-    "statusTabPending": "Në pritje",
     "statusTabConfirmed": "Konfirmuar",
     "statusTabCompleted": "Përfunduar",
     "statTodayLabel": "Sot",
     "statTodayCompletedSub": "{{count}} të përfunduara",
-    "statPendingLabel": "Në pritje",
-    "statPendingSub": "Kërkojnë konfirmim",
     "statConfirmedTodayLabel": "Konfirmuar sot",
     "statConfirmedTodaySub": "Gati për vizitë",
     "statMonthLabel": "Këtë muaj",
@@ -38,8 +35,6 @@
     "noAppointmentsHint": "Nuk u gjetën termine për këtë periudhë.",
     "todayPrefix": "SOT",
     "minutesShort": "min",
-    "confirmCta": "Konfirmo",
-    "markCancelledTitle": "Shënoji si anuluar",
     "completeCta": "Përfundo",
     "markNoShowTitle": "Nuk u paraqit",
     "badges": {
@@ -50,7 +45,6 @@
       "noShow": "NUK U PARAQIT",
       "unknown": "I PANJOHUR"
     },
-    "confirmedToast": "Termini u konfirmua.",
     "completedToast": "Termini u shënua si i përfunduar.",
     "noShowToast": "Termini u shënua si i paraqitur.",
     "dayView": {
@@ -81,7 +75,7 @@
     "patientNotesLabel": "Shënime të Pacientit",
     "statusDescriptionFallback": "Statusi i këtij termini nuk njihet.",
     "statusDescriptions": {
-      "pending": "Termini pret konfirmimin tuaj.",
+      "pending": "Termini është në pritje të konfirmimit.",
       "confirmed": "Termini është konfirmuar. Pacienti është njoftuar.",
       "checkedIn": "Pacienti ka mbërrritur.",
       "inProgress": "Konsulta është në progres.",
@@ -103,7 +97,6 @@
       "unknown": "I PANJOHUR"
     },
     "readOnlyNote": "Ky termin është vetëm për lexim — nuk ka veprime të disponueshme.",
-    "confirmPrompt": "A jeni të sigurt që dëshironi të konfirmoni këtë termin?",
     "completePrompt": "A jeni të sigurt që dëshironi ta shënoni si të përfunduar?",
     "noShowPrompt": "A jeni të sigurt? Pacienti do të shënohet si i pa-ardhur.",
     "saving": "Duke ruajtur…",

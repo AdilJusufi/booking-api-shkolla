@@ -22,13 +22,10 @@
       "3months": "Poslednja 3 meseca"
     },
     "statusTabAll": "Svi",
-    "statusTabPending": "Na čekanju",
     "statusTabConfirmed": "Potvrđeno",
     "statusTabCompleted": "Završeno",
     "statTodayLabel": "Danas",
     "statTodayCompletedSub": "{{count}} završeno",
-    "statPendingLabel": "Na čekanju",
-    "statPendingSub": "Potrebna potvrda",
     "statConfirmedTodayLabel": "Potvrđeno danas",
     "statConfirmedTodaySub": "Spremno za posetu",
     "statMonthLabel": "Ovog meseca",
@@ -38,8 +35,6 @@
     "noAppointmentsHint": "Nisu pronađeni termini za ovaj period.",
     "todayPrefix": "DANAS",
     "minutesShort": "min",
-    "confirmCta": "Potvrdi",
-    "markCancelledTitle": "Označi kao otkazano",
     "completeCta": "Završi",
     "markNoShowTitle": "Nije se pojavio/la",
     "badges": {
@@ -50,7 +45,6 @@
       "noShow": "NIJE SE POJAVIO/LA",
       "unknown": "NEPOZNATO"
     },
-    "confirmedToast": "Termin je potvrđen.",
     "completedToast": "Termin je označen kao završen.",
     "noShowToast": "Termin je označen kao nedolazak.",
     "dayView": {
@@ -81,7 +75,7 @@
     "patientNotesLabel": "Napomene pacijenta",
     "statusDescriptionFallback": "Status ovog termina nije prepoznat.",
     "statusDescriptions": {
-      "pending": "Termin čeka vašu potvrdu.",
+      "pending": "Termin je na čekanju potvrde.",
       "confirmed": "Termin je potvrđen. Pacijent je obavešten.",
       "checkedIn": "Pacijent je stigao.",
       "inProgress": "Konsultacija je u toku.",
@@ -103,7 +97,6 @@
       "unknown": "NEPOZNATO"
     },
     "readOnlyNote": "Ovaj termin je samo za čitanje — nema dostupnih radnji.",
-    "confirmPrompt": "Da li ste sigurni da želite da potvrdite ovaj termin?",
     "completePrompt": "Da li ste sigurni da želite da ga označite kao završen?",
     "noShowPrompt": "Da li ste sigurni? Pacijent će biti označen kao odsutan.",
     "saving": "Čuvanje…",

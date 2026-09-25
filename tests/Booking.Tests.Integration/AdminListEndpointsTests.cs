@@ -441,8 +441,8 @@ public class AdminListEndpointsTests
     }
 
     /// <summary>
-    /// Terminet e parezervuara nuk sjellin të ardhura: një termin i sapo-krijuar (Pending)
-    /// rrit totalin, por të ardhurat mbeten të pandryshuara — zero, jo null.
+    /// Terminet e pakryera nuk sjellin të ardhura: një termin i sapo-krijuar (Confirmed, jo
+    /// ende Completed) rrit totalin, por të ardhurat mbeten të pandryshuara — zero, jo null.
     /// </summary>
     [Fact]
     public async Task Report_UncompletedAppointment_AddsNoRevenue()
@@ -527,10 +527,12 @@ public class AdminListEndpointsTests
         return (await response.Content.ReadFromJsonAsync<ClinicReportDto>(TestHelpers.Json))!;
     }
 
-    /// <summary>Pending → Confirmed → Completed (kalimi i drejtpërdrejtë nuk lejohet).</summary>
+    /// <summary>
+    /// Rezervimet krijohen tashmë si Confirmed (nuk ka më hap Pending) — kalimi i vetëm i
+    /// mbetur për ta përfunduar terminin është Confirmed → Completed.
+    /// </summary>
     private static async Task CompleteAsync(HttpClient admin, Guid appointmentId)
     {
-        await TransitionAsync(admin, appointmentId, AppointmentStatus.Confirmed);
         await TransitionAsync(admin, appointmentId, AppointmentStatus.Completed);
     }
 

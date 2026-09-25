@@ -176,8 +176,7 @@ export default function MyAppointmentsPage() {
 
   const stats = useMemo(() => {
     return {
-      active: appointments.filter((a) => ACTIVE_STATUSES.includes(a.status) && a.status !== AppointmentStatus.Pending).length,
-      pending: appointments.filter((a) => a.status === AppointmentStatus.Pending).length,
+      active: appointments.filter((a) => ACTIVE_STATUSES.includes(a.status)).length,
       completed: appointments.filter((a) => a.status === AppointmentStatus.Completed).length,
       cancelled: appointments.filter((a) => CANCELLED_STATUSES.includes(a.status)).length,
     }
@@ -248,15 +247,6 @@ export default function MyAppointmentsPage() {
           <div>
             <div className="stat-card__count" style={{ color: 'var(--ok)' }}>{stats.completed}</div>
             <div className="stat-card__label">{t('appointmentsList.statsCompleted')}</div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-card__icon" style={{ background: 'var(--warn-bg)' }}>
-            <Clock size={20} strokeWidth={1.5} color="var(--warn)" />
-          </div>
-          <div>
-            <div className="stat-card__count" style={{ color: 'var(--warn)' }}>{stats.pending}</div>
-            <div className="stat-card__label">{t('appointmentsList.statsPending')}</div>
           </div>
         </div>
         <div className="stat-card">

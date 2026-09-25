@@ -22,13 +22,10 @@
       "3months": "Last 3 months"
     },
     "statusTabAll": "All",
-    "statusTabPending": "Pending",
     "statusTabConfirmed": "Confirmed",
     "statusTabCompleted": "Completed",
     "statTodayLabel": "Today",
     "statTodayCompletedSub": "{{count}} completed",
-    "statPendingLabel": "Pending",
-    "statPendingSub": "Need confirmation",
     "statConfirmedTodayLabel": "Confirmed today",
     "statConfirmedTodaySub": "Ready for visit",
     "statMonthLabel": "This month",
@@ -38,8 +35,6 @@
     "noAppointmentsHint": "No appointments found for this period.",
     "todayPrefix": "TODAY",
     "minutesShort": "min",
-    "confirmCta": "Confirm",
-    "markCancelledTitle": "Mark as cancelled",
     "completeCta": "Complete",
     "markNoShowTitle": "No-show",
     "badges": {
@@ -50,7 +45,6 @@
       "noShow": "NO-SHOW",
       "unknown": "UNKNOWN"
     },
-    "confirmedToast": "Appointment confirmed.",
     "completedToast": "Appointment marked as completed.",
     "noShowToast": "Appointment marked as no-show.",
     "dayView": {
@@ -81,7 +75,7 @@
     "patientNotesLabel": "Patient Notes",
     "statusDescriptionFallback": "This appointment's status is unrecognized.",
     "statusDescriptions": {
-      "pending": "The appointment is waiting for your confirmation.",
+      "pending": "The appointment is pending confirmation.",
       "confirmed": "The appointment is confirmed. The patient has been notified.",
       "checkedIn": "The patient has checked in.",
       "inProgress": "The consultation is in progress.",
@@ -103,7 +97,6 @@
       "unknown": "UNKNOWN"
     },
     "readOnlyNote": "This appointment is read-only — no actions available.",
-    "confirmPrompt": "Are you sure you want to confirm this appointment?",
     "completePrompt": "Are you sure you want to mark it as completed?",
     "noShowPrompt": "Are you sure? The patient will be marked as no-show.",
     "saving": "Saving…",

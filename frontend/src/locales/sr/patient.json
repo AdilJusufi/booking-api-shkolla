@@ -257,7 +257,6 @@
     "newAppointmentCta": "Zakaži novi termin",
     "statsActive": "Aktivni",
     "statsCompleted": "Završeni",
-    "statsPending": "Na čekanju",
     "statsCancelled": "Otkazani",
     "filterAll": "Svi",
     "filterActive": "Aktivni",
@@ -321,7 +320,7 @@
     "bookedEventLabel": "Zakazano",
     "statusDescriptionFallback": "Status ovog termina nije prepoznat.",
     "statusDescriptions": {
-      "pending": "Vaš termin čeka potvrdu klinike.",
+      "pending": "Vaš termin je automatski potvrđen u trenutku zakazivanja.",
       "confirmed": "Vaš termin je potvrđen. Molimo dođite 10 minuta ranije.",
       "checkedIn": "Označeni ste kao prijavljeni u klinici.",
       "inProgress": "Vaš termin je u toku.",

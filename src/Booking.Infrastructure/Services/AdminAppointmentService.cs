@@ -257,7 +257,7 @@ public class AdminAppointmentService : IAdminAppointmentService
         await SaveChangesGuardedAsync(cancellationToken);
 
         var dto = await GetDtoAsync(appointment.Id, cancellationToken);
-        await NotifySafeAsync(_notificationService.AppointmentCreatedAsync, patient.UserId, dto, cancellationToken);
+        await NotifySafeAsync(_notificationService.AppointmentConfirmedAsync, patient.UserId, dto, cancellationToken);
         await NotifyDoctorSafeAsync(_notificationService.AppointmentCreatedForStaffAsync, appointment.Id, dto, cancellationToken);
         return dto;
     }

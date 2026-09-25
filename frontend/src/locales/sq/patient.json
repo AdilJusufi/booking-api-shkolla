@@ -252,7 +252,6 @@
     "newAppointmentCta": "Rezervo termin të ri",
     "statsActive": "Aktive",
     "statsCompleted": "Përfunduar",
-    "statsPending": "Në pritje",
     "statsCancelled": "Anuluara",
     "filterAll": "Të gjitha",
     "filterActive": "Aktive",
@@ -316,7 +315,7 @@
     "bookedEventLabel": "Rezervuar",
     "statusDescriptionFallback": "Statusi i këtij termini nuk njihet.",
     "statusDescriptions": {
-      "pending": "Termini juaj është duke pritur konfirmimin nga klinika.",
+      "pending": "Termini juaj është konfirmuar automatikisht në momentin e rezervimit.",
       "confirmed": "Termini juaj është konfirmuar. Ju lutem mbërrini 10 minuta para kohës.",
       "checkedIn": "Jeni shënuar si të mbërritur në klinikë.",
       "inProgress": "Takimi juaj është duke u zhvilluar.",

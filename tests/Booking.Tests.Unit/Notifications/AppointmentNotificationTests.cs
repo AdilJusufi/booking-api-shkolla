@@ -30,9 +30,9 @@ public class AppointmentNotificationTests
     };
 
     [Fact]
-    public async Task Created_SendsEmailAndSms_WhenPhonePresent()
+    public async Task Confirmed_SendsEmailAndSms_WhenPhonePresent()
     {
-        await CreateSut().AppointmentCreatedAsync(Context("+383 44 123 456"));
+        await CreateSut().AppointmentConfirmedAsync(Context("+383 44 123 456"));
 
         _emailService.Verify(
             e => e.SendAsync("pacienti@test.dev", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
@@ -43,9 +43,9 @@ public class AppointmentNotificationTests
     }
 
     [Fact]
-    public async Task Created_SkipsSms_WhenPhoneMissing()
+    public async Task Confirmed_SkipsSms_WhenPhoneMissing()
     {
-        await CreateSut().AppointmentCreatedAsync(Context(phone: null));
+        await CreateSut().AppointmentConfirmedAsync(Context(phone: null));
 
         _emailService.Verify(
             e => e.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
