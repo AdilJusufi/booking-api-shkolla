@@ -16,6 +16,7 @@
     "viewList": "Lista",
     "viewDay": "Ditore",
     "dateRange": {
+      "upcoming": "90 ditët e ardhshme",
       "today": "Sot",
       "week": "Kjo javë",
       "month": "Ky muaj",
@@ -46,7 +47,7 @@
       "unknown": "I PANJOHUR"
     },
     "completedToast": "Termini u shënua si i përfunduar.",
-    "noShowToast": "Termini u shënua si i paraqitur.",
+    "noShowToast": "Termini u shënua si «nuk erdhi».",
     "dayView": {
       "todayLabel": "Sot, {{weekday}} {{day}} {{month}}",
       "dateLabel": "{{weekday}} {{day}} {{month}}",
@@ -108,7 +109,8 @@
     "internalNotesHint": "Të dukshme vetëm për stafin mjekësor.",
     "internalNotesPlaceholder": "Shkruani shënime interne këtu...",
     "saveNoteCta": "Ruaj Shënimin",
-    "noteSavedToast": "Shënimi u ruajt."
+    "noteSavedToast": "Shënimi u ruajt.",
+    "actionsAvailableAtStart": "“Përfundo” dhe “Nuk erdhi” bëhen të disponueshme kur të fillojë termini ({{time}})."
   },
   "workingSchedule": {
     "title": "Orari i punës",
@@ -158,7 +160,11 @@
     "deletedToast": "Orari u fshi.",
     "rangeCreatedToast_one": "Orari u krijua për {{count}} ditë.",
     "rangeCreatedToast_other": "Orari u krijua për {{count}} ditë.",
-    "rangePartialSuccess": "Orari u krijua për <0>{{count}} nga {{total}}</0> ditët e zgjedhura. Detajet për ditët që dështuan:"
+    "rangePartialSuccess": "Orari u krijua për <0>{{count}} nga {{total}}</0> ditët e zgjedhura. Detajet për ditët që dështuan:",
+    "editModalTitle": "Ndrysho orarin",
+    "saveChangesCta": "Ruaj ndryshimet",
+    "updatedToast": "Orari u përditësua.",
+    "editAria": "Ndrysho orarin e {{day}} në {{branch}}"
   },
   "unavailability": {
     "title": "Mungesat & Pushimet",

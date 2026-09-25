@@ -96,11 +96,6 @@ public class DoctorAppointmentService : IDoctorAppointmentService
     {
         var (doctorId, appointment) = await GetOwnedAppointmentAsync(userId, appointmentId, cancellationToken);
 
-        if (_dateTimeProvider.UtcNow <= appointment.StartDateTime)
-        {
-            throw new BookingRuleException("no-show-before-start", "NoShow mund të shënohet vetëm pasi ka kaluar ora e terminit.");
-        }
-
         var dto = await ApplyTransitionAsync(doctorId, appointment, AppointmentStatus.NoShow, cancellationToken);
         // Klinika duhet ta dijë — jo pacienti, i cili tashmë e ka humbur terminin.
         await NotifyClinicSafeAsync(_notificationService.AppointmentNoShowForStaffAsync, appointmentId, dto, cancellationToken);
@@ -136,6 +131,8 @@ public class DoctorAppointmentService : IDoctorAppointmentService
                 "invalid-status-transition",
                 $"Kalimi nga {appointment.Status} në {targetStatus} nuk lejohet.");
         }
+
+        BookingPolicy.EnsureStartedIfRequired(targetStatus, appointment.StartDateTime, _dateTimeProvider.UtcNow);
 
         appointment.Status = targetStatus;
         await SaveChangesGuardedAsync(cancellationToken);

@@ -51,7 +51,7 @@ function DoctorLayoutInner() {
         <div className="patient-topbar__right">
           <button
             type="button"
-            className="theme-toggle"
+            className="theme-toggle hide-mobile"
             aria-label={theme === 'dark' ? tCommon('theme.switchToLight') : tCommon('theme.switchToDark')}
             onClick={toggleTheme}
           >
@@ -62,7 +62,7 @@ function DoctorLayoutInner() {
         </div>
       </header>
 
-      <div className="doctor-breadcrumb">
+      <div className="doctor-breadcrumb hide-mobile">
         <span>{t('layout.breadcrumbPanel')}</span>
         <span>›</span>
         <span>{isSchedule ? t('layout.breadcrumbSchedule') : isCalendar ? t('layout.navCalendar') : t('layout.breadcrumbPanel')}</span>

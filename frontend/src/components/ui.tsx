@@ -1,12 +1,15 @@
 import {
+  useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type ComponentType,
   type CSSProperties,
   type ReactNode,
 } from 'react'
+import { createPortal } from 'react-dom'
 import {
   AlertCircle,
   Baby,
@@ -25,7 +28,7 @@ import {
   type LucideProps,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { DAY_ORDER, weekdayName } from '../lib/format'
+import { DAY_ORDER, monthName, weekdayName } from '../lib/format'
 
 /** A shimmering block sized to the thing it stands in for. */
 export function Skeleton({ className = '', style }: { className?: string; style?: CSSProperties }) {
@@ -250,6 +253,7 @@ export function CustomSelect({
   placeholder,
   disabled = false,
   hideLabel = false,
+  panelVariant,
 }: {
   label: string
   options: CustomSelectOption[]
@@ -264,10 +268,17 @@ export function CustomSelect({
   /** Keeps the label for a11y (aria-labelledby) but hides it visually — for
    * contexts (like ProfileField) that already render their own label above. */
   hideLabel?: boolean
+  /** Styling variant for the portaled panel. Because the panel renders into
+   * `document.body` it is no longer a descendant of its trigger's container,
+   * so context-specific looks (e.g. the landing hero's dark surface) must
+   * travel as an explicit class rather than a descendant selector. */
+  panelVariant?: 'hero'
 }) {
   const rootRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const listboxId = useId()
+  const [coords, setCoords] = useState<CSSProperties | null>(null)
   const selected = options.find((o) => o.value === value)
   const firstSelectableIndex = options.findIndex((o) => !o.disabled)
   const [activeIndex, setActiveIndex] = useState(() => {
@@ -282,15 +293,59 @@ export function CustomSelect({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, options, value])
 
+  const close = useCallback(() => onOpenChange(false), [onOpenChange])
+
+  /* Position the portaled panel from the trigger's own box. Layout effect so
+   * the panel never paints one frame at the wrong place. Height is clamped to
+   * whichever side has more room, and the panel flips above the trigger when
+   * below would be the tighter fit. Width is clamped to the viewport so a
+   * trigger near the right edge on a narrow screen can't push the list
+   * off-screen — `left` shifts back and `maxWidth` caps the overflow. */
+  useLayoutEffect(() => {
+    if (!open) return
+    const rect = triggerRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const GAP = panelVariant === 'hero' ? 14 : 10
+    const MARGIN = 12
+    const below = window.innerHeight - rect.bottom - GAP - MARGIN
+    const above = rect.top - GAP - MARGIN
+    const dropUp = below < 180 && above > below
+    const usable = window.innerWidth - MARGIN * 2
+    const width = Math.min(rect.width, usable)
+    const left = Math.max(MARGIN, Math.min(rect.left, window.innerWidth - MARGIN - width))
+    setCoords({
+      position: 'fixed',
+      left,
+      minWidth: width,
+      // Capped from `left`, so `left + maxWidth` can never cross the right edge
+      // however wide the longest option happens to render.
+      maxWidth: Math.min(280, window.innerWidth - MARGIN - left),
+      maxHeight: Math.max(120, Math.min(320, dropUp ? above : below)),
+      ...(dropUp
+        ? { bottom: window.innerHeight - rect.top + GAP }
+        : { top: rect.bottom + GAP }),
+    })
+  }, [open, panelVariant, options.length])
+
   useEffect(() => {
     if (!open) return
     function handleClickOutside(e: MouseEvent) {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) onOpenChange(false)
+      const target = e.target as Node
+      if (rootRef.current?.contains(target) || panelRef.current?.contains(target)) return
+      close()
     }
+    // The panel is fixed-positioned in `document.body`, so it cannot track the
+    // trigger as the page scrolls — close instead of letting it drift. Capture
+    // phase so scrolling any ancestor container counts, not just the window.
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
+    window.addEventListener('scroll', close, true)
+    window.addEventListener('resize', close)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      window.removeEventListener('scroll', close, true)
+      window.removeEventListener('resize', close)
+    }
+  }, [open, close])
 
   useEffect(() => {
     if (!open) return
@@ -355,6 +410,7 @@ export function CustomSelect({
       <button
         type="button"
         className="cselect__trigger"
+        ref={triggerRef}
         disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -372,32 +428,169 @@ export function CustomSelect({
         <ChevronDown size={15} strokeWidth={1.75} className={`cselect__chevron ${open ? 'is-open' : ''}`} />
       </button>
 
-      {open && !disabled && (
-        <div
-          className="cselect__panel"
-          ref={panelRef}
-          role="listbox"
-          aria-labelledby={`${listboxId}-label`}
-          tabIndex={-1}
-          onKeyDown={handlePanelKeyDown}
+      {open &&
+        !disabled &&
+        coords &&
+        createPortal(
+          <div
+            className={`cselect__panel ${panelVariant ? `cselect__panel--${panelVariant}` : ''}`}
+            ref={panelRef}
+            style={coords}
+            role="listbox"
+            aria-labelledby={`${listboxId}-label`}
+            tabIndex={-1}
+            onKeyDown={handlePanelKeyDown}
+          >
+            {options.map((o, i) => (
+              <div
+                key={o.value}
+                data-index={i}
+                role="option"
+                aria-selected={o.value === value}
+                aria-disabled={o.disabled}
+                className={`cselect__option ${o.value === value ? 'is-selected' : ''} ${i === activeIndex ? 'is-active' : ''} ${o.disabled ? 'is-disabled' : ''}`}
+                onMouseEnter={() => !o.disabled && setActiveIndex(i)}
+                onClick={() => commit(i)}
+              >
+                <span>{o.label}</span>
+                {o.value === value && !o.disabled && <Check size={14} strokeWidth={1.75} />}
+              </div>
+            ))}
+          </div>,
+          document.body,
+        )}
+    </div>
+  )
+}
+
+const DATE_FIELD_DAYS = Array.from({ length: 31 }, (_, i) => i + 1)
+
+/** "YYYY-MM-DD" → pjesë numerike; 0 do të thotë "ende e pazgjedhur". */
+function splitIsoDate(iso: string): { day: number; month: number; year: number } {
+  const [y, m, d] = iso ? iso.split('-') : ['', '', '']
+  return { day: Number(d) || 0, month: Number(m) || 0, year: Number(y) || 0 }
+}
+
+/** Sa ditë ka muaji — viti kalohet që shkurti i vitit të brishtë të jetë 29. */
+function daysInMonth(year: number, month: number): number {
+  if (!year || !month) return 31
+  return new Date(year, month, 0).getDate()
+}
+
+/**
+ * Data e lindjes si tre <select> (ditë / muaj / vit) në vend të
+ * `<input type="date">`.
+ *
+ * I njëjti problem si te TimeField: input-i vendas e formaton datën sipas
+ * locale-it të shfletuesit/OS-it, jo sipas `lang`-ut të faqes — në Kosovë del
+ * `mm/dd/yyyy` sa herë shfletuesi është në anglishten amerikane, dhe "03/04"
+ * lexohet si dy data të ndryshme varësisht se kush e shikon. Me select-a,
+ * muaji shkruhet me emër (`monthName`, i përkthyer), prandaj s'mbetet asnjë
+ * pikë ku rendi ditë/muaj të jetë i dykuptimtë.
+ *
+ * Vlera hyrëse/dalëse mbetet ISO `YYYY-MM-DD`, që thirrësit dhe backend-i të
+ * mos ndryshojnë fare.
+ */
+export function DateField({
+  label,
+  value,
+  onChange,
+  maxYear,
+  minYear,
+  required = false,
+  error,
+  hint,
+}: {
+  label: string
+  /** ISO "YYYY-MM-DD", ose "" kur s'është zgjedhur ende. */
+  value: string
+  onChange: (value: string) => void
+  /** Viti më i vonë i zgjedhshëm — p.sh. kufiri i moshës minimale. */
+  maxYear: number
+  minYear?: number
+  required?: boolean
+  error?: string
+  hint?: string
+}) {
+  const { t } = useTranslation('common')
+
+  // Zgjedhja e pjesshme mbahet lokalisht: `value` bëhet ISO vetëm kur të tria
+  // fushat janë plot, dhe pa këtë gjendje "15" e zgjedhur para muajit do të
+  // humbte menjëherë (data jo e plotë raportohet si "") dhe fusha s'do të
+  // mbushej dot kurrë.
+  const [parts, setParts] = useState(() => splitIsoDate(value))
+
+  // Ndjek ndryshimet që vijnë nga jashtë (reset i formës, ngarkim i të dhënave),
+  // pa e prekur gjendjen e pjesshme që po shkruan përdoruesi.
+  const lastEmitted = useRef(value)
+  useEffect(() => {
+    if (value === lastEmitted.current) return
+    lastEmitted.current = value
+    setParts(splitIsoDate(value))
+  }, [value])
+
+  const { day, month, year } = parts
+
+  const firstYear = minYear ?? maxYear - 119
+  const years: number[] = []
+  for (let y = maxYear; y >= firstYear; y--) years.push(y)
+
+  const maxDay = daysInMonth(year, month)
+
+  function emit(nextDay: number, nextMonth: number, nextYear: number) {
+    // Ditë 31 + muaj me 30 ditë: kapet te fundi i muajit, që të mos dalë kurrë
+    // një datë që s'ekziston (p.sh. 31 shkurt).
+    const clampedDay =
+      nextDay && nextMonth && nextYear ? Math.min(nextDay, daysInMonth(nextYear, nextMonth)) : nextDay
+    setParts({ day: clampedDay, month: nextMonth, year: nextYear })
+    const iso =
+      clampedDay && nextMonth && nextYear
+        ? `${String(nextYear).padStart(4, '0')}-${String(nextMonth).padStart(2, '0')}-${String(clampedDay).padStart(2, '0')}`
+        : ''
+    lastEmitted.current = iso
+    onChange(iso)
+  }
+
+  return (
+    <div className="field">
+      <label id={`${label}-date-label`}>{label}</label>
+      <div className="date-field">
+        <select
+          value={day || ''}
+          required={required}
+          aria-label={t('dateField.day')}
+          onChange={(e) => emit(Number(e.target.value), month, year)}
         >
-          {options.map((o, i) => (
-            <div
-              key={o.value}
-              data-index={i}
-              role="option"
-              aria-selected={o.value === value}
-              aria-disabled={o.disabled}
-              className={`cselect__option ${o.value === value ? 'is-selected' : ''} ${i === activeIndex ? 'is-active' : ''} ${o.disabled ? 'is-disabled' : ''}`}
-              onMouseEnter={() => !o.disabled && setActiveIndex(i)}
-              onClick={() => commit(i)}
-            >
-              <span>{o.label}</span>
-              {o.value === value && !o.disabled && <Check size={14} strokeWidth={1.75} />}
-            </div>
+          <option value="" disabled>{t('dateField.day')}</option>
+          {DATE_FIELD_DAYS.filter((d) => d <= maxDay).map((d) => (
+            <option key={d} value={d}>{d}</option>
           ))}
-        </div>
-      )}
+        </select>
+        <select
+          value={month || ''}
+          required={required}
+          aria-label={t('dateField.month')}
+          onChange={(e) => emit(day, Number(e.target.value), year)}
+        >
+          <option value="" disabled>{t('dateField.month')}</option>
+          {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+            <option key={m} value={m}>{monthName(m - 1)}</option>
+          ))}
+        </select>
+        <select
+          value={year || ''}
+          required={required}
+          aria-label={t('dateField.year')}
+          onChange={(e) => emit(day, month, Number(e.target.value))}
+        >
+          <option value="" disabled>{t('dateField.year')}</option>
+          {years.map((y) => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
+      </div>
+      {hint && !error && <p className="field__hint">{hint}</p>}
+      {error && <span className="field__error">{error}</span>}
     </div>
   )
 }
@@ -472,12 +665,15 @@ export function WeekdayMultiSelect({
   fromLabel,
   toLabel,
   applyRangeCta,
+  showRange = true,
 }: {
   selectedDays: number[]
   onChange: (days: number[]) => void
   fromLabel: string
   toLabel: string
   applyRangeCta: string
+  /** Hide the "from–to" range helper — e.g. when editing a single-day schedule. */
+  showRange?: boolean
 }) {
   const [fromDay, setFromDay] = useState('1')
   const [toDay, setToDay] = useState('5')
@@ -505,27 +701,29 @@ export function WeekdayMultiSelect({
 
   return (
     <div className="weekday-multiselect">
-      <div className="weekday-multiselect__range">
-        <CustomSelect
-          label={fromLabel}
-          options={dayOptions}
-          value={fromDay}
-          onChange={setFromDay}
-          open={openField === 'from'}
-          onOpenChange={(o) => setOpenField(o ? 'from' : null)}
-        />
-        <CustomSelect
-          label={toLabel}
-          options={dayOptions}
-          value={toDay}
-          onChange={setToDay}
-          open={openField === 'to'}
-          onOpenChange={(o) => setOpenField(o ? 'to' : null)}
-        />
-        <button type="button" className="btn btn--ghost btn--sm weekday-multiselect__apply" onClick={applyRange}>
-          {applyRangeCta}
-        </button>
-      </div>
+      {showRange && (
+        <div className="weekday-multiselect__range">
+          <CustomSelect
+            label={fromLabel}
+            options={dayOptions}
+            value={fromDay}
+            onChange={setFromDay}
+            open={openField === 'from'}
+            onOpenChange={(o) => setOpenField(o ? 'from' : null)}
+          />
+          <CustomSelect
+            label={toLabel}
+            options={dayOptions}
+            value={toDay}
+            onChange={setToDay}
+            open={openField === 'to'}
+            onOpenChange={(o) => setOpenField(o ? 'to' : null)}
+          />
+          <button type="button" className="btn btn--ghost btn--sm weekday-multiselect__apply" onClick={applyRange}>
+            {applyRangeCta}
+          </button>
+        </div>
+      )}
       <div className="multiselect-pills">
         {DAY_ORDER.map((d) => {
           const isOn = selectedDays.includes(d)
@@ -561,8 +759,14 @@ export function specialtyIcon(name: string): ComponentType<LucideProps> {
   return SPECIALTY_ICONS[name] ?? Stethoscope
 }
 
-// Specialty names now come pre-translated from the backend (seed data is
-// Albanian); this stays as a passthrough so call sites don't need to change.
+/**
+ * Emri i papërkthyer — fallback-u kanonik shqip.
+ *
+ * Përdoret vetëm aty ku një hook s'është i mundur. Komponentët duhet të marrin
+ * `useSpecialtyLabel()` nga `context/SpecialtyNamesContext`, që e përkthen
+ * emrin sipas gjuhës aktive duke u mbështetur te të dhënat e bazës (specializimet
+ * shtohen nga SuperAdmin, prandaj s'ka hartë të ngurtë në klient).
+ */
 export function specialtyLabel(name: string): string {
   return name
 }

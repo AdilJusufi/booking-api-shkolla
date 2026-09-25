@@ -53,8 +53,9 @@ public class ExceptionHandlingMiddleware
             ForbiddenAccessException => CreateProblem(
                 StatusCodes.Status403Forbidden, "forbidden", "Qasja u refuzua", exception.Message),
 
-            ConflictException conflictException => CreateProblem(
-                StatusCodes.Status409Conflict, conflictException.ErrorCode, "Konflikt", exception.Message),
+            ConflictException conflictException => WithDetails(
+                CreateProblem(StatusCodes.Status409Conflict, conflictException.ErrorCode, "Konflikt", exception.Message),
+                conflictException.Details),
 
             BookingRuleException bookingRuleException => CreateProblem(
                 StatusCodes.Status422UnprocessableEntity, bookingRuleException.ErrorCode,
@@ -94,6 +95,19 @@ public class ExceptionHandlingMiddleware
         // `code` është i njëjti identifikues si pjesa e fundit e `type`, por i lexueshëm
         // drejtpërdrejt nga klienti pa e ndarë URL-në.
         problem.Extensions["code"] = errorCode;
+        return problem;
+    }
+
+    private static ProblemDetails WithDetails(ProblemDetails problem, IReadOnlyDictionary<string, object?>? details)
+    {
+        if (details is not null)
+        {
+            foreach (var (key, value) in details)
+            {
+                problem.Extensions[key] = value;
+            }
+        }
+
         return problem;
     }
 

@@ -200,9 +200,13 @@ export default function DoctorAppointmentDetailPage() {
   const durationMinutes = Math.round(
     (parseLocal(appointment.endDateTime).getTime() - parseLocal(appointment.startDateTime).getTime()) / 60000,
   )
-  const canComplete = appointment.status === AppointmentStatus.Confirmed
+  const isConfirmed = appointment.status === AppointmentStatus.Confirmed
+  // Complete / no-show only make sense once the appointment has started — the
+  // backend rejects both before then (complete-before-start / no-show-before-start).
+  const hasStarted = parseLocal(appointment.startDateTime).getTime() <= Date.now()
+  const canComplete = isConfirmed && hasStarted
   const canNoShow = canComplete
-  const isReadOnly = !canComplete
+  const isReadOnly = !isConfirmed
 
   return (
     <div className="detail-page">
@@ -327,6 +331,10 @@ export default function DoctorAppointmentDetailPage() {
                     </button>
                   </div>
                 </div>
+              ) : !hasStarted ? (
+                <p className="muted" style={{ fontSize: 13, textAlign: 'center' }}>
+                  {t('appointmentDetail.actionsAvailableAtStart', { time: `${formatDateSq(appointment.startDateTime)}, ${formatTimeSq(appointment.startDateTime)}` })}
+                </p>
               ) : (
                 <>
                   {canComplete && (

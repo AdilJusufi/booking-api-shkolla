@@ -6,11 +6,15 @@ import { api } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import type { ClinicDetails, Doctor } from '../lib/types'
 import DoctorCard from '../components/DoctorCard'
-import { EmptyState, ErrorBox, SkeletonDetail, specialtyIcon, specialtyLabel } from '../components/ui'
+import { EmptyState, ErrorBox, SkeletonDetail, specialtyIcon } from '../components/ui'
+import { useSpecialtyLabel } from '../context/SpecialtyNamesContext'
 import { formatMoney } from '../lib/format'
+import { SITE_NAME, clinicSeo } from '../lib/seo'
+import { useSeo } from '../lib/useSeo'
 
 export default function ClinicDetailPage() {
   const { t } = useTranslation('patient')
+  const specialtyLabel = useSpecialtyLabel()
   const { id } = useParams<{ id: string }>()
   const [clinic, setClinic] = useState<ClinicDetails | null>(null)
   const [doctors, setDoctors] = useState<Doctor[]>([])
@@ -36,6 +40,9 @@ export default function ClinicDetailPage() {
   }, [id])
 
   useEffect(load, [load])
+
+  // An error / unknown id is still served as HTTP 200 (SPA), so it must say noindex itself.
+  useSeo(clinic ? clinicSeo(clinic, { t, specialtyLabel }) : error ? { title: SITE_NAME, noindex: true } : null)
 
   if (loading) return <div className="container page"><SkeletonDetail label={t('clinicDetail.loadingLabel')} /></div>
   if (error) return <div className="container page"><ErrorBox message={error} onRetry={load} /></div>

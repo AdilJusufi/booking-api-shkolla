@@ -18,7 +18,7 @@ import {
   Stethoscope,
 } from 'lucide-react'
 import { api, ApiError } from '../lib/api'
-import { getErrorMessage } from '../lib/errors'
+import { getErrorMessage, getScheduleAffectedAppointments } from '../lib/errors'
 import type {
   AdminDoctorDetail,
   ClinicBranch,
@@ -26,6 +26,7 @@ import type {
   CreateWorkingScheduleRequest,
   DoctorServiceAssignment,
   DoctorWorkingSchedule,
+  ScheduleAffectedAppointment,
   MedicalService,
   Specialty,
   UpdateDoctorRequest,
@@ -35,6 +36,7 @@ import { useClinicContext } from '../components/ClinicDetailLayout'
 import { CustomSelect, EmptyState, ErrorBox, Modal, SkeletonRows, TimeField, WeekdayMultiSelect, initials } from '../components/ui'
 import type { CustomSelectOption } from '../components/ui'
 import { DAY_ORDER, monthName, weekdayName } from '../lib/format'
+import ScheduleAffectedList from '../components/ScheduleAffectedList'
 
 const EMPTY_DOCTOR_FORM: CreateDoctorRequest = {
   firstName: '',
@@ -860,6 +862,10 @@ function DoctorScheduleModal({
   const [formError, setFormError] = useState('')
   const [openSelect, setOpenSelect] = useState<'branch' | null>(null)
   const [rangeResult, setRangeResult] = useState<RangeSubmitResult | null>(null)
+  /** The schedule the lower form is editing; null = the form adds new schedules. */
+  const [editing, setEditing] = useState<DoctorWorkingSchedule | null>(null)
+  const [affected, setAffected] = useState<ScheduleAffectedAppointment[]>([])
+  const formRef = useRef<HTMLParagraphElement>(null)
 
   const [schedules, setSchedules] = useState<DoctorWorkingSchedule[]>([])
   const [schedulesLoading, setSchedulesLoading] = useState(true)
@@ -916,6 +922,61 @@ function DoctorScheduleModal({
       slotDurationMinutes: form.slotDurationMinutes,
       validFrom: form.validFrom || undefined,
       validUntil: form.validUntil || undefined,
+    }
+  }
+
+  function startEdit(schedule: DoctorWorkingSchedule) {
+    setEditing(schedule)
+    setForm({
+      clinicBranchId: schedule.clinicBranchId,
+      selectedDays: [schedule.dayOfWeek],
+      startTime: schedule.startTime.slice(0, 5),
+      endTime: schedule.endTime.slice(0, 5),
+      slotDurationMinutes: schedule.slotDurationMinutes,
+      validFrom: schedule.validFrom ?? '',
+      validUntil: schedule.validUntil ?? '',
+    })
+    setFormError('')
+    setAffected([])
+    setRangeResult(null)
+    requestAnimationFrame(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
+
+  function cancelEdit() {
+    setEditing(null)
+    setAffected([])
+    setFormError('')
+    setForm({ ...EMPTY_SCHEDULE_FORM, clinicBranchId: form.clinicBranchId })
+  }
+
+  /** Editing is exactly one weekday — a newly ticked day replaces the old one. */
+  function changeDays(days: number[]) {
+    if (!editing) return updateField('selectedDays', days)
+    const added = days.find((d) => !form.selectedDays.includes(d))
+    if (added !== undefined) updateField('selectedDays', [added])
+  }
+
+  async function handleUpdate() {
+    if (!editing) return
+    if (!form.clinicBranchId) return setFormError(t('doctors.scheduleModal.branchRequired'))
+    if (!form.startTime || !form.endTime) return setFormError(t('doctors.scheduleModal.timeRequired'))
+    if (!form.slotDurationMinutes || form.slotDurationMinutes <= 0) return setFormError(t('doctors.scheduleModal.slotDurationInvalid'))
+    setFormError('')
+    setAffected([])
+
+    setSaving(true)
+    try {
+      const updated = await api.updateDoctorScheduleAsAdmin(doctor.id, editing.id, buildSchedulePayload(form.selectedDays[0]))
+      setSchedules((prev) => prev.map((s) => (s.id === updated.id ? updated : s)))
+      notify(t('doctors.scheduleModal.updatedToast'), 'ok')
+      setEditing(null)
+      setForm({ ...EMPTY_SCHEDULE_FORM, clinicBranchId: form.clinicBranchId })
+    } catch (e) {
+      const stranded = getScheduleAffectedAppointments(e)
+      if (stranded.length > 0) setAffected(stranded)
+      else setFormError(getErrorMessage(e))
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -978,7 +1039,7 @@ function DoctorScheduleModal({
             </div>
 
             {items.map((s) => (
-              <div className="schedule-card" key={s.id}>
+              <div className={`schedule-card card-link ${editing?.id === s.id ? 'is-editing' : ''}`} key={s.id}>
                 <div className="schedule-card__time">
                   <span className="schedule-card__time-label">{t('doctors.scheduleModal.timeLabel')}</span>
                   <span className="schedule-card__time-start">{s.startTime.slice(0, 5)}</span>
@@ -986,7 +1047,15 @@ function DoctorScheduleModal({
                 </div>
 
                 <div className="schedule-card__main">
-                  <div className="schedule-card__branch">{s.branchName}</div>
+                  {/* Stretched button: tapping anywhere on the card loads it into the form below. */}
+                  <button
+                    type="button"
+                    className="schedule-card__branch card-link__target"
+                    aria-label={t('doctors.scheduleModal.editAria', { day: weekdayName(s.dayOfWeek), branch: s.branchName })}
+                    onClick={() => startEdit(s)}
+                  >
+                    {s.branchName}
+                  </button>
                   <div className="schedule-card__meta">
                     <span><Clock size={13} strokeWidth={1.5} /> {t('doctors.scheduleModal.perAppointment', { count: s.slotDurationMinutes })}</span>
                     <span><Calendar size={13} strokeWidth={1.5} /> {validityLabel(s, t)}</span>
@@ -1029,7 +1098,13 @@ function DoctorScheduleModal({
         </div>
       )}
 
-      <p className="doctor-form__section-title">{t('doctors.scheduleModal.addScheduleSectionTitle')}</p>
+      <p className="doctor-form__section-title" ref={formRef}>
+        {editing
+          ? t('doctors.scheduleModal.editSectionTitle', { day: weekdayName(editing.dayOfWeek) })
+          : t('doctors.scheduleModal.addScheduleSectionTitle')}
+      </p>
+
+      <ScheduleAffectedList appointments={affected} />
 
       <div className="field">
         <CustomSelect
@@ -1049,7 +1124,8 @@ function DoctorScheduleModal({
         <label>{t('doctors.scheduleModal.daysLabel')}</label>
         <WeekdayMultiSelect
           selectedDays={form.selectedDays}
-          onChange={(days) => updateField('selectedDays', days)}
+          onChange={changeDays}
+          showRange={!editing}
           fromLabel={t('doctors.scheduleModal.rangeFromLabel')}
           toLabel={t('doctors.scheduleModal.rangeToLabel')}
           applyRangeCta={t('doctors.scheduleModal.rangeApplyCta')}
@@ -1083,21 +1159,32 @@ function DoctorScheduleModal({
         </div>
       </div>
 
-      <button
-        type="button"
-        className="btn btn--primary btn--block"
-        disabled={saving || doctorBranches.length === 0}
-        onClick={handleSubmit}
-      >
-        {saving ? (
-          t('doctors.scheduleModal.savingCta')
-        ) : (
-          <>
-            <Plus size={16} strokeWidth={1.5} />
-            {t('doctors.scheduleModal.addRangeCta')}
-          </>
-        )}
-      </button>
+      {editing ? (
+        <div className="form-row">
+          <button type="button" className="btn btn--ghost btn--block" disabled={saving} onClick={cancelEdit}>
+            {t('doctors.scheduleModal.cancelEditCta')}
+          </button>
+          <button type="button" className="btn btn--primary btn--block" disabled={saving} onClick={handleUpdate}>
+            {saving ? t('doctors.scheduleModal.savingCta') : t('doctors.scheduleModal.saveChangesCta')}
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="btn btn--primary btn--block"
+          disabled={saving || doctorBranches.length === 0}
+          onClick={handleSubmit}
+        >
+          {saving ? (
+            t('doctors.scheduleModal.savingCta')
+          ) : (
+            <>
+              <Plus size={16} strokeWidth={1.5} />
+              {t('doctors.scheduleModal.addRangeCta')}
+            </>
+          )}
+        </button>
+      )}
     </Modal>
   )
 }

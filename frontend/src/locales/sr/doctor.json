@@ -16,6 +16,7 @@
     "viewList": "Lista",
     "viewDay": "Dnevni",
     "dateRange": {
+      "upcoming": "Sledećih 90 dana",
       "today": "Danas",
       "week": "Ove nedelje",
       "month": "Ovog meseca",
@@ -108,7 +109,8 @@
     "internalNotesHint": "Vidljivo samo medicinskom osoblju.",
     "internalNotesPlaceholder": "Unesite interne napomene ovde...",
     "saveNoteCta": "Sačuvaj Napomenu",
-    "noteSavedToast": "Napomena je sačuvana."
+    "noteSavedToast": "Napomena je sačuvana.",
+    "actionsAvailableAtStart": "„Završi“ i „Nije došao“ postaju dostupni kada termin počne ({{time}})."
   },
   "workingSchedule": {
     "title": "Radno vreme",
@@ -160,7 +162,11 @@
     "rangeCreatedToast_one": "Raspored je dodat za {{count}} dan.",
     "rangeCreatedToast_few": "Raspored je dodat za {{count}} dana.",
     "rangeCreatedToast_other": "Raspored je dodat za {{count}} dana.",
-    "rangePartialSuccess": "Raspored je dodat za <0>{{count}} od {{total}}</0> izabranih dana. Detalji za dane koji nisu uspeli:"
+    "rangePartialSuccess": "Raspored je dodat za <0>{{count}} od {{total}}</0> izabranih dana. Detalji za dane koji nisu uspeli:",
+    "editModalTitle": "Izmeni raspored",
+    "saveChangesCta": "Sačuvaj izmene",
+    "updatedToast": "Raspored je ažuriran.",
+    "editAria": "Izmeni raspored za {{day}} u {{branch}}"
   },
   "unavailability": {
     "title": "Odsustva i Slobodni Dani",

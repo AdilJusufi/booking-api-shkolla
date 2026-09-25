@@ -75,6 +75,17 @@ public class EnvironmentGuardTests
     }
 
     [Fact]
+    public void Allows_seeding_outside_development_only_when_explicitly_opted_in()
+    {
+        var act = () => EnvironmentGuard.Validate("Production", Config(
+            ("ConnectionStrings:BookingDb", "Host=ep-x.aws.neon.tech;Database=booking"),
+            ("Seed:Enabled", "true"),
+            ("Seed:AllowOutsideDevelopment", "true")));
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
     public void Allows_normal_development_startup()
     {
         var act = () => EnvironmentGuard.Validate("Development",

@@ -69,7 +69,7 @@ public class ClinicsAndSlotsTests
     {
         // Dr. Driton (Ulpiana) rezervohet vetëm nga ky test — numri i sloteve është deterministik:
         // 08:00–12:00 dhe 13:00–17:00 me grid 30 min dhe shërbim 30-minutësh = 16 slote.
-        var client = _factory.CreateClient();
+        var client = await _factory.CreateSignedInClientAsync();
         var date = TestHelpers.NextMonday();
 
         var slots = await client.GetFromJsonAsync<List<AvailableSlotDto>>(
@@ -86,12 +86,46 @@ public class ClinicsAndSlotsTests
     public async Task AvailableSlots_ServiceNotOfferedByDoctor_Returns422()
     {
         // Dr. Driton nuk ofron pastrim dhëmbësh (vetëm mbushje + kontroll).
-        var client = _factory.CreateClient();
+        var client = await _factory.CreateSignedInClientAsync();
         var date = TestHelpers.NextMonday();
 
         var response = await client.GetAsync(
             $"/api/doctors/{DbSeeder.Ids.DoctorDriton}/available-slots" +
             $"?branchId={DbSeeder.Ids.BranchUlpiana}&serviceId={DbSeeder.Ids.ServiceDentalCleaning}&date={date:yyyy-MM-dd}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Fact]
+    public async Task AvailableDays_MarksWeekendClosedAndWeekdaysAvailable()
+    {
+        // Dr. Driton punon E hënë–E premte (seeder): e shtuna/e diela duhet të dalin Closed.
+        var client = await _factory.CreateSignedInClientAsync();
+        var monday = TestHelpers.NextMonday();
+        var sunday = monday.AddDays(6);
+
+        var days = await client.GetFromJsonAsync<List<AvailableDayDto>>(
+            $"/api/doctors/{DbSeeder.Ids.DoctorDriton}/available-days" +
+            $"?branchId={DbSeeder.Ids.BranchUlpiana}&serviceId={DbSeeder.Ids.ServiceDentalCheckup}" +
+            $"&from={monday:yyyy-MM-dd}&to={sunday:yyyy-MM-dd}",
+            TestHelpers.Json);
+
+        days.Should().NotBeNull().And.HaveCount(7);
+
+        days!.Take(5).Should().OnlyContain(d => d.Status == DayAvailability.Available);
+        days!.Skip(5).Should().OnlyContain(d => d.Status == DayAvailability.Closed);
+    }
+
+    [Fact]
+    public async Task AvailableDays_RangeTooLong_Returns422()
+    {
+        var client = await _factory.CreateSignedInClientAsync();
+        var from = TestHelpers.NextMonday();
+
+        var response = await client.GetAsync(
+            $"/api/doctors/{DbSeeder.Ids.DoctorDriton}/available-days" +
+            $"?branchId={DbSeeder.Ids.BranchUlpiana}&serviceId={DbSeeder.Ids.ServiceDentalCheckup}" +
+            $"&from={from:yyyy-MM-dd}&to={from.AddDays(90):yyyy-MM-dd}");
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }

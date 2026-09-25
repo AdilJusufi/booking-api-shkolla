@@ -31,6 +31,9 @@
     "editModalTitle": "Ndrysho Specializimin",
     "addModalTitle": "Shto Specializim",
     "nameLabel": "Emri",
+    "nameEnLabel": "Emri anglisht",
+    "nameSrLabel": "Emri serbisht",
+    "translationHint": "Pa përkthim, emri shqip shfaqet në të gjitha gjuhët.",
     "descriptionLabel": "Përshkrimi",
     "optional": "(opsional)",
     "activeCheckbox": "Aktiv",
@@ -232,7 +235,12 @@
       "daysRequired": "Zgjidhni të paktën një ditë.",
       "rangeAddedToast_one": "Orari u shtua për {{count}} ditë.",
       "rangeAddedToast_other": "Orari u shtua për {{count}} ditë.",
-      "rangePartialSuccess": "Orari u shtua për <0>{{count}} nga {{total}}</0> ditët e zgjedhura. Detajet për ditët që dështuan:"
+      "rangePartialSuccess": "Orari u shtua për <0>{{count}} nga {{total}}</0> ditët e zgjedhura. Detajet për ditët që dështuan:",
+      "editSectionTitle": "Ndrysho orarin — {{day}}",
+      "saveChangesCta": "Ruaj ndryshimet",
+      "cancelEditCta": "Anulo ndryshimin",
+      "updatedToast": "Orari u përditësua.",
+      "editAria": "Ndrysho orarin e {{day}} në {{branch}}"
     },
     "pendingTitle": "Klinika është ende në pritje të aprovimit",
     "pendingHint": "Menaxhimi i mjekëve hapet sapo SuperAdmin ta aprovojë klinikën.",

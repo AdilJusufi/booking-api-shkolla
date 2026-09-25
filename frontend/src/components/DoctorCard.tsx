@@ -2,10 +2,12 @@ import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { Doctor } from '../lib/types'
-import { initials, specialtyIcon, specialtyLabel } from './ui'
+import { initials, specialtyIcon } from './ui'
+import { useSpecialtyLabel } from '../context/SpecialtyNamesContext'
 
 export default function DoctorCard({ doctor }: { doctor: Doctor }) {
   const { t } = useTranslation('patient')
+  const specialtyLabel = useSpecialtyLabel()
   return (
     <Link to={`/mjeku/${doctor.id}`} className="card doctor-card" data-reveal>
       <div className="doctor-card__avatar" aria-hidden>

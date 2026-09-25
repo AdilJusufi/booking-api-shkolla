@@ -16,17 +16,20 @@ public class ScheduleService : IScheduleService
 {
     private readonly BookingDbContext _dbContext;
     private readonly ITimeZoneService _timeZoneService;
+    private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IAppointmentNotificationService _notificationService;
     private readonly ILogger<ScheduleService> _logger;
 
     public ScheduleService(
         BookingDbContext dbContext,
         ITimeZoneService timeZoneService,
+        IDateTimeProvider dateTimeProvider,
         IAppointmentNotificationService notificationService,
         ILogger<ScheduleService> logger)
     {
         _dbContext = dbContext;
         _timeZoneService = timeZoneService;
+        _dateTimeProvider = dateTimeProvider;
         _notificationService = notificationService;
         _logger = logger;
     }
@@ -85,22 +88,70 @@ public class ScheduleService : IScheduleService
     public async Task<WorkingScheduleDto> AddScheduleAsync(
         Guid doctorId, CreateWorkingScheduleRequest request, CancellationToken cancellationToken = default)
     {
+        await EnsureDoctorAtBranchAsync(doctorId, request.ClinicBranchId, cancellationToken);
+        await EnsureNoOverlapAsync(doctorId, request, excludeScheduleId: null, cancellationToken);
+
+        var schedule = new DoctorWorkingSchedule { DoctorId = doctorId };
+        Apply(schedule, request);
+        _dbContext.DoctorWorkingSchedules.Add(schedule);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return await GetScheduleDtoAsync(schedule.Id, cancellationToken);
+    }
+
+    public async Task<WorkingScheduleDto> UpdateScheduleAsync(
+        Guid doctorId, Guid scheduleId, UpdateWorkingScheduleRequest request, CancellationToken cancellationToken = default)
+    {
+        var schedule = await _dbContext.DoctorWorkingSchedules
+            .FirstOrDefaultAsync(ws => ws.Id == scheduleId && ws.DoctorId == doctorId, cancellationToken)
+            ?? throw new NotFoundException("DoctorWorkingSchedule", scheduleId);
+
+        await EnsureDoctorAtBranchAsync(doctorId, request.ClinicBranchId, cancellationToken);
+        await EnsureNoOverlapAsync(doctorId, request, excludeScheduleId: scheduleId, cancellationToken);
+        await EnsureNoStrandedAppointmentsAsync(doctorId, schedule, request, cancellationToken);
+
+        Apply(schedule, request);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return await GetScheduleDtoAsync(schedule.Id, cancellationToken);
+    }
+
+    private static void Apply(DoctorWorkingSchedule schedule, IWorkingScheduleRequest request)
+    {
+        schedule.ClinicBranchId = request.ClinicBranchId;
+        schedule.DayOfWeek = request.DayOfWeek;
+        schedule.StartTime = request.StartTime;
+        schedule.EndTime = request.EndTime;
+        schedule.SlotDurationMinutes = request.SlotDurationMinutes;
+        schedule.ValidFrom = request.ValidFrom;
+        schedule.ValidUntil = request.ValidUntil;
+    }
+
+    private async Task EnsureDoctorAtBranchAsync(Guid doctorId, Guid branchId, CancellationToken cancellationToken)
+    {
         var doctorAtBranch = await _dbContext.DoctorClinicBranches
             .AnyAsync(dcb => dcb.DoctorId == doctorId
-                             && dcb.ClinicBranchId == request.ClinicBranchId
+                             && dcb.ClinicBranchId == branchId
                              && dcb.IsActive, cancellationToken);
         if (!doctorAtBranch)
         {
             throw new BookingRuleException("doctor-not-at-branch", "Doktori nuk është i caktuar në këtë degë.");
         }
+    }
 
-        // Kontrolli i mbivendosjes: dy rreshta orari për të njëjtën ditë/degë nuk guxojnë
-        // të mbivendosen as në kohë as në periudhë vlefshmërie.
+    /// <summary>
+    /// Kontrolli i mbivendosjes: dy rreshta orari për të njëjtën ditë/degë nuk guxojnë
+    /// të mbivendosen as në kohë as në periudhë vlefshmërie. Te ndryshimi, orari vetë përjashtohet.
+    /// </summary>
+    private async Task EnsureNoOverlapAsync(
+        Guid doctorId, IWorkingScheduleRequest request, Guid? excludeScheduleId, CancellationToken cancellationToken)
+    {
         var existingSchedules = await _dbContext.DoctorWorkingSchedules
             .Where(ws => ws.DoctorId == doctorId
                          && ws.ClinicBranchId == request.ClinicBranchId
                          && ws.DayOfWeek == request.DayOfWeek
-                         && ws.IsActive)
+                         && ws.IsActive
+                         && (excludeScheduleId == null || ws.Id != excludeScheduleId))
             .ToListAsync(cancellationToken);
 
         var overlaps = existingSchedules.Any(existing =>
@@ -111,41 +162,121 @@ public class ScheduleService : IScheduleService
         {
             throw new ConflictException("schedule-overlap", "Orari mbivendoset me një orar ekzistues për këtë ditë.");
         }
-
-        var schedule = new DoctorWorkingSchedule
-        {
-            DoctorId = doctorId,
-            ClinicBranchId = request.ClinicBranchId,
-            DayOfWeek = request.DayOfWeek,
-            StartTime = request.StartTime,
-            EndTime = request.EndTime,
-            SlotDurationMinutes = request.SlotDurationMinutes,
-            ValidFrom = request.ValidFrom,
-            ValidUntil = request.ValidUntil
-        };
-        _dbContext.DoctorWorkingSchedules.Add(schedule);
-        await _dbContext.SaveChangesAsync(cancellationToken);
-
-        var branchName = await _dbContext.ClinicBranches
-            .Where(b => b.Id == request.ClinicBranchId)
-            .Select(b => b.Name)
-            .FirstAsync(cancellationToken);
-
-        return new WorkingScheduleDto
-        {
-            Id = schedule.Id,
-            DoctorId = schedule.DoctorId,
-            ClinicBranchId = schedule.ClinicBranchId,
-            BranchName = branchName,
-            DayOfWeek = schedule.DayOfWeek,
-            StartTime = schedule.StartTime,
-            EndTime = schedule.EndTime,
-            SlotDurationMinutes = schedule.SlotDurationMinutes,
-            IsActive = schedule.IsActive,
-            ValidFrom = schedule.ValidFrom,
-            ValidUntil = schedule.ValidUntil
-        };
     }
+
+    /// <summary>
+    /// Një ndryshim orari nuk guxon të lërë në heshtje termine të ardhshme të rezervuara jashtë
+    /// orarit të punës: pacienti do të vinte për një termin që sistemi s'e mbulon më. Termini
+    /// quhet "i prekur" nëse orari i VJETËR e mbulonte, ndërsa pas ndryshimit asnjë orar aktiv
+    /// i doktorit në atë degë (ky i ndryshuar apo një tjetër) s'e mbulon. Refuzohet me listën e
+    /// tyre, që doktori/admini t'i riplanifikojë ose anulojë vetë para ndryshimit.
+    /// </summary>
+    private async Task EnsureNoStrandedAppointmentsAsync(
+        Guid doctorId, DoctorWorkingSchedule schedule, IWorkingScheduleRequest request, CancellationToken cancellationToken)
+    {
+        if (!schedule.IsActive)
+        {
+            return;
+        }
+
+        var nowUtc = _dateTimeProvider.UtcNow;
+        var candidates = await _dbContext.Appointments
+            .Where(a => a.DoctorId == doctorId
+                        && a.ClinicBranchId == schedule.ClinicBranchId
+                        && Appointment.BlockingStatuses.Contains(a.Status)
+                        && a.EndDateTime > nowUtc)
+            .OrderBy(a => a.StartDateTime)
+            .Select(a => new
+            {
+                a.Id,
+                a.StartDateTime,
+                a.EndDateTime,
+                PatientName = _dbContext.Users
+                    .Where(u => u.Id == a.PatientProfile.UserId)
+                    .Select(u => u.FirstName + " " + u.LastName)
+                    .First(),
+                ServiceName = a.MedicalService.Name
+            })
+            .ToListAsync(cancellationToken);
+
+        if (candidates.Count == 0)
+        {
+            return;
+        }
+
+        var otherSchedules = await _dbContext.DoctorWorkingSchedules
+            .Where(ws => ws.DoctorId == doctorId
+                         && ws.ClinicBranchId == schedule.ClinicBranchId
+                         && ws.IsActive
+                         && ws.Id != schedule.Id)
+            .ToListAsync(cancellationToken);
+
+        var updatedStaysAtBranch = request.ClinicBranchId == schedule.ClinicBranchId;
+
+        var affected = candidates
+            .Select(a => new
+            {
+                Appointment = a,
+                Start = _timeZoneService.ToLocal(a.StartDateTime),
+                End = _timeZoneService.ToLocal(a.EndDateTime)
+            })
+            .Where(x =>
+                Covers(schedule.DayOfWeek, schedule.StartTime, schedule.EndTime, schedule.ValidFrom, schedule.ValidUntil, x.Start, x.End)
+                && !(updatedStaysAtBranch
+                     && Covers(request.DayOfWeek, request.StartTime, request.EndTime, request.ValidFrom, request.ValidUntil, x.Start, x.End))
+                && !otherSchedules.Any(o =>
+                    Covers(o.DayOfWeek, o.StartTime, o.EndTime, o.ValidFrom, o.ValidUntil, x.Start, x.End)))
+            .Select(x => new ScheduleAffectedAppointmentDto
+            {
+                Id = x.Appointment.Id,
+                StartDateTime = x.Start,
+                EndDateTime = x.End,
+                PatientName = x.Appointment.PatientName,
+                ServiceName = x.Appointment.ServiceName
+            })
+            .ToList();
+
+        if (affected.Count > 0)
+        {
+            throw new ConflictException(
+                "schedule-has-booked-appointments",
+                $"Ndryshimi do të linte {affected.Count} termin(e) të rezervuar(a) jashtë orarit. Riplanifikoni ose anuloni ato më parë.",
+                new Dictionary<string, object?> { ["affectedAppointments"] = affected });
+        }
+    }
+
+    /// <summary>A bie termini (orë lokale) plotësisht brenda këtij orari në datën e tij?</summary>
+    private static bool Covers(
+        DayOfWeek day, TimeOnly start, TimeOnly end, DateOnly? validFrom, DateOnly? validUntil,
+        DateTime appointmentStartLocal, DateTime appointmentEndLocal)
+    {
+        var date = DateOnly.FromDateTime(appointmentStartLocal);
+        return appointmentStartLocal.DayOfWeek == day
+               && (validFrom == null || validFrom <= date)
+               && (validUntil == null || date <= validUntil)
+               && TimeOnly.FromDateTime(appointmentStartLocal) >= start
+               && TimeOnly.FromDateTime(appointmentEndLocal) <= end
+               && DateOnly.FromDateTime(appointmentEndLocal) == date;
+    }
+
+    private async Task<WorkingScheduleDto> GetScheduleDtoAsync(Guid scheduleId, CancellationToken cancellationToken) =>
+        await _dbContext.DoctorWorkingSchedules
+            .Where(ws => ws.Id == scheduleId)
+            .Select(ws => new WorkingScheduleDto
+            {
+                Id = ws.Id,
+                DoctorId = ws.DoctorId,
+                ClinicBranchId = ws.ClinicBranchId,
+                BranchName = ws.ClinicBranch.Name,
+                DayOfWeek = ws.DayOfWeek,
+                StartTime = ws.StartTime,
+                EndTime = ws.EndTime,
+                SlotDurationMinutes = ws.SlotDurationMinutes,
+                IsActive = ws.IsActive,
+                ValidFrom = ws.ValidFrom,
+                ValidUntil = ws.ValidUntil
+            })
+            .FirstAsync(cancellationToken);
 
     public async Task DeactivateScheduleAsync(Guid doctorId, Guid scheduleId, CancellationToken cancellationToken = default)
     {

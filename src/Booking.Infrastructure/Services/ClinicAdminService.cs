@@ -620,6 +620,7 @@ public class ClinicAdminService : IClinicAdminService
         Guid doctorId, CreateWorkingScheduleRequest request, CancellationToken cancellationToken = default)
     {
         await _tenantAccess.EnsureCanManageDoctorAsync(doctorId, cancellationToken);
+        await EnsureCanManageBranchAsync(request.ClinicBranchId, cancellationToken);
 
         var schedule = await _scheduleService.AddScheduleAsync(doctorId, request, cancellationToken);
 
@@ -628,6 +629,45 @@ public class ClinicAdminService : IClinicAdminService
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return schedule;
+    }
+
+    public async Task<WorkingScheduleDto> UpdateDoctorScheduleAsync(
+        Guid doctorId, Guid scheduleId, UpdateWorkingScheduleRequest request, CancellationToken cancellationToken = default)
+    {
+        // Tenant: admini i klinikës X menaxhon vetëm doktorët e X; ScheduleService e kufizon
+        // më tej orarin te ky doktor (scheduleId i një doktori tjetër → 404).
+        await _tenantAccess.EnsureCanManageDoctorAsync(doctorId, cancellationToken);
+
+        var before = await _dbContext.DoctorWorkingSchedules
+            .Where(ws => ws.Id == scheduleId && ws.DoctorId == doctorId)
+            .Select(ws => new { ws.ClinicBranchId, ws.DayOfWeek, ws.StartTime, ws.EndTime, ws.SlotDurationMinutes, ws.ValidFrom, ws.ValidUntil })
+            .FirstOrDefaultAsync(cancellationToken)
+            ?? throw new NotFoundException("DoctorWorkingSchedule", scheduleId);
+
+        // Doktori mund të punojë në disa klinika: edhe dega e vjetër edhe e reja duhet t'i
+        // përkasin klinikës së këtij admini, përndryshe prek orarin e një klinike tjetër.
+        await EnsureCanManageBranchAsync(before.ClinicBranchId, cancellationToken);
+        await EnsureCanManageBranchAsync(request.ClinicBranchId, cancellationToken);
+
+        var schedule = await _scheduleService.UpdateScheduleAsync(doctorId, scheduleId, request, cancellationToken);
+
+        _auditService.Record("SCHEDULE_UPDATED_BY_ADMIN", nameof(DoctorWorkingSchedule), scheduleId.ToString(), before,
+            new { request.ClinicBranchId, request.DayOfWeek, request.StartTime, request.EndTime, request.SlotDurationMinutes, request.ValidFrom, request.ValidUntil });
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return schedule;
+    }
+
+    /// <summary>Dega i përket një klinike që ky admin e menaxhon (SuperAdmin kalon gjithmonë).</summary>
+    private async Task EnsureCanManageBranchAsync(Guid branchId, CancellationToken cancellationToken)
+    {
+        var clinicId = await _dbContext.ClinicBranches
+            .Where(b => b.Id == branchId)
+            .Select(b => (Guid?)b.ClinicId)
+            .FirstOrDefaultAsync(cancellationToken)
+            ?? throw new NotFoundException("ClinicBranch", branchId);
+
+        await _tenantAccess.EnsureCanManageClinicAsync(clinicId, cancellationToken);
     }
 
     public async Task<UnavailabilityDto> AddDoctorUnavailabilityAsync(

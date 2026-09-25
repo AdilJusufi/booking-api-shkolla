@@ -80,6 +80,16 @@ public static class TestHelpers
         return (await response.Content.ReadFromJsonAsync<AuthResponse>(Json))!;
     }
 
+    /// <summary>
+    /// Klient i një pacienti të ri të kyçur — për endpoint-et që kërkojnë login (disponueshmëria, rezervimi).
+    /// </summary>
+    public static async Task<HttpClient> CreateSignedInClientAsync(this BookingApiFactory factory)
+    {
+        var client = factory.CreateClient();
+        client.WithToken((await RegisterPatientAsync(client)).AccessToken);
+        return client;
+    }
+
     public static HttpClient WithToken(this HttpClient client, string accessToken)
     {
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
