@@ -1,6 +1,6 @@
 {
   "home": {
-    "eyebrow": "18 klinika · 120+ mjekë · Kosovë",
+    "eyebrow": "Platformë e re, në rritje çdo javë · Kosovë",
     "heroLine1": "Gjeni mjekun",
     "heroLine2": "e duhur.",
     "heroAccent": "Rezervoni",
@@ -22,14 +22,7 @@
       "freeSlotsLabel": "Oraret e lira",
       "slotCount_one": "{{count}} termin",
       "slotCount_other": "{{count}} terme",
-      "confirmCta": "Konfirmo terminin",
-      "reviewCount": "nga 640 pacientë"
-    },
-    "stats": {
-      "verifiedDoctors": "Mjekë të verifikuar",
-      "partnerClinics": "Klinika partnere",
-      "bookedAppointments": "Termine të rezervuara",
-      "citiesInKosovo": "Qytete në Kosovë"
+      "confirmCta": "Konfirmo terminin"
     },
     "specialtiesSection": {
       "kicker": "Specialitetet",
@@ -69,8 +62,8 @@
       "hoursLabel": "Rezervim online, edhe natën",
       "easyBig": "Lehtë",
       "easyLabel": "Anuloni ose ricaktoni me një klik",
-      "coverageBig": "7 qytete",
-      "coverageLabel": "Mbulim në gjithë Kosovën"
+      "coverageBig": "Online",
+      "coverageLabel": "E disponueshme nga kudo në Kosovë"
     },
     "clinicsSection": {
       "kicker": "Klinikat",
@@ -80,10 +73,6 @@
       "viewClinic": "Shiko klinikën",
       "doctorCount_one": "{{count}} mjek",
       "doctorCount_other": "{{count}} mjekë"
-    },
-    "testimonials": {
-      "kicker": "Dëshmi",
-      "title": "Të besuar nga pacientë dhe klinika"
     },
     "finalCta": {
       "kicker": "Falas për pacientët",
@@ -132,7 +121,7 @@
       ],
       "clinics": [
         {
-          "name": "Spitali Amerikan",
+          "name": "Klinika Qendrore",
           "city": "Prishtinë",
           "specialties": [
             "Kardiologji",
@@ -156,24 +145,12 @@
             "Pediatri"
           ]
         }
-      ],
-      "testimonials": [
-        {
-          "quote": "Kam rezervuar terminin te kardiologu në më pak se një minutë, në mbrëmje, pa telefonuar askënd. Konfirmimi erdhi menjëherë.",
-          "name": "Blerta Hoxha",
-          "role": "Pacient · Prishtinë"
-        },
-        {
-          "quote": "Si klinikë, kalendarin e kemi tani në një vend. Terminet e humbura na janë ulur ndjeshëm që kur kaluam te Rezervo Mjekun.",
-          "name": "Dr. Fatos Kelmendi",
-          "role": "Drejtor klinike · Prizren"
-        }
       ]
     }
   },
   "search": {
     "title": "Gjeni mjekun ose klinikën e duhur",
-    "subtitle": "Kërkoni nga 500+ mjekë dhe 80+ klinika në Kosovë",
+    "subtitle": "Kërkoni mjekë dhe klinika të verifikuara në Kosovë",
     "searchPlaceholder": "Kërkoni mjek, klinikë, ose specialitet...",
     "allSpecialtiesChip": "Të gjitha",
     "tabClinics": "Klinika",
@@ -183,19 +160,16 @@
     "specialtyLabel": "Specialiteti",
     "showLess": "Shfaq më pak ▴",
     "showMore": "Shfaq më shumë ▾",
-    "minRatingLabel": "Vlerësimi minimal",
-    "andUp": "& lart",
-    "anyRating": "Çdo vlerësim",
     "applyFilters": "Apliko filtrat",
     "clearAllFilters": "Pastro të gjitha",
     "headingClinicsIn": "Klinika në {{city}}",
     "headingDoctorsIn": "Mjekë në {{city}}",
-    "defaultCity": "Kosovë",
+    "headingClinicsAll": "Klinika në Kosovë",
+    "headingDoctorsAll": "Mjekë në Kosovë",
     "resultCount_one": "{{count}} rezultat i gjetur",
     "resultCount_other": "{{count}} rezultate të gjetur",
     "sortRelevance": "Rendito sipas: Relevanca",
     "sortName": "Emri (A-Z)",
-    "sortRating": "Më të vlerësuarat",
     "errorTitle": "Ndodhi një gabim",
     "noResultsTitle": "Nuk u gjetën rezultate",
     "noResultsHint": "Provoni të ndryshoni filtrat ose termin e kërkimit.",
@@ -232,19 +206,30 @@
       "date": "Data",
       "time": "Ora"
     },
-    "chooseService": "Zgjidhni shërbimin",
-    "changeService": "Ndrysho shërbimin",
     "chooseBranch": "Zgjidhni degën",
-    "changeBranch": "Ndrysho degën",
     "chooseDate": "Zgjidhni datën",
-    "changeDate": "Ndrysho datën",
     "chooseTime": "Zgjidhni orën",
     "noSlotsForDate": "Nuk ka vende të lira për këtë datë.",
     "tryAnotherDate": "Provoni datë tjetër",
     "confirmBooking": "Konfirmo rezervimin",
     "continueCta": "Vazhdo",
-    "loginRequiredHint": "Duhet të jeni të kyçur për të rezervuar.",
-    "loginCta": "Kyçuni"
+    "back": "Kthehu",
+    "servicesHint": "Prekni një shërbim për ta rezervuar.",
+    "selectedLabel": "Zgjedhur",
+    "pickServiceHint": "Zgjidhni një shërbim nga lista “Shërbimet” për të filluar.",
+    "pickServiceCta": "Shiko shërbimet",
+    "dayClosed": "Klinika nuk punon këtë ditë",
+    "dayFull": "Nuk ka orare të lira këtë ditë",
+    "dayPast": "Kjo ditë ka kaluar",
+    "dayTooFar": "Rezervimet hapen deri në 60 ditë përpara",
+    "prevMonth": "Muaji i kaluar",
+    "nextMonth": "Muaji tjetër",
+    "legendAvailable": "E lirë",
+    "legendFull": "E zënë",
+    "legendClosed": "Mbyllur",
+    "loginToBook": "Hyni për të rezervuar",
+    "loginToBookHint": "Shërbimet dhe çmimet shihen këtu. Për të parë orët e lira dhe për të rezervuar, hyni në llogari.",
+    "registerCta": "Nuk keni llogari? Regjistrohuni falas"
   },
   "appointmentsList": {
     "title": "Terminet e mia",
@@ -488,5 +473,12 @@
     "myProfile": "Profili im",
     "familyMembers": "Anëtarët e familjes",
     "changePassword": "Ndrysho fjalëkalimin"
+  },
+  "seo": {
+    "in": "në",
+    "clinic": "Klinikë",
+    "doctorDescription": "Rezervoni termin online te Dr. {{name}} ({{summary}}). Shikoni shërbimet, çmimet dhe vendndodhjen.",
+    "doctorDescriptionBare": "Rezervoni termin online te Dr. {{name}}. Shikoni shërbimet, çmimet dhe vendndodhjen.",
+    "clinicDescription": "{{name}}{{place}}: shërbimet, çmimet dhe mjekët. Rezervoni termin online."
   }
 }

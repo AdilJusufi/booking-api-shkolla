@@ -23,13 +23,13 @@ export default function SuperAdminLayout() {
       <header className="admin-topbar">
         <div className="admin-topbar__left">
           <Logo variant="horizontal" size={20} />
-          <span className="admin-breadcrumb">{t('layout.superAdminBreadcrumb')}</span>
+          <span className="admin-breadcrumb hide-mobile">{t('layout.superAdminBreadcrumb')}</span>
         </div>
 
         <div className="admin-topbar__right">
           <button
             type="button"
-            className="admin-icon-btn"
+            className="admin-icon-btn hide-mobile"
             aria-label={theme === 'dark' ? tCommon('theme.switchToLight') : tCommon('theme.switchToDark')}
             onClick={toggleTheme}
           >

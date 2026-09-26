@@ -10,6 +10,7 @@
 // switch made after the module was first imported.
 import i18n from '../i18n'
 import { ApiError } from './api'
+import type { ScheduleAffectedAppointment } from './types'
 
 function tCommon(key: string): string {
   return i18n.t(key, { ns: 'common' })
@@ -142,6 +143,13 @@ export function getErrorMessage(error: unknown, overrides: ErrorMessageOverrides
   if (!(error instanceof ApiError)) {
     return overrides.default ?? tCommon('errors.default')
   }
+
+  // A known backend rule code beats both the caller's status override and
+  // the generic status copy: "422" alone can mean a dozen different rules
+  // (e.g. no-show-before-start rendered as "something went wrong").
+  const codeMessage = getErrorCodeMessage(error)
+  if (codeMessage) return codeMessage
+
   if (error.status === 0) return overrides.network ?? tCommon('errors.network')
   if (error.status >= 500) return overrides[500] ?? tCommon('errors.500')
 
@@ -155,6 +163,32 @@ export function getErrorMessage(error: unknown, overrides: ErrorMessageOverrides
     case 429: return overrides[429] ?? tCommon('errors.429')
     default: return overrides.default ?? tCommon('errors.default')
   }
+}
+
+/**
+ * Localized copy for the structured `code` the backend puts on every
+ * BookingRuleException / ConflictException / DomainException problem response
+ * (see ExceptionHandlingMiddleware). Null when there's no code or no
+ * translation for it, so the caller falls back to status-based copy.
+ */
+export function getErrorCodeMessage(error: unknown): string | null {
+  if (!(error instanceof ApiError)) return null
+  const data = error.data as { code?: unknown } | null | undefined
+  if (typeof data?.code !== 'string') return null
+  const key = `errors.codes.${data.code}`
+  return i18n.exists(key, { ns: 'common' }) ? tCommon(key) : null
+}
+
+/**
+ * The booked appointments a schedule edit would strand, from a 409
+ * `schedule-has-booked-appointments` (see ScheduleService on the backend).
+ * Empty for any other error.
+ */
+export function getScheduleAffectedAppointments(error: unknown): ScheduleAffectedAppointment[] {
+  if (!(error instanceof ApiError) || error.status !== 409) return []
+  const data = error.data as { code?: unknown; affectedAppointments?: unknown } | null | undefined
+  if (data?.code !== 'schedule-has-booked-appointments' || !Array.isArray(data.affectedAppointments)) return []
+  return data.affectedAppointments as ScheduleAffectedAppointment[]
 }
 
 function logError(error: unknown): void {

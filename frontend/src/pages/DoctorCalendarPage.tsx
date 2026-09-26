@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   Calendar,
   CalendarX,
@@ -8,7 +8,6 @@ import {
   ChevronRight,
   LayoutGrid,
   List,
-  MoreVertical,
   TrendingUp,
   UserX,
 } from 'lucide-react'
@@ -75,15 +74,16 @@ function calculateDateRange(filter: string): { dateFrom: string; dateTo: string 
       end.setDate(end.getDate() + 90)
       return { dateFrom: toDateInput(today), dateTo: toDateInput(end) }
     }
-    case 'week':
-    default: {
-      const day = today.getDay()
-      const diff = day === 0 ? 6 : day - 1
-      const start = new Date(today)
-      start.setDate(start.getDate() - diff)
-      const end = new Date(start)
+    case 'week': {
+      const end = new Date(today)
       end.setDate(end.getDate() + 6)
-      return { dateFrom: toDateInput(start), dateTo: toDateInput(end) }
+      return { dateFrom: toDateInput(today), dateTo: toDateInput(end) }
+    }
+    case 'upcoming':
+    default: {
+      const end = new Date(today)
+      end.setDate(end.getDate() + 90)
+      return { dateFrom: toDateInput(today), dateTo: toDateInput(end) }
     }
   }
 }
@@ -136,6 +136,7 @@ export default function DoctorCalendarPage() {
   const { t } = useTranslation('doctor')
   const { t: tCommon } = useTranslation('common')
   const DATE_OPTIONS = [
+    { value: 'upcoming', label: t('calendar.dateRange.upcoming') },
     { value: 'today', label: t('calendar.dateRange.today') },
     { value: 'week', label: t('calendar.dateRange.week') },
     { value: 'month', label: t('calendar.dateRange.month') },
@@ -153,7 +154,7 @@ export default function DoctorCalendarPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [view, setView] = useState<'lista' | 'ditore'>('lista')
   const [statusFilter, setStatusFilter] = useState('all')
-  const [dateFilter, setDateFilter] = useState('week')
+  const [dateFilter, setDateFilter] = useState('upcoming')
   const [appointments, setAppointments] = useState<DoctorAppointment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -351,7 +352,7 @@ export default function DoctorCalendarPage() {
                 const durationMinutes = Math.round((parseLocal(a.endDateTime).getTime() - parseLocal(a.startDateTime).getTime()) / 60000)
                 const startInFuture = parseLocal(a.startDateTime).getTime() > Date.now()
                 return (
-                  <div className="doctor-appt-row" key={a.id}>
+                  <div className="doctor-appt-row card-link" key={a.id}>
                     <div className="doctor-appt-row__time">
                       <span className="doctor-appt-row__start">{formatTime(a.startDateTime)}</span>
                       <span className="doctor-appt-row__duration">{durationMinutes} {t('calendar.minutesShort')}</span>
@@ -362,7 +363,7 @@ export default function DoctorCalendarPage() {
                     <div className="doctor-appt-row__main">
                       <div className="doctor-appt-row__patient">
                         <span className="doctor-appt-row__avatar">{initialsFromName(a.patientName)}</span>
-                        <span className="doctor-appt-row__name">{a.patientName}</span>
+                        <Link to={`/mjeku-panel/terminet/${a.id}`} className="doctor-appt-row__name card-link__target">{a.patientName}</Link>
                       </div>
                       <div className="doctor-appt-row__meta">
                         <span>{a.serviceName}</span>
@@ -371,7 +372,7 @@ export default function DoctorCalendarPage() {
                       </div>
                     </div>
 
-                    <div className="doctor-appt-row__actions">
+                    <div className="doctor-appt-row__actions card-link__raise">
                       {a.status === AppointmentStatus.Confirmed && !startInFuture && (
                         <>
                           <button
@@ -382,22 +383,17 @@ export default function DoctorCalendarPage() {
                           >
                             {t('calendar.completeCta')}
                           </button>
-                          <span
+                          <button
+                            type="button"
                             title={t('calendar.markNoShowTitle')}
-                            style={{ cursor: 'pointer', color: 'var(--muted)', display: 'inline-flex' }}
+                            aria-label={t('calendar.markNoShowTitle')}
+                            className="icon-btn-bare"
                             onClick={() => handleNoShow(a.id)}
                           >
                             <UserX size={16} strokeWidth={1.5} />
-                          </span>
+                          </button>
                         </>
                       )}
-                      <MoreVertical
-                        size={18}
-                        strokeWidth={1.5}
-                        color="var(--muted)"
-                        style={{ cursor: 'pointer' }}
-                        onClick={() => navigate(`/mjeku-panel/terminet/${a.id}`)}
-                      />
                     </div>
                   </div>
                 )

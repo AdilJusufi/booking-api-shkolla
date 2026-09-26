@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useOnlineStatus } from './pwa/useOnlineStatus'
 import OfflineFallback from './components/OfflineFallback'
 import ErrorBoundary from './components/ErrorBoundary'
+import ScrollToTop from './components/ScrollToTop'
 import Logo from './components/Logo'
 import Layout from './components/Layout'
 import PatientLayout from './components/PatientLayout'
@@ -67,6 +68,7 @@ export default function App() {
 
   return (
     <ErrorBoundary fallback={<RouteCrashFallback />}>
+      <ScrollToTop />
       <Routes>
       <Route path="/hyr" element={<LoginPage />} />
       <Route path="/konfirmo-email" element={<ConfirmEmailPage />} />

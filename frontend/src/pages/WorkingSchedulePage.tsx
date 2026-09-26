@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { Calendar, Clock, Info, Plus, Trash2 } from 'lucide-react'
 import { Trans, useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
-import { getErrorMessage } from '../lib/errors'
-import type { CreateWorkingScheduleRequest, DoctorBranch, DoctorWorkingSchedule } from '../lib/types'
+import { getErrorMessage, getScheduleAffectedAppointments } from '../lib/errors'
+import type { CreateWorkingScheduleRequest, DoctorBranch, DoctorWorkingSchedule, ScheduleAffectedAppointment } from '../lib/types'
 import { useToast } from '../context/ToastContext'
 import { CustomSelect, EmptyState, ErrorBox, Modal, SkeletonRows, TimeField, WeekdayMultiSelect } from '../components/ui'
 import { DAY_ORDER, monthName, weekdayName } from '../lib/format'
+import ScheduleAffectedList from '../components/ScheduleAffectedList'
 
 function formatDatePill(iso?: string): string {
   if (!iso) return ''
@@ -58,6 +59,9 @@ export default function WorkingSchedulePage() {
   const [error, setError] = useState('')
 
   const [showAddModal, setShowAddModal] = useState(false)
+  /** Set when the modal is editing an existing schedule rather than creating new ones. */
+  const [editing, setEditing] = useState<DoctorWorkingSchedule | null>(null)
+  const [affected, setAffected] = useState<ScheduleAffectedAppointment[]>([])
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
@@ -102,10 +106,63 @@ export default function WorkingSchedulePage() {
   }, [schedules])
 
   function openAddModal() {
+    setEditing(null)
     setForm({ ...EMPTY_FORM, clinicBranchId: branchOptions[0]?.id ?? '' })
     setFormError('')
+    setAffected([])
     setRangeResult(null)
     setShowAddModal(true)
+  }
+
+  function openEditModal(schedule: DoctorWorkingSchedule) {
+    setEditing(schedule)
+    setForm({
+      clinicBranchId: schedule.clinicBranchId,
+      selectedDays: [schedule.dayOfWeek],
+      startTime: schedule.startTime.slice(0, 5),
+      endTime: schedule.endTime.slice(0, 5),
+      slotDurationMinutes: String(schedule.slotDurationMinutes),
+      validFrom: schedule.validFrom ?? '',
+      validUntil: schedule.validUntil ?? '',
+    })
+    setFormError('')
+    setAffected([])
+    setRangeResult(null)
+    setShowAddModal(true)
+  }
+
+  function closeModal() {
+    setShowAddModal(false)
+    setEditing(null)
+  }
+
+  /** In edit mode a schedule is exactly one weekday — a newly ticked day replaces the old one. */
+  function changeDays(days: number[]) {
+    if (!editing) return updateField('selectedDays', days)
+    const added = days.find((d) => !form.selectedDays.includes(d))
+    if (added !== undefined) updateField('selectedDays', [added])
+  }
+
+  async function handleUpdate() {
+    if (!editing) return
+    setFormError('')
+    setAffected([])
+    const validationError = validateCommonFields()
+    if (validationError) return setFormError(validationError)
+
+    setSaving(true)
+    try {
+      const updated = await api.updateWorkingSchedule(editing.id, buildPayload(form.selectedDays[0]))
+      setSchedules((prev) => prev.map((s) => (s.id === updated.id ? updated : s)))
+      closeModal()
+      notify(t('workingSchedule.updatedToast'), 'ok')
+    } catch (e) {
+      const stranded = getScheduleAffectedAppointments(e)
+      if (stranded.length > 0) setAffected(stranded)
+      else setFormError(getErrorMessage(e))
+    } finally {
+      setSaving(false)
+    }
   }
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -249,7 +306,7 @@ export default function WorkingSchedulePage() {
             </div>
 
             {items.map((s) => (
-              <div className="schedule-card" key={s.id}>
+              <div className="schedule-card card-link" key={s.id}>
                 <div className="schedule-card__time">
                   <span className="schedule-card__time-label">{t('workingSchedule.timeLabel')}</span>
                   <span className="schedule-card__time-start">{s.startTime.slice(0, 5)}</span>
@@ -257,14 +314,22 @@ export default function WorkingSchedulePage() {
                 </div>
 
                 <div className="schedule-card__main">
-                  <div className="schedule-card__branch">{s.branchName}</div>
+                  {/* Stretched button: tapping anywhere on the card opens the edit form. */}
+                  <button
+                    type="button"
+                    className="schedule-card__branch card-link__target"
+                    aria-label={t('workingSchedule.editAria', { day: weekdayName(s.dayOfWeek), branch: s.branchName })}
+                    onClick={() => openEditModal(s)}
+                  >
+                    {s.branchName}
+                  </button>
                   <div className="schedule-card__meta">
                     <span><Clock size={13} strokeWidth={1.5} /> {t('workingSchedule.perAppointment', { count: s.slotDurationMinutes })}</span>
                     <span><Calendar size={13} strokeWidth={1.5} /> {validityLabel(s, t)}</span>
                   </div>
                 </div>
 
-                <div className="schedule-card__actions">
+                <div className="schedule-card__actions card-link__raise">
                   <span className={`schedule-card__status ${s.isActive ? 'is-active' : ''}`}>
                     {s.isActive ? t('workingSchedule.statusActive') : t('workingSchedule.statusInactive')}
                   </span>
@@ -294,8 +359,9 @@ export default function WorkingSchedulePage() {
       )}
 
       {showAddModal && (
-        <Modal title={t('workingSchedule.addModalTitle')} onClose={() => setShowAddModal(false)}>
+        <Modal title={editing ? t('workingSchedule.editModalTitle') : t('workingSchedule.addModalTitle')} onClose={closeModal}>
           {formError && <ErrorBox message={formError} />}
+          <ScheduleAffectedList appointments={affected} linkTo={(id) => `/mjeku-panel/terminet/${id}`} />
 
           {rangeResult && (
             <div className="range-result">
@@ -346,7 +412,8 @@ export default function WorkingSchedulePage() {
             <label>{t('workingSchedule.daysLabel')}</label>
             <WeekdayMultiSelect
               selectedDays={form.selectedDays}
-              onChange={(days) => updateField('selectedDays', days)}
+              onChange={changeDays}
+              showRange={!editing}
               fromLabel={t('workingSchedule.rangeFromLabel')}
               toLabel={t('workingSchedule.rangeToLabel')}
               applyRangeCta={t('workingSchedule.rangeApplyCta')}
@@ -384,9 +451,13 @@ export default function WorkingSchedulePage() {
             type="button"
             className="btn btn--primary btn--block"
             disabled={saving || branchOptions.length === 0}
-            onClick={handleCreate}
+            onClick={editing ? handleUpdate : handleCreate}
           >
-            {saving ? t('workingSchedule.saving') : t('workingSchedule.addRangeSubmit')}
+            {saving
+              ? t('workingSchedule.saving')
+              : editing
+                ? t('workingSchedule.saveChangesCta')
+                : t('workingSchedule.addRangeSubmit')}
           </button>
         </Modal>
       )}

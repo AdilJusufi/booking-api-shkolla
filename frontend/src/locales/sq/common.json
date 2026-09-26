@@ -30,6 +30,11 @@
     "emptyState": "Së shpejti do të mund t'i shihni këtu njoftimet për terminet tuaja.",
     "comingSoon": "Së shpejti"
   },
+  "dateField": {
+    "day": "Dita",
+    "month": "Muaji",
+    "year": "Viti"
+  },
   "dates": {
     "weekdaysLong": [
       "E Diel",
@@ -95,11 +100,11 @@
     "myAppointments": "Terminet e mia",
     "contactTitle": "Kontakt",
     "contactCity": "Prishtinë, Kosovë",
-    "contactEmail": "info@rezervomjekun.com",
+    "contactEmail": "rezervomjekun@gmail.com",
     "legalTitle": "Ligjore",
     "privacyPolicy": "Politika e Privatësisë",
     "termsOfService": "Kushtet e Përdorimit",
-    "copyright": "© {{year}} Rezervo Mjekun — Projekt demonstrues."
+    "copyright": "© {{year}} Rezervo Mjekun — Version beta."
   },
   "buttons": {
     "retry": "Provo përsëri",
@@ -160,7 +165,31 @@
     "500": "Ndodhi një gabim në server. Provoni përsëri pas pak.",
     "default": "Ndodhi një gabim. Provoni përsëri pas pak.",
     "slotTaken": "Ky termin sapo u zu nga dikush tjetër. Ju lutem zgjidhni një kohë tjetër.",
-    "staleRecord": "Dikush tjetër e ndryshoi këtë termin ndërkohë. Faqja u rifreskua me të dhënat e fundit."
+    "staleRecord": "Dikush tjetër e ndryshoi këtë termin ndërkohë. Faqja u rifreskua me të dhënat e fundit.",
+    "codes": {
+      "no-show-before-start": "Termini nuk mund të shënohet si “nuk erdhi” para se të fillojë. Provoni pasi të ketë kaluar ora e terminit.",
+      "complete-before-start": "Termini mund të shënohet i përfunduar vetëm pasi të ketë filluar.",
+      "invalid-status-transition": "Ky veprim nuk lejohet për statusin aktual të terminit. Rifreskoni faqen për të parë statusin e fundit.",
+      "not-cancellable": "Ky termin nuk mund të anulohet më në statusin aktual.",
+      "not-reschedulable": "Ky termin nuk mund të riplanifikohet në statusin aktual.",
+      "cancellation-window-passed": "Afati për anulim ka kaluar. Kontaktoni klinikën drejtpërdrejt.",
+      "appointment-conflict": "Ky orar nuk është më i lirë. Zgjidhni një orë tjetër.",
+      "appointment-in-past": "Termini nuk mund të jetë në të kaluarën.",
+      "patient-appointment-overlap": "Pacienti ka tashmë një termin në këtë orar.",
+      "doctor-not-at-branch": "Mjeku nuk punon në degën e zgjedhur.",
+      "service-not-in-clinic": "Shërbimi nuk i përket klinikës së kësaj dege.",
+      "service-not-offered-by-doctor": "Mjeku nuk e ofron këtë shërbim.",
+      "dependent-not-owned": "Ky anëtar i familjes nuk është në llogarinë tuaj.",
+      "schedule-overlap": "Ky orar mbivendoset me një orar ekzistues për të njëjtën ditë.",
+      "schedule-has-booked-appointments": "Ky ndryshim do të linte jashtë orarit termine të rezervuara. Riplanifikoni ose anuloni ato termine më parë.",
+      "doctor-has-future-appointments": "Mjeku ka termine të ardhshme aktive. Riplanifikoni ose anuloni ato më parë.",
+      "concurrency-conflict": "Dikush tjetër e ndryshoi këtë ndërkohë. Rifreskoni faqen dhe provoni përsëri.",
+      "email-exists": "Ekziston tashmë një llogari me këtë email.",
+      "phone-exists": "Ky numër telefoni është i regjistruar tashmë.",
+      "license-exists": "Ky numër licence është i regjistruar tashmë.",
+      "specialty-exists": "Ekziston tashmë një specializim me këtë emër.",
+      "admin-already-assigned": "Ky përdorues është tashmë administrator i kësaj klinike."
+    }
   },
   "appointment": {
     "status": {
@@ -196,5 +225,10 @@
     "vushtrri": "Vushtrri",
     "podujeva": "Podujevë",
     "suhareka": "Suharekë"
+  },
+  "scheduleConflict": {
+    "title_one": "Ky ndryshim do të linte jashtë orarit {{count}} termin të rezervuar:",
+    "title_other": "Ky ndryshim do të linte jashtë orarit {{count}} termine të rezervuara:",
+    "hint": "Riplanifikoni ose anuloni këto termine, pastaj ruani përsëri ndryshimin."
   }
 }

@@ -31,6 +31,9 @@
     "editModalTitle": "Izmeni Specijalnost",
     "addModalTitle": "Dodaj Specijalnost",
     "nameLabel": "Naziv",
+    "nameEnLabel": "Naziv na engleskom",
+    "nameSrLabel": "Naziv na srpskom",
+    "translationHint": "Bez prevoda, albanski naziv se prikazuje na svim jezicima.",
     "descriptionLabel": "Opis",
     "optional": "(opciono)",
     "activeCheckbox": "Aktivno",
@@ -235,7 +238,12 @@
       "rangeAddedToast_one": "Raspored je dodat za {{count}} dan.",
       "rangeAddedToast_few": "Raspored je dodat za {{count}} dana.",
       "rangeAddedToast_other": "Raspored je dodat za {{count}} dana.",
-      "rangePartialSuccess": "Raspored je dodat za <0>{{count}} od {{total}}</0> izabranih dana. Detalji za dane koji nisu uspeli:"
+      "rangePartialSuccess": "Raspored je dodat za <0>{{count}} od {{total}}</0> izabranih dana. Detalji za dane koji nisu uspeli:",
+      "editSectionTitle": "Izmeni raspored — {{day}}",
+      "saveChangesCta": "Sačuvaj izmene",
+      "cancelEditCta": "Otkaži izmenu",
+      "updatedToast": "Raspored je ažuriran.",
+      "editAria": "Izmeni raspored za {{day}} u {{branch}}"
     },
     "pendingTitle": "Klinika još uvek čeka odobrenje",
     "pendingHint": "Upravljanje lekarima se otvara čim SuperAdmin odobri kliniku.",

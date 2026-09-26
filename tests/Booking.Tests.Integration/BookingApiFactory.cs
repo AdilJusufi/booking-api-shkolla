@@ -43,6 +43,7 @@ public class BookingApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         SetConfig("Auth__RequireConfirmedEmail", "false");
         SetConfig("Database__ApplyMigrationsOnStartup", "true");
         SetConfig("Seed__Enabled", "true");
+        SetConfig("Frontend__BaseUrl", "https://www.example.test");
         SetConfig("Seed__SuperAdminPassword", SuperAdminPassword);
         SetConfig("Seed__DefaultUserPassword", DefaultUserPassword);
         SetConfig("RateLimiting__AuthPermitLimit", "1000");

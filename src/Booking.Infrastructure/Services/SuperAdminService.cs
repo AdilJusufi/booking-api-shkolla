@@ -123,6 +123,14 @@ public class SuperAdminService : ISuperAdminService
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Fusha bosh nga forma ("") ruhet si null, që rregulli i fallback-ut të
+    /// mbetet një kontroll i vetëm për null — përndryshe një string bosh do të
+    /// shfaqej si emër specializimi.
+    /// </summary>
+    private static string? Normalize(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
     public async Task<SpecialtyDto> CreateSpecialtyAsync(
         CreateSpecialtyRequest request, CancellationToken cancellationToken = default)
     {
@@ -133,13 +141,19 @@ public class SuperAdminService : ISuperAdminService
             throw new ConflictException("specialty-exists", "Ekziston tashmë një specializim me këtë emër.");
         }
 
-        var specialty = new Specialty { Name = request.Name, Description = request.Description };
+        var specialty = new Specialty
+        {
+            Name = request.Name,
+            NameEn = Normalize(request.NameEn),
+            NameSr = Normalize(request.NameSr),
+            Description = request.Description
+        };
         _dbContext.Specialties.Add(specialty);
 
         _auditService.Record("SPECIALTY_CREATED", nameof(Specialty), specialty.Id.ToString(), null, new { specialty.Name });
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return new SpecialtyDto { Id = specialty.Id, Name = specialty.Name, Description = specialty.Description, IsActive = specialty.IsActive };
+        return new SpecialtyDto { Id = specialty.Id, Name = specialty.Name, NameEn = specialty.NameEn, NameSr = specialty.NameSr, Description = specialty.Description, IsActive = specialty.IsActive };
     }
 
     public async Task<SpecialtyDto> UpdateSpecialtyAsync(
@@ -150,15 +164,17 @@ public class SuperAdminService : ISuperAdminService
             ?? throw new NotFoundException("Specialty", specialtyId);
 
         _auditService.Record("SPECIALTY_UPDATED", nameof(Specialty), specialtyId.ToString(),
-            new { specialty.Name, specialty.Description, specialty.IsActive },
-            new { request.Name, request.Description, request.IsActive });
+            new { specialty.Name, specialty.NameEn, specialty.NameSr, specialty.Description, specialty.IsActive },
+            new { request.Name, request.NameEn, request.NameSr, request.Description, request.IsActive });
 
         specialty.Name = request.Name;
+        specialty.NameEn = Normalize(request.NameEn);
+        specialty.NameSr = Normalize(request.NameSr);
         specialty.Description = request.Description;
         specialty.IsActive = request.IsActive;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return new SpecialtyDto { Id = specialty.Id, Name = specialty.Name, Description = specialty.Description, IsActive = specialty.IsActive };
+        return new SpecialtyDto { Id = specialty.Id, Name = specialty.Name, NameEn = specialty.NameEn, NameSr = specialty.NameSr, Description = specialty.Description, IsActive = specialty.IsActive };
     }
 
     public async Task DeleteSpecialtyAsync(

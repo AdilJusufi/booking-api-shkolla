@@ -529,11 +529,25 @@ public class AdminListEndpointsTests
 
     /// <summary>
     /// Rezervimet krijohen tashmë si Confirmed (nuk ka më hap Pending) — kalimi i vetëm i
-    /// mbetur për ta përfunduar terminin është Confirmed → Completed.
+    /// mbetur për ta përfunduar terminin është Confirmed → Completed. Një termin mund të
+    /// përfundohet vetëm pasi ka filluar (complete-before-start), ndaj termini i sapo-rezervuar
+    /// (në të ardhmen) zhvendoset 4 javë prapa — mbetet brenda WideFrom..WideTo të raportit.
     /// </summary>
-    private static async Task CompleteAsync(HttpClient admin, Guid appointmentId)
+    private async Task CompleteAsync(HttpClient admin, Guid appointmentId)
     {
+        await MoveIntoPastAsync(appointmentId);
         await TransitionAsync(admin, appointmentId, AppointmentStatus.Completed);
+    }
+
+    private async Task MoveIntoPastAsync(Guid appointmentId)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
+
+        var appointment = await db.Appointments.SingleAsync(a => a.Id == appointmentId);
+        appointment.StartDateTime = appointment.StartDateTime.AddDays(-28);
+        appointment.EndDateTime = appointment.EndDateTime.AddDays(-28);
+        await db.SaveChangesAsync();
     }
 
     /// <summary>

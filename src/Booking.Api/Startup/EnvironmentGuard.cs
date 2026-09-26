@@ -45,12 +45,23 @@ public static class EnvironmentGuard
 
         // 2. Ana tjetër e të njëjtës medalje: seed-i i ndezur jashtë Development-it krijon
         //    llogari me password-e që ndodhen në kontrollin e versionit.
-        if (!isDevelopment && configuration.GetValue<bool>("Seed:Enabled"))
+        //
+        //    Përjashtim i qëllimshëm: një instancë "dev" (Render, DB Neon e veçantë) duhet
+        //    të drejtohet me ASPNETCORE_ENVIRONMENT=Production — jo Development — pikërisht
+        //    që të mos trashëgojë default-et e Development-it (RequireConfirmedEmail=false
+        //    etj.), por PRAPË duhet të mund të seedohet me të dhëna false, sepse s'ka asnjë
+        //    patient real pas saj. environmentName vetëm s'mjafton më për të dalluar "ky është
+        //    databaza reale e prodhimit" nga "kjo është një instancë testimi që quhet
+        //    Production". Seed__AllowOutsideDevelopment=true e bën këtë dallim eksplicit dhe
+        //    të auditueshëm — vendoset VETËM te instanca dev, kurrë te prodhimi real.
+        var allowSeedOutsideDevelopment = configuration.GetValue<bool>("Seed:AllowOutsideDevelopment");
+        if (!isDevelopment && !allowSeedOutsideDevelopment && configuration.GetValue<bool>("Seed:Enabled"))
         {
             throw new InvalidOperationException(
                 $"NISJA U NDAL: Seed:Enabled=true në mjedisin '{environmentName}'. Seed-i krijon "
                 + "llogari me password-e të marra nga konfigurimi i zhvillimit, të cilat janë publike "
-                + "në repo. Vendos Seed__Enabled=false.");
+                + "në repo. Vendos Seed__Enabled=false, ose — nëse kjo ËSHTË vërtet një instancë "
+                + "dev/testimi pa asnjë patient real, jo prodhimi — Seed__AllowOutsideDevelopment=true.");
         }
     }
 

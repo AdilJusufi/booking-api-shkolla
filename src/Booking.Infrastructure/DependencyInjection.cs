@@ -9,6 +9,7 @@ using Booking.Application.Features.Patients;
 using Booking.Application.Features.Availability;
 using Booking.Application.Features.Clinics;
 using Booking.Application.Features.Doctors;
+using Booking.Application.Features.Seo;
 using Booking.Application.Features.Schedules;
 using Booking.Infrastructure.Auth;
 using Booking.Infrastructure.Queries;
@@ -59,6 +60,7 @@ public static class DependencyInjection
 
         services.AddScoped<IClinicQueryService, ClinicQueryService>();
         services.AddScoped<IDoctorQueryService, DoctorQueryService>();
+        services.AddScoped<ISitemapQueryService, SitemapQueryService>();
         services.AddScoped<IAvailabilityService, AvailabilityService>();
         services.AddScoped<IScheduleService, ScheduleService>();
         services.AddScoped<IAppointmentService, AppointmentService>();

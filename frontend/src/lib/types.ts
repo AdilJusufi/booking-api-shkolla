@@ -85,13 +85,19 @@ export interface PagedResult<T> {
 
 export interface Specialty {
   id: string
+  /** Emri kanonik shqip — edhe fallback-u kur mungon përkthimi. */
   name: string
+  /** Të dyja opsionale: null/mungesë do të thotë "shfaq `name`". */
+  nameEn?: string | null
+  nameSr?: string | null
   description?: string
 }
 
 /** Pasqyron CreateSpecialtyRequest — POST /api/admin/specialties. */
 export interface CreateSpecialtyRequest {
   name: string
+  nameEn?: string | null
+  nameSr?: string | null
   description?: string
 }
 
@@ -103,6 +109,8 @@ export interface CreateSpecialtyRequest {
  */
 export interface UpdateSpecialtyRequest {
   name: string
+  nameEn?: string | null
+  nameSr?: string | null
   description?: string
   isActive: boolean
 }
@@ -377,6 +385,14 @@ export interface AvailableSlot {
   serviceId: string
 }
 
+/** Day-level booking-calendar state from GET /api/doctors/{id}/available-days. */
+export type DayAvailability = 'Closed' | 'Full' | 'Available'
+
+export interface AvailableDay {
+  date: string
+  status: DayAvailability
+}
+
 export interface CreateAppointmentRequest {
   doctorId: string
   clinicBranchId: string
@@ -503,6 +519,22 @@ export interface CreateWorkingScheduleRequest {
   slotDurationMinutes: number
   validFrom?: string
   validUntil?: string
+}
+
+/** PUT working-schedules/{id} — same shape and rules as create (full replace). */
+export type UpdateWorkingScheduleRequest = CreateWorkingScheduleRequest
+
+/**
+ * One entry of `affectedAppointments` on a 409 `schedule-has-booked-appointments`:
+ * a booked future appointment the edit would leave outside working hours.
+ * Times are Prishtina local, like everywhere else.
+ */
+export interface ScheduleAffectedAppointment {
+  id: string
+  startDateTime: string
+  endDateTime: string
+  patientName: string
+  serviceName: string
 }
 
 /** Pasqyron CreateUnavailabilityRequest — POST /api/admin/doctors/{id}/unavailability. */

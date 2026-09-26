@@ -29,6 +29,17 @@ public class DoctorQueryService : IDoctorQueryService
             query = query.Where(x => EF.Functions.ILike(x.User.FirstName + " " + x.User.LastName, pattern));
         }
 
+        // Doktori nuk ka qytet të vetin — e trashëgon nga degët ku ordinon.
+        // ILike pa wildcard = përputhje e plotë pa dallim shkronjash, njësoj
+        // si filtri i qytetit te kërkimi i klinikave.
+        if (!string.IsNullOrWhiteSpace(request.City))
+        {
+            query = query.Where(x => x.Doctor.DoctorClinicBranches.Any(dcb =>
+                dcb.IsActive
+                && dcb.ClinicBranch.IsActive
+                && EF.Functions.ILike(dcb.ClinicBranch.City, request.City)));
+        }
+
         if (request.ClinicId is { } clinicId)
         {
             query = query.Where(x => x.Doctor.DoctorClinicBranches.Any(dcb =>

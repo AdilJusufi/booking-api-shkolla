@@ -55,6 +55,22 @@
   /* Always-dark surface (footer, toasts) — stays constant across themes */
   --ink-fixed: #131718;
   --surface-inverse: #0e1111;
+
+  /* Z-index scale — the only z-index values allowed in this stylesheet.
+     Every rule uses one of these tokens; never a raw number. Values are
+     spaced so a component can locally sit one above its tier with
+     calc(var(--z-…) + 1) without colliding with the next tier. */
+  --z-below: -1; /* decorative pseudo-elements behind their parent */
+  --z-base: 0;
+  --z-raised: 1; /* content lifted over a sibling decoration in the same box */
+  --z-dropdown: 10; /* in-flow menus: filter dropdowns, user menu, notifications */
+  --z-sticky: 20; /* fixed/sticky chrome below the header: mobile tab bar */
+  --z-header: 30; /* top bars: navbar, patient/doctor/admin topbars */
+  --z-modal: 40; /* modal overlay (backdrop + dialog in one layer) */
+  --z-popover: 50; /* portalled floating panels that must clear modals (CustomSelect) */
+  --z-banner: 60; /* persistent system banners: offline, PWA install/update */
+  --z-toast: 70; /* toasts clear everything the user can interact with */
+  --z-system: 100; /* non-production environment badge — always on top */
 }
 
 /* Dark theme — palette lifted from the Rezervo Mjekun Stitch design system */
@@ -388,7 +404,7 @@ textarea {
 .navbar {
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: var(--z-header);
   background: color-mix(in srgb, var(--surface) 90%, transparent);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--line);
@@ -533,8 +549,16 @@ textarea {
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow);
-  z-index: 50;
+  z-index: var(--z-dropdown);
   overflow: hidden;
+}
+@media (max-width: 600px) {
+  /* Pinned to the trigger's own width so a right-hand filter never pushes
+     the page into horizontal scroll. */
+  .dropdown__panel {
+    right: 0;
+    min-width: 100%;
+  }
 }
 .dropdown__option {
   display: flex;
@@ -644,20 +668,22 @@ textarea {
   transform: rotate(180deg);
   color: var(--primary);
 }
+/* Rendered into `document.body` via a portal, positioned with `position:
+   fixed` from the trigger's box (see CustomSelect). Keeping it in the trigger's
+   own subtree meant any ancestor that formed a stacking context trapped it —
+   the landing hero's `[data-reveal]` animation sets `will-change: transform`
+   on the search form, which did exactly that and let the trust badges below
+   paint over the open list. `left`/`top`/`min-width`/`max-height` all arrive
+   inline; --z-popover clears --z-modal so selects inside modals work. */
 .cselect__panel {
-  position: absolute;
-  top: calc(100% + 10px);
-  left: 0;
-  min-width: 100%;
   width: max-content;
   max-width: 280px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow);
-  z-index: 50;
+  z-index: var(--z-popover);
   overflow: hidden auto;
-  max-height: 320px;
   animation: modal-rise 0.24s var(--ease-spring);
 }
 .cselect__option {
@@ -725,22 +751,23 @@ textarea {
 .lp-search__field .cselect__chevron.is-open {
   color: var(--lp-accent);
 }
-.lp-search__field .cselect__panel {
+/* The hero panel portals out of `.lp-search__field`, so its landing-page look
+   rides on this modifier rather than a descendant selector. */
+.cselect__panel--hero {
   background: var(--lp-surface);
   border-color: var(--lp-line);
   border-radius: var(--lp-r);
   box-shadow: var(--lp-sh-lg);
-  top: calc(100% + 14px);
 }
-.lp-search__field .cselect__option {
+.cselect__panel--hero .cselect__option {
   color: var(--lp-text);
 }
-.lp-search__field .cselect__option:hover,
-.lp-search__field .cselect__option.is-active {
+.cselect__panel--hero .cselect__option:hover,
+.cselect__panel--hero .cselect__option.is-active {
   background: color-mix(in srgb, var(--lp-accent) 10%, transparent);
   color: var(--lp-accent);
 }
-.lp-search__field .cselect__option.is-selected {
+.cselect__panel--hero .cselect__option.is-selected {
   background: var(--lp-accent);
   color: #fff;
 }
@@ -1059,7 +1086,7 @@ textarea {
 }
 .detail-hero > * {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-raised);
 }
 .backlink {
   display: inline-block;
@@ -1126,6 +1153,16 @@ textarea {
 
 .detail-body {
   padding-top: 36px;
+}
+/* Varianti pa `--split` (faqja e klinikës) i mban `.block`-at si fëmijë të
+   drejtpërdrejtë, dhe `.block` s'ka margjinë të vetën — pa këtë, titulli
+   "Shërbimet & çmimet" ngjitej fill pas kartelave të degëve. I njëjti ritëm
+   30px si te `.detail-col`, që të dy faqet e detajeve të lexohen njësoj.
+   Varianti `--split` e ka tashmë hapësirën nga `gap` i grid-it. */
+.detail-body:not(.detail-body--split) {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
 }
 .detail-body--split {
   display: grid;
@@ -1250,6 +1287,56 @@ textarea {
   color: var(--primary);
   font-size: 1.1rem;
 }
+.block__hint {
+  margin: -8px 0 14px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+/* The services list is the booking entry point — each row is a button. */
+.service-row--pick {
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-height: 64px;
+  transition:
+    border-color var(--dur) var(--ease-spring),
+    background var(--dur) var(--ease-spring),
+    box-shadow var(--dur) var(--ease-spring),
+    transform var(--dur-fast) var(--ease-spring);
+}
+@media (hover: hover) {
+  .service-row--pick:hover:not(.is-selected) {
+    border-color: var(--primary);
+    box-shadow: var(--shadow-sm);
+  }
+}
+.service-row--pick:active {
+  transform: scale(0.985);
+}
+.service-row--pick.is-selected {
+  border-color: var(--primary);
+  background: var(--primary-050);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+.service-row--pick.is-selected .service-row__icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  align-items: center;
+  justify-content: center;
+}
+.service-row__selected {
+  color: var(--primary-700);
+  font-weight: 600;
+}
+@media (prefers-reduced-motion: reduce) {
+  .service-row--pick:active {
+    transform: none;
+  }
+}
 
 /* ============ Booking panel ============ */
 .booking {
@@ -1349,6 +1436,22 @@ textarea {
 }
 .time-field.is-disabled {
   opacity: 0.6;
+}
+
+/* Ditë / muaj / vit — muaji merr më shumë hapësirë sepse mban emër, jo numër. */
+.date-field {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 8px;
+}
+.date-field select {
+  min-width: 0;
+  width: 100%;
+}
+@media (max-width: 420px) {
+  .date-field {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Slots: mono, tabular, 44px floor. Available = hairline, selected = solid accent. */
@@ -1714,6 +1817,15 @@ textarea {
   font-size: 0.8rem;
   font-weight: 600;
 }
+/* Udhëzim gjithmonë i dukshëm nën fushë (p.sh. rregullat e fjalëkalimit) —
+   ndryshe nga placeholder-i, s'zhduket sapo përdoruesi fillon të shkruajë dhe
+   s'pritet nga gjerësia e input-it. */
+.field__hint {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
 .split-auth__brand-copyright {
   color: rgba(255, 255, 255, 0.4);
   font-size: 11px;
@@ -1871,7 +1983,11 @@ textarea {
 /* Authenticated content settles in rather than snapping on route change. */
 .patient-content > *,
 .admin-content > * {
-  animation: content-in 0.45s var(--ease-spring) both;
+  /* `backwards`, not `both`: a filled transform keeps every section a
+     stacking context after the animation ends, so a later sibling (the
+     appointments list) painted over an earlier one's dropdown regardless of
+     the dropdown's z-index. */
+  animation: content-in 0.45s var(--ease-spring) backwards;
 }
 @keyframes content-in {
   from {
@@ -2123,7 +2239,7 @@ textarea {
 }
 .search-hero > * {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-raised);
 }
 .search-hero h1 {
   color: #fff;
@@ -2549,7 +2665,7 @@ textarea {
   position: fixed;
   bottom: 24px;
   right: 24px;
-  z-index: 100;
+  z-index: var(--z-toast);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -2662,7 +2778,7 @@ textarea {
   height: 64px;
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: var(--z-header);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2712,8 +2828,11 @@ textarea {
   position: sticky;
   top: 64px;
   height: calc(100dvh - 64px);
-  background: var(--ink-fixed);
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  /* Follows the theme (was pinned to --ink-fixed). Every colour below is a
+     theme token, so both palettes get the same hierarchy: muted idle, teal
+     wash on hover/active, teal accent bar on the active item. */
+  background: var(--surface);
+  border-right: 1px solid var(--line);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2730,32 +2849,32 @@ textarea {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--muted);
   transition: 0.15s;
 }
 .patient-nav-item__icon {
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--muted);
   transition: 0.15s;
 }
 .patient-nav-item__label {
   font-size: 9px;
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--muted);
   transition: 0.15s;
 }
 .patient-nav-item:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--primary-050);
 }
 .patient-nav-item:hover .patient-nav-item__icon {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--primary-700);
 }
 .patient-nav-item.is-active {
-  background: rgba(52, 179, 162, 0.16);
+  background: var(--primary-050);
 }
 .patient-nav-item.is-active .patient-nav-item__icon {
-  color: #34b3a2;
+  color: var(--primary);
 }
 .patient-nav-item.is-active .patient-nav-item__label {
-  color: #7fd3c6;
+  color: var(--primary-700);
 }
 .patient-nav-item.is-active::before {
   content: "";
@@ -2764,7 +2883,7 @@ textarea {
   top: 10px;
   width: 3px;
   height: 24px;
-  background: #34b3a2;
+  background: var(--primary);
   border-radius: 0 3px 3px 0;
 }
 .patient-sidebar__spacer {
@@ -2791,7 +2910,7 @@ textarea {
   left: 0;
   right: 0;
   height: 64px;
-  z-index: 50;
+  z-index: var(--z-sticky);
   background: var(--surface);
   border-top: 1px solid var(--line);
 }
@@ -2882,6 +3001,47 @@ textarea {
   color: var(--muted);
   margin-top: 4px;
 }
+@media (max-width: 600px) {
+  /* Grid instead of wrapping flex: three tiles sit in one compact row (no
+     2 + 1 orphan), any other count pairs up two per row. Shared by the
+     patient, doctor, admin and profile stat rows. */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .stats-row:has(> :nth-child(3):last-child) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .stats-row > * {
+    min-width: 0;
+  }
+  .stat-card {
+    min-width: 0;
+    flex: 1 1 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px;
+  }
+  .stat-card__icon {
+    width: 32px;
+    height: 32px;
+  }
+  .stat-card__icon svg {
+    width: 16px;
+    height: 16px;
+  }
+  .stat-card__label {
+    font-size: 0.62rem;
+    letter-spacing: 0.04em;
+    overflow-wrap: anywhere;
+  }
+  .appts-header {
+    margin-bottom: 16px;
+  }
+}
 
 .appts-filter-row {
   display: flex;
@@ -2958,6 +3118,32 @@ textarea {
 .appts-search input:focus {
   outline: none;
 }
+@media (max-width: 600px) {
+  /* Tabs get a full row of their own and split it evenly; search and the
+     date filter share the row below. */
+  .appts-filter-row {
+    gap: 10px;
+  }
+  .status-tabs {
+    display: flex;
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .status-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .status-tab {
+    flex: 1 0 auto;
+    padding: 10px 12px;
+    white-space: nowrap;
+    min-height: 40px;
+  }
+  .appts-search {
+    max-width: none;
+    min-width: 0;
+  }
+}
 
 .appt-row {
   background: var(--surface);
@@ -2973,6 +3159,58 @@ textarea {
 .appt-row:hover {
   border-color: var(--primary-100);
 }
+/* ============ Whole-card link (stretched link) ============
+   The card's primary link (`.card-link__target`) stretches an ::after over the
+   entire card, so a click anywhere opens it and the card stays a single
+   focusable, Enter-to-open target for keyboards and screen readers. Secondary
+   controls inside the card opt out with `.card-link__raise`. */
+.card-link {
+  position: relative;
+  cursor: pointer;
+  transition:
+    border-color var(--dur) var(--ease-spring),
+    box-shadow var(--dur) var(--ease-spring),
+    transform var(--dur-fast) var(--ease-spring);
+}
+.card-link__target {
+  color: inherit;
+  text-decoration: none;
+}
+.card-link__target::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.card-link__target:focus-visible {
+  outline: none;
+}
+.card-link:has(.card-link__target:focus-visible) {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.card-link__raise {
+  position: relative;
+  z-index: var(--z-raised);
+}
+@media (hover: hover) {
+  .card-link.card-link:hover {
+    border-color: var(--primary);
+    box-shadow: var(--shadow-sm);
+  }
+}
+/* Press state — touch has no hover, so the card answers the tap itself. */
+.card-link:active:not(:has(.card-link__raise:active)) {
+  transform: scale(0.985);
+  border-color: var(--primary);
+  background: var(--surface-sunk);
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-link:active {
+    transform: none;
+  }
+}
+
 .appt-row__date {
   flex-shrink: 0;
   text-align: center;
@@ -3039,6 +3277,40 @@ textarea {
 .appt-row__actions {
   display: flex;
   gap: 6px;
+}
+.appt-row__actions:empty {
+  display: none;
+}
+@media (max-width: 600px) {
+  /* Date tile + text on top; status and actions drop to their own row
+     instead of squeezing against the service chip. */
+  .appt-row {
+    flex-wrap: wrap;
+    padding: 14px;
+    gap: 12px;
+  }
+  .appt-row__date {
+    width: 48px;
+    padding: 8px 6px;
+  }
+  .appt-row__day {
+    font-size: 20px;
+  }
+  .appt-row__doctor {
+    font-size: 15px;
+  }
+  .appt-row__side {
+    flex-basis: 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    padding-top: 10px;
+    border-top: 1px solid var(--line-soft);
+  }
+  .appt-row__note {
+    flex-basis: 100%;
+  }
 }
 .btn--danger-outline {
   border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent);
@@ -3306,7 +3578,7 @@ textarea {
   flex-shrink: 0;
   margin-top: 2px;
   border: 2px solid var(--surface);
-  z-index: 1;
+  z-index: var(--z-raised);
 }
 .apptdetail-timeline__label {
   font-size: 13px;
@@ -4053,15 +4325,145 @@ textarea {
   color: var(--ink);
   margin-bottom: 10px;
 }
+/* A real, thumb-sized button on every step after the first — older users
+   read small text links as decoration, not as a way back. */
 .booking-back {
-  display: block;
-  background: none;
-  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 16px 0 12px;
+  margin-bottom: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 12px;
+  transition:
+    border-color var(--dur) var(--ease-spring),
+    background var(--dur) var(--ease-spring),
+    color var(--dur) var(--ease-spring);
+}
+.booking-back:hover {
+  border-color: var(--primary);
+  color: var(--primary-700);
+  background: var(--primary-050);
+}
+.booking-back svg {
   color: var(--primary);
-  margin-bottom: 12px;
-  padding: 0;
+}
+
+/* Logged-out booking widget: one clear action instead of the step flow. */
+.booking-login {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.booking-login__text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--body);
+}
+.booking-login__register {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.booking-intro {
+  font-size: 14px;
+  color: var(--body);
+  line-height: 1.5;
+  padding: 14px 16px;
+  border: 1px dashed var(--primary-100);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunk);
+}
+.booking-intro__cta {
+  margin-top: 10px;
+}
+@media (min-width: 901px) {
+  /* Side by side on desktop — the list is already in view. */
+  .booking-intro__cta {
+    display: none;
+  }
+}
+
+/* Month calendar */
+.booking-cal__grid {
+  touch-action: pan-y;
+}
+.booking-cal__grid.is-slide-next {
+  animation: cal-in-next 0.28s var(--ease-spring);
+}
+.booking-cal__grid.is-slide-prev {
+  animation: cal-in-prev 0.28s var(--ease-spring);
+}
+@keyframes cal-in-next {
+  from {
+    opacity: 0;
+    transform: translate3d(24px, 0, 0);
+  }
+}
+@keyframes cal-in-prev {
+  from {
+    opacity: 0;
+    transform: translate3d(-24px, 0, 0);
+  }
+}
+.booking-cal__grid.is-loading .booking-daybtn:not(.is-off) {
+  opacity: 0.6;
+}
+.booking-cal__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.booking-cal__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.booking-cal__swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+}
+.booking-cal__swatch--open {
+  border: 1px solid var(--primary);
+  background: var(--surface);
+}
+.booking-cal__swatch--full {
+  background: var(--line);
+}
+.booking-cal__swatch--closed {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--line) 0 2px,
+    transparent 2px 5px
+  );
+  border: 1px solid var(--line);
+}
+.booking-cal__notice-slot {
+  min-height: 0;
+}
+.booking-cal__notice {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--warn-bg);
+  color: var(--warn);
+  font-size: 13px;
+  font-weight: 600;
+  animation: modal-rise 0.2s var(--ease-spring);
 }
 
 .booking-cards {
@@ -4206,6 +4608,40 @@ textarea {
   opacity: 0.3;
   cursor: not-allowed;
   pointer-events: none;
+}
+/* Unbookable days stay clickable (for the explanation) but read as off:
+   muted text on a flat grey tile; closed days also get a hatch + strike so
+   the difference doesn't rest on colour alone. */
+.booking-daybtn.is-off,
+.booking-daybtn.is-off.is-today {
+  color: var(--muted);
+  border-color: transparent;
+  background: var(--line-soft);
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.booking-daybtn.is-off:hover {
+  background: var(--line-soft);
+  color: var(--muted);
+}
+.booking-daybtn.is-closed {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--line-soft) 0 3px,
+    transparent 3px 7px
+  );
+  text-decoration: line-through;
+}
+.booking-daybtn.is-past,
+.booking-daybtn.is-toofar {
+  background: transparent;
+  opacity: 0.35;
+}
+.booking-daybtn:not(.is-off):not(.is-selected) {
+  border-color: var(--primary-100);
+}
+.booking-daybtn.is-today:not(.is-off):not(.is-selected) {
+  border-color: var(--primary);
 }
 
 .booking-selected-date {
@@ -4421,6 +4857,28 @@ textarea {
   box-shadow: none;
   border-color: var(--line);
 }
+@media (max-width: 600px) {
+  /* Compact tile to fit the three-up mobile stats grid: icon above text. */
+  .doctor-stat {
+    min-width: 0;
+    padding: 12px;
+    flex-direction: column-reverse;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .doctor-stat__icon {
+    width: 32px;
+    height: 32px;
+  }
+  .doctor-stat__label {
+    font-size: 0.62rem;
+    letter-spacing: 0.04em;
+    overflow-wrap: anywhere;
+  }
+  .doctor-stat__sub {
+    font-size: 11px;
+  }
+}
 .doctor-stat__label {
   font-size: 0.69rem;
   font-weight: 700;
@@ -4565,6 +5023,23 @@ textarea {
   font-size: 15px;
   font-weight: 700;
   color: var(--ink);
+}
+.icon-btn-bare {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.icon-btn-bare:hover {
+  background: var(--danger-bg);
+  color: var(--danger);
 }
 .doctor-appt-row__meta {
   display: flex;
@@ -4907,6 +5382,72 @@ textarea {
   font-weight: 700;
   color: var(--ink);
 }
+.schedule-card.is-editing {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+/* The branch name doubles as the card's stretched "edit" button. */
+button.schedule-card__branch {
+  display: block;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Booked appointments a schedule edit would strand (409 from the API). */
+.schedule-affected {
+  border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent);
+  background: var(--warn-bg);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.schedule-affected__title {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--warn);
+}
+.schedule-affected__title svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.schedule-affected__list {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.schedule-affected__list a,
+.schedule-affected__list div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  text-decoration: none;
+}
+.schedule-affected__list a:hover {
+  outline: 1px solid var(--primary);
+}
+.schedule-affected__list span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.schedule-affected__hint {
+  font-size: 12px;
+  color: var(--body);
+}
 .schedule-card__meta {
   display: flex;
   gap: 16px;
@@ -4946,6 +5487,42 @@ textarea {
 }
 .schedule-card__delete:hover {
   color: var(--danger);
+}
+/* Meta chips never break mid-phrase ("Pa skadim" split over two lines);
+   the chip wraps as a whole instead. */
+.schedule-card__meta span {
+  white-space: nowrap;
+}
+@media (max-width: 600px) {
+  .schedule-card {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px;
+    align-items: flex-start;
+  }
+  .schedule-card__time {
+    width: 64px;
+    padding: 8px 4px;
+  }
+  .schedule-card__meta {
+    gap: 6px 12px;
+  }
+  /* Status + switch + delete get their own row, spread edge to edge. */
+  .schedule-card__actions {
+    flex-basis: 100%;
+    justify-content: flex-end;
+    padding-top: 10px;
+    border-top: 1px solid var(--line-soft);
+  }
+  .schedule-card__status {
+    margin-right: auto;
+  }
+  .schedule-card__delete {
+    min-width: 40px;
+    min-height: 40px;
+    justify-content: center;
+    align-items: center;
+  }
 }
 
 .schedule-toggle {
@@ -5021,7 +5598,7 @@ textarea {
   inset: 0;
   background: rgba(19, 23, 24, 0.5);
   backdrop-filter: blur(3px);
-  z-index: 200;
+  z-index: var(--z-modal);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5164,7 +5741,7 @@ textarea {
   background: var(--surface);
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: var(--z-header);
 }
 .admin-topbar__left {
   display: flex;
@@ -6449,7 +7026,7 @@ textarea {
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow);
-  z-index: 200;
+  z-index: var(--z-dropdown);
   overflow: hidden;
   animation: modal-rise 0.24s var(--ease-spring);
 }
@@ -6465,7 +7042,7 @@ textarea {
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow);
-  z-index: 200;
+  z-index: var(--z-dropdown);
   overflow: hidden;
   animation: modal-rise 0.24s var(--ease-spring);
 }
@@ -6607,6 +7184,20 @@ textarea {
   color: #34b3a2;
 }
 
+/* Theme toggle lives in the account menu on mobile only (the topbar keeps
+   its own on desktop). */
+.user-menu__mobile-only {
+  display: none;
+}
+@media (max-width: 768px) {
+  .user-menu__mobile-only {
+    display: block;
+  }
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
 /* Hide name on small screens — avatar alone is enough. */
 @media (max-width: 900px) {
   .user-menu__name {
@@ -6732,7 +7323,12 @@ textarea {
    Everything is scoped under `.lp` so it cannot leak into the app shell.
    ========================================================================== */
 
-.lp {
+/* `.cselect__panel--hero` joins every token selector below because the hero's
+   dropdown portals into `document.body`, outside `.lp` — without it the
+   `--lp-*` tokens it paints with resolve to nothing and the panel renders
+   transparent. Listing it here keeps one source of truth for the values. */
+.lp,
+.cselect__panel--hero {
   /* Surfaces — cool neutral, held constant */
   --lp-canvas: #f7f8f8;
   --lp-surface: #ffffff;
@@ -6768,13 +7364,16 @@ textarea {
   /* Spring approximation — stiffness 100 / damping 20 */
   --lp-spring: cubic-bezier(0.22, 1, 0.36, 1);
   --lp-gap: clamp(4.5rem, 9vw, 7.5rem);
+}
 
+.lp {
   background: var(--lp-canvas);
   color: var(--lp-body);
   overflow-x: clip;
 }
 
-:root[data-theme="dark"] .lp {
+:root[data-theme="dark"] .lp,
+:root[data-theme="dark"] .cselect__panel--hero {
   --lp-canvas: #0e1111;
   --lp-surface: #161a1a;
   --lp-ink: #0a0d0d;
@@ -6793,7 +7392,8 @@ textarea {
   --lp-sh-lg: 0 32px 64px -24px rgba(0, 0, 0, 0.7);
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .lp {
+  :root:not([data-theme="light"]) .lp,
+  :root:not([data-theme="light"]) .cselect__panel--hero {
     --lp-canvas: #0e1111;
     --lp-surface: #161a1a;
     --lp-ink: #0a0d0d;
@@ -6818,7 +7418,7 @@ textarea {
   position: fixed;
   inset: 0 0 auto 0;
   height: 2px;
-  z-index: 60;
+  z-index: calc(var(--z-header) + 1);
   background: var(--lp-accent);
   transform-origin: 0 50%;
   will-change: transform;
@@ -6839,7 +7439,6 @@ textarea {
 
 .lp-num,
 .lp-slot,
-.lp-stat__value,
 .lp-day b,
 .lp-panel__count {
   font-family: var(--lp-mono);
@@ -6902,6 +7501,13 @@ textarea {
   gap: 32px;
   max-width: none;
 }
+/* `max-width: none` më sipër synon vetëm kufirin 720px të `.lp-head`. Kur i
+   njëjti element është edhe `.container` (seksioni i mjekëve), ajo fshinte
+   gjithashtu kufirin e faqes dhe titulli dilte i shtyrë deri te skaji, i
+   pabarabartë me seksionet fqinje. Specifikë më e lartë → nuk varet nga rendi. */
+.lp-head--row.container {
+  max-width: var(--maxw);
+}
 .lp-head--row > div {
   max-width: 640px;
 }
@@ -6926,11 +7532,14 @@ textarea {
   gap: 12px;
 }
 
+/* Vetëm padding vertikal. Me shkurtesën `padding: X 0` kjo rregull fshinte
+   `padding-inline: 20px` të `.container` te seksionet që mbajnë të dyja klasat
+   (`class="lp-section container"`), dhe titujt dilnin ngjitur me skajin e majtë. */
 .lp-section {
-  padding: var(--lp-gap) 0;
+  padding-block: var(--lp-gap);
 }
 .lp-section--flush {
-  padding: 0;
+  padding-block: 0;
 }
 .lp-section--soft {
   background: var(--lp-surface);
@@ -7075,7 +7684,7 @@ textarea {
 
 .lp-hero__inner {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-raised);
   display: grid;
   grid-template-columns: 1.05fr 0.95fr;
   gap: 56px;
@@ -7449,116 +8058,8 @@ textarea {
   transform: scale(1.045);
 }
 
-.lp-panel__foot {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding-top: 18px;
-  margin-top: 18px;
-  border-top: 1px solid var(--lp-line);
-}
-.lp-stars {
-  display: inline-flex;
-  gap: 2px;
-  color: var(--lp-accent);
-}
-.lp-panel__foot strong {
-  font-family: var(--lp-mono);
-  font-size: 0.92rem;
-  font-weight: 700;
-  color: var(--lp-text);
-}
-.lp-panel__reviews {
-  font-size: 0.78rem;
-  color: var(--lp-muted);
-}
-
-/* ---------- Partner marquee ---------- */
-.lp-marquee {
-  position: relative;
-  z-index: 1;
-  overflow: hidden;
-  padding: 16px 0;
-  border-top: 1px solid var(--lp-line);
-  background: var(--lp-surface);
-  mask-image: linear-gradient(
-    90deg,
-    transparent,
-    #000 9%,
-    #000 91%,
-    transparent
-  );
-  -webkit-mask-image: linear-gradient(
-    90deg,
-    transparent,
-    #000 9%,
-    #000 91%,
-    transparent
-  );
-}
-.lp-marquee__track {
-  display: flex;
-  gap: 52px;
-  width: max-content;
-  animation: lpMarquee 46s linear infinite;
-}
-.lp-marquee__item {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
-  font-size: 0.76rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--lp-muted);
-}
-.lp-marquee__item svg {
-  color: var(--lp-accent);
-}
-@keyframes lpMarquee {
-  to {
-    transform: translate3d(-50%, 0, 0);
-  }
-}
-
 /* ==========================================================================
-   2 — STATS
-   ========================================================================== */
-.lp-stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-}
-.lp-stat {
-  position: relative;
-  padding: 54px 26px;
-}
-.lp-stat + .lp-stat::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 34px;
-  bottom: 34px;
-  width: 1px;
-  background: var(--lp-line);
-}
-.lp-stat__value {
-  display: block;
-  font-size: clamp(2rem, 3.3vw, 2.9rem);
-  font-weight: 700;
-  letter-spacing: -0.05em;
-  line-height: 1;
-  color: var(--lp-text);
-}
-.lp-stat__label {
-  display: block;
-  margin-top: 12px;
-  font-size: 0.82rem;
-  color: var(--lp-muted);
-}
-
-/* ==========================================================================
-   3 — SPECIALTIES (gapless bento, not floating cards)
+   2 — SPECIALTIES (gapless bento, not floating cards)
    ========================================================================== */
 .lp-bento {
   display: grid;
@@ -7596,7 +8097,7 @@ textarea {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: var(--z-below);
   opacity: 0;
   background: radial-gradient(
     240px circle at var(--mx, 50%) var(--my, 50%),
@@ -7664,7 +8165,7 @@ textarea {
 }
 
 /* ==========================================================================
-   4 — HOW IT WORKS (asymmetric: sticky aside + stepped list)
+   3 — HOW IT WORKS (asymmetric: sticky aside + stepped list)
    ========================================================================== */
 .lp-how {
   display: grid;
@@ -7748,7 +8249,7 @@ textarea {
 }
 
 /* ==========================================================================
-   5 — DOCTORS (horizontal snap rail)
+   4 — DOCTORS (horizontal snap rail)
    ========================================================================== */
 .lp-rail {
   overflow-x: auto;
@@ -7790,7 +8291,7 @@ textarea {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: var(--z-below);
   opacity: 0;
   border-radius: inherit;
   background: radial-gradient(
@@ -7859,7 +8360,7 @@ textarea {
 }
 
 /* ==========================================================================
-   6 — FEATURE BAND
+   5 — FEATURE BAND
    ========================================================================== */
 .lp-band {
   background: var(--lp-ink);
@@ -7915,7 +8416,7 @@ textarea {
 }
 
 /* ==========================================================================
-   7 — CLINICS (asymmetric grid, one feature tile)
+   6 — CLINICS (asymmetric grid, one feature tile)
    ========================================================================== */
 .lp-clinics {
   display: grid;
@@ -8019,79 +8520,7 @@ textarea {
 }
 
 /* ==========================================================================
-   8 — TESTIMONIALS
-   ========================================================================== */
-.lp-quotes {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-}
-.lp-quote {
-  display: flex;
-  flex-direction: column;
-  padding: 32px;
-  background: var(--lp-canvas);
-  border: 1px solid var(--lp-line);
-  border-radius: var(--lp-r-lg);
-  transition:
-    transform 0.45s var(--lp-spring),
-    box-shadow 0.45s var(--lp-spring);
-}
-.lp-quote:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--lp-sh);
-}
-.lp-quote__mark {
-  color: var(--lp-accent);
-  margin-bottom: 18px;
-}
-.lp-quote blockquote {
-  margin: 0 0 26px;
-  font-size: 1.1rem;
-  line-height: 1.58;
-  letter-spacing: -0.015em;
-  color: var(--lp-text);
-  font-weight: 400;
-  text-wrap: pretty;
-}
-.lp-quote figcaption {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: auto;
-  padding-top: 22px;
-  border-top: 1px solid var(--lp-line);
-}
-.lp-quote__avatar {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  flex-shrink: 0;
-  border-radius: 14px;
-  background: var(--lp-accent-wash);
-  color: var(--lp-accent-deep);
-  font-family: var(--lp-display);
-  font-weight: 700;
-  font-size: 0.82rem;
-}
-:root[data-theme="dark"] .lp-quote__avatar {
-  color: var(--lp-accent);
-}
-.lp-quote figcaption strong {
-  display: block;
-  font-size: 0.92rem;
-  color: var(--lp-text);
-  font-weight: 600;
-}
-.lp-quote figcaption em {
-  font-style: normal;
-  font-size: 0.8rem;
-  color: var(--lp-muted);
-}
-
-/* ==========================================================================
-   9 — FINAL CTA
+   7 — FINAL CTA
    ========================================================================== */
 .lp-cta {
   position: relative;
@@ -8117,7 +8546,7 @@ textarea {
 }
 .lp-cta__content {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-raised);
   max-width: 40ch;
 }
 .lp-cta h2 {
@@ -8191,24 +8620,12 @@ textarea {
   .lp-band__item + .lp-band__item::before {
     display: none;
   }
-  .lp-quotes {
-    grid-template-columns: 1fr;
-  }
 }
 @media (max-width: 768px) {
   .lp-head--row {
     flex-direction: column;
     align-items: flex-start;
     gap: 14px;
-  }
-  .lp-stats {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .lp-stat {
-    padding: 34px 18px;
-  }
-  .lp-stat + .lp-stat::before {
-    display: none;
   }
   .lp-bento {
     grid-template-columns: repeat(2, 1fr);
@@ -8343,7 +8760,6 @@ textarea {
   }
   .lp-panel,
   .lp-dot,
-  .lp-marquee__track,
   .lp-panel__count::after {
     animation: none !important;
   }
@@ -8410,6 +8826,26 @@ textarea {
   }
 }
 
+/* Fixed corner marker for non-production builds — see EnvironmentBadge.
+   Deliberately outside the --z-banner tier with --z-system:
+   it must stay visible over every other persistent surface, always. */
+.environment-badge {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: var(--z-system);
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  user-select: none;
+}
+
 /* ============ PWA: offline, update and install surfaces ============ */
 
 /* Persistent while the device is offline — a bar, not a toast, because the
@@ -8419,7 +8855,7 @@ textarea {
   top: 0;
   left: 0;
   right: 0;
-  z-index: 300;
+  z-index: var(--z-banner);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -8463,7 +8899,7 @@ textarea {
 .pwa-update,
 .pwa-install {
   position: fixed;
-  z-index: 300;
+  z-index: var(--z-banner);
   left: 16px;
   right: 16px;
   bottom: calc(16px + env(safe-area-inset-bottom, 0px));

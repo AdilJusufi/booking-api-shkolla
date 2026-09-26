@@ -31,6 +31,9 @@
     "editModalTitle": "Edit Specialty",
     "addModalTitle": "Add Specialty",
     "nameLabel": "Name",
+    "nameEnLabel": "Name in English",
+    "nameSrLabel": "Name in Serbian",
+    "translationHint": "Without a translation, the Albanian name is shown in every language.",
     "descriptionLabel": "Description",
     "optional": "(optional)",
     "activeCheckbox": "Active",
@@ -232,7 +235,12 @@
       "daysRequired": "Select at least one day.",
       "rangeAddedToast_one": "Schedule added for {{count}} day.",
       "rangeAddedToast_other": "Schedule added for {{count}} days.",
-      "rangePartialSuccess": "Schedule added for <0>{{count}} of {{total}}</0> selected days. Details for the days that failed:"
+      "rangePartialSuccess": "Schedule added for <0>{{count}} of {{total}}</0> selected days. Details for the days that failed:",
+      "editSectionTitle": "Edit schedule — {{day}}",
+      "saveChangesCta": "Save changes",
+      "cancelEditCta": "Cancel editing",
+      "updatedToast": "Schedule updated.",
+      "editAria": "Edit the {{day}} schedule at {{branch}}"
     },
     "pendingTitle": "The clinic is still awaiting approval",
     "pendingHint": "Doctor management opens up as soon as a SuperAdmin approves the clinic.",

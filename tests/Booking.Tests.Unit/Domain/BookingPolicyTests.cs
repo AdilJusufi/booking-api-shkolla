@@ -1,4 +1,5 @@
 using Booking.Domain.Enums;
+using Booking.Domain.Exceptions;
 using Booking.Domain.Services;
 using FluentAssertions;
 using Xunit;
@@ -55,4 +56,40 @@ public class BookingPolicyTests
     [InlineData(AppointmentStatus.InProgress, false)]
     public void IsPatientModifiable_OnlyPendingAndConfirmed(AppointmentStatus status, bool expected) =>
         BookingPolicy.IsPatientModifiable(status).Should().Be(expected);
+
+    [Theory]
+    [InlineData(AppointmentStatus.NoShow, "no-show-before-start")]
+    [InlineData(AppointmentStatus.Completed, "complete-before-start")]
+    public void EnsureStartedIfRequired_BeforeStart_Throws(AppointmentStatus target, string expectedCode)
+    {
+        var now = new DateTime(2026, 10, 14, 8, 0, 0, DateTimeKind.Utc);
+
+        var act = () => BookingPolicy.EnsureStartedIfRequired(target, now.AddHours(2), now);
+
+        act.Should().Throw<BookingRuleException>().Which.ErrorCode.Should().Be(expectedCode);
+    }
+
+    [Theory]
+    [InlineData(AppointmentStatus.NoShow)]
+    [InlineData(AppointmentStatus.Completed)]
+    public void EnsureStartedIfRequired_AfterStart_Allows(AppointmentStatus target)
+    {
+        var now = new DateTime(2026, 10, 14, 8, 0, 0, DateTimeKind.Utc);
+
+        var act = () => BookingPolicy.EnsureStartedIfRequired(target, now.AddMinutes(-1), now);
+
+        act.Should().NotThrow();
+    }
+
+    [Theory]
+    [InlineData(AppointmentStatus.CheckedIn)]
+    [InlineData(AppointmentStatus.CancelledByClinic)]
+    public void EnsureStartedIfRequired_OtherTargets_AllowedBeforeStart(AppointmentStatus target)
+    {
+        var now = new DateTime(2026, 10, 14, 8, 0, 0, DateTimeKind.Utc);
+
+        var act = () => BookingPolicy.EnsureStartedIfRequired(target, now.AddDays(3), now);
+
+        act.Should().NotThrow();
+    }
 }

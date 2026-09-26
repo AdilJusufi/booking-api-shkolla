@@ -50,6 +50,12 @@ public sealed record DoctorSearchRequest : PagedRequest
     /// <summary>Kërkim në emër e mbiemër.</summary>
     public string? SearchTerm { get; init; }
 
+    /// <summary>
+    /// Qyteti i doktorit vjen nga degët ku ai ordinon — një doktor përputhet
+    /// nëse ka të paktën një degë aktive në këtë qytet.
+    /// </summary>
+    public string? City { get; init; }
+
     public Guid? ClinicId { get; init; }
     public Guid? BranchId { get; init; }
     public Guid? SpecialtyId { get; init; }

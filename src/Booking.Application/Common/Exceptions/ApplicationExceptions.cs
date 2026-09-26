@@ -84,8 +84,16 @@ public sealed class ConflictException : Exception
 {
     public string ErrorCode { get; }
 
-    public ConflictException(string errorCode, string message) : base(message)
+    /// <summary>
+    /// Të dhëna shtesë të strukturuara që klienti i sheh si fusha të ProblemDetails
+    /// (p.sh. "affectedAppointments" kur një ndryshim orari prek termine të rezervuara).
+    /// </summary>
+    public IReadOnlyDictionary<string, object?>? Details { get; }
+
+    public ConflictException(string errorCode, string message, IReadOnlyDictionary<string, object?>? details = null)
+        : base(message)
     {
         ErrorCode = errorCode;
+        Details = details;
     }
 }

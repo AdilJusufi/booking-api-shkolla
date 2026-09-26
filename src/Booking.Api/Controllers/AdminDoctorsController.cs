@@ -64,6 +64,14 @@ public class AdminDoctorsController : ControllerBase
         return StatusCode(StatusCodes.Status201Created, schedule);
     }
 
+    [HttpPut("{id:guid}/working-schedules/{scheduleId:guid}")]
+    [ProducesResponseType(typeof(WorkingScheduleDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<WorkingScheduleDto>> UpdateSchedule(
+        Guid id, Guid scheduleId, UpdateWorkingScheduleRequest request, CancellationToken cancellationToken) =>
+        Ok(await _clinicAdminService.UpdateDoctorScheduleAsync(id, scheduleId, request, cancellationToken));
+
     [HttpPost("{id:guid}/unavailability")]
     [ProducesResponseType(typeof(UnavailabilityDto), StatusCodes.Status201Created)]
     public async Task<ActionResult<UnavailabilityDto>> AddUnavailability(

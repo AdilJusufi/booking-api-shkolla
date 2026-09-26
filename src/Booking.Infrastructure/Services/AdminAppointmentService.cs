@@ -278,6 +278,9 @@ public class AdminAppointmentService : IAdminAppointmentService
                     "invalid-status-transition", $"Kalimi nga {appointment.Status} në {targetStatus} nuk lejohet.");
             }
 
+            BookingPolicy.EnsureStartedIfRequired(
+                targetStatus, appointment.StartDateTime, _dateTimeProvider.UtcNow);
+
             appointment.Status = targetStatus;
         }
 

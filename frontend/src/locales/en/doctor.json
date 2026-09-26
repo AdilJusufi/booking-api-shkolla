@@ -16,6 +16,7 @@
     "viewList": "List",
     "viewDay": "Day",
     "dateRange": {
+      "upcoming": "Next 90 days",
       "today": "Today",
       "week": "This week",
       "month": "This month",
@@ -108,7 +109,8 @@
     "internalNotesHint": "Visible only to medical staff.",
     "internalNotesPlaceholder": "Write internal notes here...",
     "saveNoteCta": "Save Note",
-    "noteSavedToast": "Note saved."
+    "noteSavedToast": "Note saved.",
+    "actionsAvailableAtStart": "“Complete” and “No-show” become available once the appointment starts ({{time}})."
   },
   "workingSchedule": {
     "title": "Work Schedule",
@@ -158,7 +160,11 @@
     "deletedToast": "Schedule deleted.",
     "rangeCreatedToast_one": "Schedule added for {{count}} day.",
     "rangeCreatedToast_other": "Schedule added for {{count}} days.",
-    "rangePartialSuccess": "Schedule added for <0>{{count}} of {{total}}</0> selected days. Details for the days that failed:"
+    "rangePartialSuccess": "Schedule added for <0>{{count}} of {{total}}</0> selected days. Details for the days that failed:",
+    "editModalTitle": "Edit schedule",
+    "saveChangesCta": "Save changes",
+    "updatedToast": "Schedule updated.",
+    "editAria": "Edit the {{day}} schedule at {{branch}}"
   },
   "unavailability": {
     "title": "Absences & Time Off",

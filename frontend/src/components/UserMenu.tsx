@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ChevronDown, LogOut } from 'lucide-react'
+import { ChevronDown, LogOut, Moon, Sun } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import i18n from '../i18n'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import { initials } from './ui'
 import LanguageSwitcher from './LanguageSwitcher'
 
@@ -29,6 +30,7 @@ function tNs(ns: string, key: string): string {
 export default function UserMenu({ onDark = false }: UserMenuProps) {
   const { t } = useTranslation('common')
   const { user, logout } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
@@ -126,6 +128,14 @@ export default function UserMenu({ onDark = false }: UserMenuProps) {
 
           <div className="user-menu__divider" role="separator" />
           <LanguageSwitcher variant="menu" onSelect={close} />
+          {/* Mobile only — on desktop the topbar keeps its own toggle (CSS hides this item above 768px). */}
+          <div className="user-menu__mobile-only">
+            <div className="user-menu__divider" role="separator" />
+            <button type="button" className="user-menu__item" role="menuitem" onClick={toggleTheme}>
+              {theme === 'dark' ? <Sun size={14} strokeWidth={1.5} aria-hidden /> : <Moon size={14} strokeWidth={1.5} aria-hidden />}
+              {theme === 'dark' ? t('theme.switchToLight') : t('theme.switchToDark')}
+            </button>
+          </div>
           <div className="user-menu__divider" role="separator" />
           <button
             type="button"

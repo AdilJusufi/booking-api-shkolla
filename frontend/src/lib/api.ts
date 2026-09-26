@@ -12,7 +12,9 @@ import type {
   AuditLog,
   AuditLogQuery,
   AuthResponse,
+  AvailableDay,
   AvailableSlot,
+  UpdateWorkingScheduleRequest,
   Clinic,
   ClinicBranch,
   ClinicDetails,
@@ -52,6 +54,10 @@ import type {
 
 import { withRefreshLock } from './crossTabLock'
 
+// The localhost fallback only ever matters in `vite dev`/tests, where
+// .env.development (or the test env) is expected to set VITE_API_URL anyway.
+// A `vite build` output missing it never reaches this: main.tsx renders
+// ConfigErrorPage instead of mounting anything that calls into this module.
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5080'
 
 const TOKEN_KEY = 'rezervo.accessToken'
@@ -299,16 +305,25 @@ export const api = {
       },
     }),
 
+  // Profiles are public and read-only (Google indexes them); no token is sent, so an
+  // expired session can't turn a public page into a "session expired" bounce.
   getClinic: (id: string) => request<ClinicDetails>(`/api/clinics/${id}`),
   getClinicDoctors: (id: string) => request<Doctor[]>(`/api/clinics/${id}/doctors`),
   getClinicServices: (id: string) => request<MedicalService[]>(`/api/clinics/${id}/services`),
 
-  searchDoctors: (params: { searchTerm?: string; specialtyId?: string; clinicId?: string; page?: number }) =>
+  searchDoctors: (params: {
+    searchTerm?: string
+    specialtyId?: string
+    clinicId?: string
+    city?: string
+    page?: number
+  }) =>
     request<PagedResult<Doctor>>('/api/doctors', {
       query: {
         SearchTerm: params.searchTerm,
         SpecialtyId: params.specialtyId,
         ClinicId: params.clinicId,
+        City: params.city,
         Page: params.page ?? 1,
         PageSize: 12,
       },
@@ -316,9 +331,17 @@ export const api = {
 
   getDoctor: (id: string) => request<DoctorDetails>(`/api/doctors/${id}`),
 
+  // Availability is what makes booking possible — sign-in required on the backend.
   getAvailableSlots: (doctorId: string, branchId: string, serviceId: string, date: string) =>
     request<AvailableSlot[]>(`/api/doctors/${doctorId}/available-slots`, {
+      auth: true,
       query: { BranchId: branchId, ServiceId: serviceId, Date: date },
+    }),
+
+  getAvailableDays: (doctorId: string, branchId: string, serviceId: string, from: string, to: string) =>
+    request<AvailableDay[]>(`/api/doctors/${doctorId}/available-days`, {
+      auth: true,
+      query: { BranchId: branchId, ServiceId: serviceId, From: from, To: to },
     }),
 
   // --- Pacient (kërkon token) ---
@@ -404,6 +427,9 @@ export const api = {
   getMyBranches: () => request<DoctorBranch[]>('/api/doctor/branches', { auth: true }),
 
   getWorkingSchedules: () => request<DoctorWorkingSchedule[]>('/api/doctor/working-schedules', { auth: true }),
+
+  updateWorkingSchedule: (id: string, payload: UpdateWorkingScheduleRequest) =>
+    request<DoctorWorkingSchedule>(`/api/doctor/working-schedules/${id}`, { method: 'PUT', body: payload, auth: true }),
 
   createWorkingSchedule: (payload: CreateWorkingScheduleRequest) =>
     request<DoctorWorkingSchedule>('/api/doctor/working-schedules', { method: 'POST', body: payload, auth: true }),
@@ -591,6 +617,13 @@ export const api = {
 
   getDoctorSchedulesAsAdmin: (doctorId: string) =>
     request<DoctorWorkingSchedule[]>(`/api/admin/doctors/${doctorId}/working-schedules`, { auth: true }),
+
+  updateDoctorScheduleAsAdmin: (doctorId: string, scheduleId: string, payload: UpdateWorkingScheduleRequest) =>
+    request<DoctorWorkingSchedule>(`/api/admin/doctors/${doctorId}/working-schedules/${scheduleId}`, {
+      method: 'PUT',
+      body: payload,
+      auth: true,
+    }),
 
   createDoctorScheduleAsAdmin: (doctorId: string, payload: CreateWorkingScheduleRequest) =>
     request<DoctorWorkingSchedule>(`/api/admin/doctors/${doctorId}/working-schedules`, {

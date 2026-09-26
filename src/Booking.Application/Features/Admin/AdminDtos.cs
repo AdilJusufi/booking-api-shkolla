@@ -223,12 +223,18 @@ public sealed record AssignClinicAdminRequest
 public sealed record CreateSpecialtyRequest
 {
     public required string Name { get; init; }
+    /// <summary>Opsional — pa të, ndërfaqja anglisht shfaq <see cref="Name"/>.</summary>
+    public string? NameEn { get; init; }
+    /// <summary>Opsional — pa të, ndërfaqja serbisht shfaq <see cref="Name"/>.</summary>
+    public string? NameSr { get; init; }
     public string? Description { get; init; }
 }
 
 public sealed record UpdateSpecialtyRequest
 {
     public required string Name { get; init; }
+    public string? NameEn { get; init; }
+    public string? NameSr { get; init; }
     public string? Description { get; init; }
     public required bool IsActive { get; init; }
 }
