@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type TouchEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, ArrowUp, Calendar, CalendarX, Check, ChevronLeft, ChevronRight, Clock, MapPin } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
@@ -35,6 +35,8 @@ export default function DoctorDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const preselectServiceId = searchParams.get('sherbimi')
 
   const [doctor, setDoctor] = useState<DoctorDetails | null>(null)
   const [loading, setLoading] = useState(true)
@@ -103,6 +105,21 @@ export default function DoctorDetailPage() {
       requestAnimationFrame(() => bookingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
     }
   }
+
+  // `?sherbimi=` (set by the clinic page's service list) starts the booking on
+  // that service. Logged-out visitors sign in first and come back to this same
+  // URL; the param is dropped once applied so going back doesn't re-trigger it.
+  useEffect(() => {
+    if (!preselectServiceId || !doctor || !id) return
+    if (!isAuthenticated) {
+      navigate('/hyr', { replace: true, state: { from: `/mjeku/${id}?sherbimi=${encodeURIComponent(preselectServiceId)}` } })
+      return
+    }
+    const service = doctor.services.find((s) => s.medicalServiceId === preselectServiceId)
+    if (service) pickService(service)
+    setSearchParams({}, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preselectServiceId, doctor, id, isAuthenticated])
 
   function clearService() {
     setSelectedService(null)

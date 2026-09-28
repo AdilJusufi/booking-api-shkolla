@@ -65,4 +65,23 @@ describe('DoctorDetailPage — public profile, private booking', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: /Kontroll dentar/ })).toBeInTheDocument())
     expect(screen.queryByRole('link', { name: /Hyni për të rezervuar/ })).not.toBeInTheDocument()
   })
+
+  it('starts the booking on the service passed as ?sherbimi= for a logged-in patient', async () => {
+    server.use(
+      http.get(`${API_BASE_URL}/api/doctors/d1`, () =>
+        HttpResponse.json(
+          buildDoctorDetails({
+            id: 'd1',
+            firstName: 'Filan',
+            lastName: 'Fisteku',
+            services: [buildDoctorService({ medicalServiceId: 's1', name: 'Kontroll dentar' })],
+          }),
+        ),
+      ),
+      http.get(`${API_BASE_URL}/api/doctors/d1/available-days`, () => HttpResponse.json([])),
+    )
+    renderWithProviders(<DoctorDetailPage />, { route: '/mjeku/d1?sherbimi=s1', path: '/mjeku/:id', user: 'Patient' })
+    const row = await screen.findByRole('button', { name: /Kontroll dentar/ })
+    await waitFor(() => expect(row).toHaveAttribute('aria-pressed', 'true'))
+  })
 })

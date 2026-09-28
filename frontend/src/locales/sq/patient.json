@@ -183,7 +183,11 @@
     "servicesTitle": "Shërbimet & çmimet",
     "minutesShort": "min",
     "doctorsTitle": "Mjekët",
-    "noDoctorsListed": "Nuk ka mjekë të listuar"
+    "noDoctorsListed": "Nuk ka mjekë të listuar",
+    "servicesHint": "Zgjidhni një shërbim për të rezervuar termin.",
+    "pickDoctorTitle": "Zgjidhni mjekun — {{service}}",
+    "pickDoctorHint": "Këtë shërbim e ofrojnë disa mjekë. Zgjidhni me cilin dëshironi të rezervoni.",
+    "noDoctorForService": "Aktualisht asnjë mjek nuk e ofron këtë shërbim për rezervim online."
   },
   "cards": {
     "bookCta": "Rezervo",
@@ -260,7 +264,7 @@
       "cancelledByPatient": "ANULUAR",
       "cancelledByClinic": "ANULUAR (KLINIKA)",
       "noShow": "NUK U PARAQIT",
-      "rescheduled": "RISCHEDULUAR",
+      "rescheduled": "RICAKTUAR",
       "unknown": "I PANJOHUR"
     },
     "errorTitle": "Ndodhi një gabim",
@@ -329,7 +333,7 @@
     "cannotCancelWithin12h": "Anulimi nuk është i mundur — takimi fillon brenda 12 orëve.",
     "countdownDays": "Mbetet {{count}} ditë",
     "countdownHoursMinutes": "Mbetet {{hours}} orë {{minutes}} min",
-    "rescheduleCta": "Rischeduloni terminin",
+    "rescheduleCta": "Ricaktoni terminin",
     "cancelCta": "Anuloni terminin",
     "cancelConfirmPrompt": "Anuloni terminin me Dr. {{lastName}}?",
     "cancelling": "Duke anuluar…",
@@ -337,12 +341,12 @@
     "cancelDeadlineNote": "Mund të anuloni deri 12 orë para takimit.",
     "questionsHint": "Nëse keni pyetje rreth terminit tuaj, kontaktoni klinikën direkt.",
     "cancelledToast": "Termini u anulua.",
-    "rescheduledToast": "Termini u rischedulua me sukses.",
+    "rescheduledToast": "Termini u ricaktua me sukses.",
     "rescheduleTitle": "Zgjidhni datë të re",
     "rescheduleNoSlotsForDate": "Nuk ka vende të lira për këtë datë.",
     "rescheduleNewDateSummary": "Data e re: {{date}} ora {{time}}",
-    "confirmReschedule": "Konfirmo rischedulimin",
-    "reschedulingInProgress": "Duke rischeduluar…",
+    "confirmReschedule": "Konfirmo ricaktimin",
+    "reschedulingInProgress": "Duke ricaktuar…",
     "cancelReasonDefault": "Anuluar nga pacienti"
   },
   "confirmBooking": {

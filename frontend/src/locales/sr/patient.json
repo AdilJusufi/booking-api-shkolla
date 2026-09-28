@@ -187,7 +187,11 @@
     "servicesTitle": "Usluge i cene",
     "minutesShort": "min",
     "doctorsTitle": "Lekari",
-    "noDoctorsListed": "Nema navedenih lekara"
+    "noDoctorsListed": "Nema navedenih lekara",
+    "servicesHint": "Izaberite uslugu da biste zakazali termin.",
+    "pickDoctorTitle": "Izaberite lekara — {{service}}",
+    "pickDoctorHint": "Ovu uslugu nudi više lekara. Izaberite kod koga želite da zakažete.",
+    "noDoctorForService": "Trenutno nijedan lekar ne nudi ovu uslugu za online zakazivanje."
   },
   "cards": {
     "bookCta": "Zakaži",

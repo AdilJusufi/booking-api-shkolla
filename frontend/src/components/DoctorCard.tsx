@@ -5,11 +5,12 @@ import type { Doctor } from '../lib/types'
 import { initials, specialtyIcon } from './ui'
 import { useSpecialtyLabel } from '../context/SpecialtyNamesContext'
 
-export default function DoctorCard({ doctor }: { doctor: Doctor }) {
+/** `to` overrides the default profile link, e.g. to carry a preselected service. */
+export default function DoctorCard({ doctor, to }: { doctor: Doctor; to?: string }) {
   const { t } = useTranslation('patient')
   const specialtyLabel = useSpecialtyLabel()
   return (
-    <Link to={`/mjeku/${doctor.id}`} className="card doctor-card" data-reveal>
+    <Link to={to ?? `/mjeku/${doctor.id}`} className="card doctor-card" data-reveal>
       <div className="doctor-card__avatar" aria-hidden>
         {initials(doctor.firstName, doctor.lastName)}
       </div>

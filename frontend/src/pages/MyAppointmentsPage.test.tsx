@@ -20,7 +20,7 @@ const APPOINTMENTS_BY_STATUS = [
   { status: AppointmentStatus.CancelledByPatient, doctorName: 'CancelledPatient Doktori', expectedBadge: 'ANULUAR' },
   { status: AppointmentStatus.CancelledByClinic, doctorName: 'CancelledClinic Doktori', expectedBadge: 'ANULUAR (KLINIKA)' },
   { status: AppointmentStatus.NoShow, doctorName: 'NoShow Doktori', expectedBadge: 'NUK U PARAQIT' },
-  { status: AppointmentStatus.Rescheduled, doctorName: 'Rescheduled Doktori', expectedBadge: 'RISCHEDULUAR' },
+  { status: AppointmentStatus.Rescheduled, doctorName: 'Rescheduled Doktori', expectedBadge: 'RICAKTUAR' },
 ]
 
 // Row text is "Dr. {name}" as a single element's textContent — RTL matches

@@ -336,13 +336,19 @@ export function CustomSelect({
     }
     // The panel is fixed-positioned in `document.body`, so it cannot track the
     // trigger as the page scrolls — close instead of letting it drift. Capture
-    // phase so scrolling any ancestor container counts, not just the window.
+    // phase so scrolling any ancestor container counts, not just the window —
+    // but capture also delivers the panel's own list scroll, which must not
+    // close it (it's the only way to reach options past the max-height).
+    function handleScroll(e: Event) {
+      if (e.target instanceof Node && panelRef.current?.contains(e.target)) return
+      close()
+    }
     document.addEventListener('mousedown', handleClickOutside)
-    window.addEventListener('scroll', close, true)
+    window.addEventListener('scroll', handleScroll, true)
     window.addEventListener('resize', close)
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
-      window.removeEventListener('scroll', close, true)
+      window.removeEventListener('scroll', handleScroll, true)
       window.removeEventListener('resize', close)
     }
   }, [open, close])

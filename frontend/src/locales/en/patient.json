@@ -183,7 +183,11 @@
     "servicesTitle": "Services & pricing",
     "minutesShort": "min",
     "doctorsTitle": "Doctors",
-    "noDoctorsListed": "No doctors listed"
+    "noDoctorsListed": "No doctors listed",
+    "servicesHint": "Pick a service to book an appointment.",
+    "pickDoctorTitle": "Choose a doctor — {{service}}",
+    "pickDoctorHint": "Several doctors offer this service. Choose who you'd like to book with.",
+    "noDoctorForService": "No doctor currently offers this service for online booking."
   },
   "cards": {
     "bookCta": "Book",

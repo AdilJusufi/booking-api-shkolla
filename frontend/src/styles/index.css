@@ -684,6 +684,9 @@ textarea {
   box-shadow: var(--shadow);
   z-index: var(--z-popover);
   overflow: hidden auto;
+  /* Wheel/touch at either end of the list must not chain into the page:
+     a page scroll closes the panel (see CustomSelect). */
+  overscroll-behavior: contain;
   animation: modal-rise 0.24s var(--ease-spring);
 }
 .cselect__option {
@@ -1310,6 +1313,32 @@ textarea {
     border-color: var(--primary);
     box-shadow: var(--shadow-sm);
   }
+}
+.service-row--pick:disabled {
+  cursor: progress;
+}
+/* "Rezervo ›" hint on the clinic page's service rows — the affordance that
+   the row starts a booking, since those rows otherwise read as a price list. */
+.service-row__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+}
+@media (max-width: 480px) {
+  .service-row__cta {
+    font-size: 0; /* keep just the chevron on narrow rows */
+  }
+  .service-row__cta svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+.service-list__error {
+  color: var(--danger);
 }
 .service-row--pick:active {
   transform: scale(0.985);
@@ -8830,19 +8859,28 @@ button.schedule-card__branch {
    Deliberately outside the --z-banner tier with --z-system:
    it must stay visible over every other persistent surface, always. */
 .environment-badge {
+  /* A thin tab on the right edge, vertically centred: the header (logo, nav,
+     user menu), the mobile tab bar and the toast/banner corners all live at
+     the top or bottom, so mid-edge is the one spot that covers no chrome.
+     pointer-events: none so the sliver it overlaps stays clickable. */
   position: fixed;
-  top: 8px;
-  left: 8px;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
   z-index: var(--z-system);
-  padding: 3px 8px;
-  border-radius: 999px;
+  writing-mode: vertical-rl;
+  padding: 8px 2px;
+  border-radius: 6px 0 0 6px;
   background: var(--danger-bg);
   color: var(--danger);
   border: 1px solid var(--danger);
-  font-size: 11px;
+  border-right: 0;
+  font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.04em;
-  line-height: 1.4;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  opacity: 0.85;
+  pointer-events: none;
   user-select: none;
 }
 
