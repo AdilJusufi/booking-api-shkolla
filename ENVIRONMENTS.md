@@ -78,10 +78,29 @@ krijohen shërbimet përkatëse.
 | `VITE_API_URL` | URL-ja e Render prod | URL-ja e Render dev |
 | `VITE_ENVIRONMENT` | `production` | `development` |
 
-`VITE_ENVIRONMENT` kontrollon vetëm një shenjë të vogël vizuale në cep të
+`VITE_ENVIRONMENT` kontrollon (1) një shenjë të vogël vizuale në cep të
 ekranit ("DEV"/"TESTING") që shfaqet sa herë s'është `production` — shih
-`src/components/EnvironmentBadge.tsx`. Qëllimi: askush s'duhet të ngatërrojë
-kurrë një sesion testimi me prodhimin real, thjesht duke parë ekranin.
+`src/components/EnvironmentBadge.tsx`; qëllimi: askush s'duhet të ngatërrojë
+kurrë një sesion testimi me prodhimin real, thjesht duke parë ekranin — dhe
+(2) **indeksimin nga motorët e kërkimit**.
+
+### Indeksimi (SEO): vetëm `production` indeksohet
+
+Në kohën e build-it (`vite.config.ts` → plugin `indexing-policy`,
+logjika te `src/build/indexing.ts`):
+
+| `VITE_ENVIRONMENT` | `/robots.txt` | `<meta name="robots">` te `index.html` |
+|---|---|---|
+| `production` | rregullat e vërteta (`robots.production.txt`) | asnjë — indeksohet |
+| çdo vlerë tjetër **ose e pavendosur** | `Disallow: /` | `noindex, nofollow` |
+
+**KUJDES:** te Vercel Production, `VITE_ENVIRONMENT` DUHET të jetë saktësisht
+`production` (shkronja të vogla). Nëse mungon ose ka shkruarje tjetër, faqja
+reale ndërtohet si `noindex` dhe Google do ta heqë nga rezultatet. Build-i
+shfaq një paralajmërim `[indexing-policy]` sa herë që ndërtohet një version
+jo-prodhim — kontrolloje te log-u i deployment-it të prodhimit që NUK del.
+Rregullat reale të prodhimit ndryshohen te `frontend/robots.production.txt`
+(jo më te `public/`).
 
 Nëse `VITE_API_URL` mungon në një build të vendosur (jo `vite dev`/teste),
 aplikacioni **NUK** bie mbrapa në ndonjë URL parazgjedhur — shfaq një faqe
