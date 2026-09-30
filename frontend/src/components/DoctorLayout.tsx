@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { DoctorSearchProvider, useDoctorSearch } from '../context/DoctorSearchContext'
-import { initials } from './ui'
+import { DoctorProfileProvider, useDoctorProfile } from '../context/DoctorProfileContext'
+import DoctorAvatar from './DoctorAvatar'
 import Logo from './Logo'
 import NotificationsBell from './NotificationsBell'
 import UserMenu from './UserMenu'
@@ -12,7 +13,9 @@ import UserMenu from './UserMenu'
 export default function DoctorLayout() {
   return (
     <DoctorSearchProvider>
-      <DoctorLayoutInner />
+      <DoctorProfileProvider>
+        <DoctorLayoutInner />
+      </DoctorProfileProvider>
     </DoctorSearchProvider>
   )
 }
@@ -28,9 +31,10 @@ function DoctorLayoutInner() {
   const { user } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const { searchTerm, setSearchTerm } = useDoctorSearch()
-  const userInitials = user ? initials(user.firstName, user.lastName) : ''
+  const photoUrl = useDoctorProfile()?.profile?.photoUrl
   const isCalendar = useMatch('/mjeku-panel/kalendari')
   const isSchedule = useMatch('/mjeku-panel/orari')
+  const isProfile = useMatch('/mjeku-panel/profili')
 
   return (
     <div className="patient-shell">
@@ -58,14 +62,22 @@ function DoctorLayoutInner() {
             {theme === 'dark' ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}
           </button>
           <NotificationsBell triggerClassName="theme-toggle" size={20} />
-          <UserMenu />
+          <UserMenu avatarPhotoUrl={photoUrl} />
         </div>
       </header>
 
       <div className="doctor-breadcrumb hide-mobile">
         <span>{t('layout.breadcrumbPanel')}</span>
         <span>›</span>
-        <span>{isSchedule ? t('layout.breadcrumbSchedule') : isCalendar ? t('layout.navCalendar') : t('layout.breadcrumbPanel')}</span>
+        <span>
+          {isSchedule
+            ? t('layout.breadcrumbSchedule')
+            : isCalendar
+              ? t('layout.navCalendar')
+              : isProfile
+                ? t('layout.breadcrumbProfile')
+                : t('layout.breadcrumbPanel')}
+        </span>
       </div>
 
       <div className="patient-body">
@@ -83,7 +95,18 @@ function DoctorLayoutInner() {
 
           <div className="patient-sidebar__spacer" />
 
-          <span className="patient-avatar" aria-hidden>{userInitials}</span>
+          {user && (
+            <Link to="/mjeku-panel/profili" className="patient-sidebar__avatar-link" aria-label={t('userMenu.myProfile')}>
+              <DoctorAvatar
+                as="span"
+                className="patient-avatar"
+                firstName={user.firstName}
+                lastName={user.lastName}
+                photoUrl={photoUrl}
+                displayPx={28}
+              />
+            </Link>
+          )}
         </aside>
 
         <main className="patient-content">

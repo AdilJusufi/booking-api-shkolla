@@ -5,12 +5,14 @@ import { useTranslation } from 'react-i18next'
 import i18n from '../i18n'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
-import { initials } from './ui'
+import DoctorAvatar from './DoctorAvatar'
 import LanguageSwitcher from './LanguageSwitcher'
 
 interface UserMenuProps {
   /** Pass true when the trigger sits on the always-dark sidebar. */
   onDark?: boolean
+  /** Doctor's photo (DoctorLayout); initials when absent. */
+  avatarPhotoUrl?: string
 }
 
 // The per-role item labels below read i18n.t() directly with an explicit ns,
@@ -27,7 +29,7 @@ function tNs(ns: string, key: string): string {
   return i18n.t(key, { ns })
 }
 
-export default function UserMenu({ onDark = false }: UserMenuProps) {
+export default function UserMenu({ onDark = false, avatarPhotoUrl }: UserMenuProps) {
   const { t } = useTranslation('common')
   const { user, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
@@ -58,7 +60,6 @@ export default function UserMenu({ onDark = false }: UserMenuProps) {
   if (!user) return null
 
   const role = user.roles[0] ?? ''
-  const userInitials = initials(user.firstName, user.lastName)
 
   function handleLogout() {
     logout()
@@ -88,7 +89,14 @@ export default function UserMenu({ onDark = false }: UserMenuProps) {
         aria-expanded={open}
         aria-label={t('nav.accountMenu')}
       >
-        <span className="patient-avatar" aria-hidden>{userInitials}</span>
+        <DoctorAvatar
+          as="span"
+          className="patient-avatar"
+          firstName={user.firstName}
+          lastName={user.lastName}
+          photoUrl={avatarPhotoUrl}
+          displayPx={32}
+        />
         <span className="user-menu__name">{user.firstName} {user.lastName}</span>
         <ChevronDown size={14} strokeWidth={1.75} className={`user-menu__chevron ${open ? 'is-open' : ''}`} aria-hidden />
       </button>
@@ -111,6 +119,7 @@ export default function UserMenu({ onDark = false }: UserMenuProps) {
             )}
             {role === 'Doctor' && (
               <>
+                <Link to="/mjeku-panel/profili" className="user-menu__item" role="menuitem" onClick={close}>{tNs('doctor', 'userMenu.myProfile')}</Link>
                 <Link to="/mjeku-panel/orari" className="user-menu__item" role="menuitem" onClick={close}>{tNs('doctor', 'userMenu.mySchedule')}</Link>
                 <Link to="/mjeku-panel/mungesat" className="user-menu__item" role="menuitem" onClick={close}>{tNs('doctor', 'userMenu.unavailability')}</Link>
               </>

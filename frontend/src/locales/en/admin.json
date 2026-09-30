@@ -148,7 +148,8 @@
       "activateMenuItem": "Reactivate",
       "deactivatedToast": "Dr. {{firstName}} {{lastName}} was deactivated.",
       "reactivatedToast": "Dr. {{firstName}} {{lastName}} was reactivated.",
-      "noServiceAssignedCta": "Assign services"
+      "noServiceAssignedCta": "Assign services",
+      "changePhotoMenuItem": "Doctor's photo"
     },
     "multiSelect": {
       "noOptions": "No options available."
@@ -268,6 +269,10 @@
       "deactivatingCta": "Deactivating…",
       "cancelAppointmentsPrompt": "To deactivate anyway, the upcoming appointments must be cancelled first — affected patients are notified automatically.",
       "cancelAndDeactivateCta": "Cancel Appointments and Deactivate"
+    },
+    "photoModal": {
+      "title": "Photo of Dr. {{name}}",
+      "description": "The photo appears on the doctor's public profile and in search results."
     }
   },
   "services": {
@@ -442,11 +447,10 @@
     "deactivateCta": "Deactivate Clinic",
     "deactivateNote": "Deactivation is only performed by Rezervo Mjekun central staff. Contact the central administrator.",
     "logo": {
-      "unsupportedFormat": "File format not supported. Use PNG, JPEG, SVG or WEBP.",
+      "unsupportedFormat": "File format not supported. Use PNG, JPEG or WEBP.",
       "tooLarge": "File is too large. Maximum size is 2MB.",
       "tooSmall": "Image must be at least {{size}}x{{size}}px.",
       "uploadedToast": "Logo uploaded successfully.",
-      "uploadFailedToast": "Upload failed. Please try again.",
       "removedToast": "Logo removed.",
       "removeFailedToast": "Error. Please try again.",
       "logoAlt": "Clinic logo",

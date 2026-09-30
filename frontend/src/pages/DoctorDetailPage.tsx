@@ -6,7 +6,8 @@ import { api } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import type { AvailableSlot, DayAvailability, DoctorBranch, DoctorDetails, DoctorService } from '../lib/types'
 import { useAuth } from '../context/AuthContext'
-import { ErrorBox, SkeletonDetail, initials, specialtyIcon } from '../components/ui'
+import { ErrorBox, SkeletonDetail, specialtyIcon } from '../components/ui'
+import DoctorAvatar from '../components/DoctorAvatar'
 import { useSpecialtyLabel } from '../context/SpecialtyNamesContext'
 import { formatMoney, formatTime, monthName, toDateInput, weekdayName } from '../lib/format'
 import { SITE_NAME, doctorSeo } from '../lib/seo'
@@ -202,9 +203,13 @@ export default function DoctorDetailPage() {
             <ChevronLeft size={16} strokeWidth={1.5} /> {t('doctorDetail.backToSearch')}
           </Link>
           <div className="detail-hero__row">
-            <div className="detail-hero__avatar" aria-hidden>
-              {initials(doctor.firstName, doctor.lastName)}
-            </div>
+            <DoctorAvatar
+              className="detail-hero__avatar"
+              firstName={doctor.firstName}
+              lastName={doctor.lastName}
+              photoUrl={doctor.photoUrl}
+              displayPx={84}
+            />
             <div>
               <h1>Dr. {doctor.firstName} {doctor.lastName}</h1>
               <div className="detail-hero__meta">

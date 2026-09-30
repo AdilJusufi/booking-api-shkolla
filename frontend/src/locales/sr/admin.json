@@ -149,7 +149,8 @@
       "activateMenuItem": "Reaktiviraj",
       "deactivatedToast": "Dr. {{firstName}} {{lastName}} je deaktiviran.",
       "reactivatedToast": "Dr. {{firstName}} {{lastName}} je reaktiviran.",
-      "noServiceAssignedCta": "Dodeli usluge"
+      "noServiceAssignedCta": "Dodeli usluge",
+      "changePhotoMenuItem": "Fotografija lekara"
     },
     "multiSelect": {
       "noOptions": "Nema dostupnih opcija."
@@ -271,6 +272,10 @@
       "deactivatingCta": "Deaktiviranje…",
       "cancelAppointmentsPrompt": "Da biste ipak deaktivirali, predstojeći termini moraju prvo biti otkazani — pogođeni pacijenti se automatski obaveštavaju.",
       "cancelAndDeactivateCta": "Otkaži termine i deaktiviraj"
+    },
+    "photoModal": {
+      "title": "Fotografija dr {{name}}",
+      "description": "Fotografija se prikazuje na javnom profilu lekara i u rezultatima pretrage."
     }
   },
   "services": {
@@ -445,11 +450,10 @@
     "deactivateCta": "Deaktiviraj kliniku",
     "deactivateNote": "Deaktiviranje vrši samo centralno osoblje Rezervo Mjekun. Kontaktirajte centralnog administratora.",
     "logo": {
-      "unsupportedFormat": "Format fajla nije podržan. Koristite PNG, JPEG, SVG ili WEBP.",
+      "unsupportedFormat": "Format fajla nije podržan. Koristite PNG, JPEG ili WEBP.",
       "tooLarge": "Fajl je prevelik. Maksimalna veličina je 2MB.",
       "tooSmall": "Slika mora biti najmanje {{size}}x{{size}}px.",
       "uploadedToast": "Logo je uspešno otpremljen.",
-      "uploadFailedToast": "Otpremanje nije uspelo. Pokušajte ponovo.",
       "removedToast": "Logo je uklonjen.",
       "removeFailedToast": "Greška. Pokušajte ponovo.",
       "logoAlt": "Logo klinike",

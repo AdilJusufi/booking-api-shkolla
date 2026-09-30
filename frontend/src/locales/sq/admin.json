@@ -148,7 +148,8 @@
       "activateMenuItem": "Riaktivizo",
       "deactivatedToast": "Dr. {{firstName}} {{lastName}} u çaktivizua.",
       "reactivatedToast": "Dr. {{firstName}} {{lastName}} u riaktivizua.",
-      "noServiceAssignedCta": "Cakto shërbime"
+      "noServiceAssignedCta": "Cakto shërbime",
+      "changePhotoMenuItem": "Fotoja e mjekut"
     },
     "multiSelect": {
       "noOptions": "Nuk ka opsione në dispozicion."
@@ -268,6 +269,10 @@
       "deactivatingCta": "Duke çaktivizuar…",
       "cancelAppointmentsPrompt": "Për ta çaktivizuar gjithsesi, terminet e ardhshme duhet të anulohen — pacientët e prekur njoftohen automatikisht.",
       "cancelAndDeactivateCta": "Anulo Terminet dhe Çaktivizo"
+    },
+    "photoModal": {
+      "title": "Fotoja e Dr. {{name}}",
+      "description": "Fotoja shfaqet në profilin publik të mjekut dhe në rezultatet e kërkimit."
     }
   },
   "services": {
@@ -442,11 +447,10 @@
     "deactivateCta": "Çaktivizo Klinikën",
     "deactivateNote": "Çaktivizimi kryhet vetëm nga stafi qendror i Rezervo Mjekun. Kontaktoni administratorin qendror.",
     "logo": {
-      "unsupportedFormat": "Formati i skedarit nuk mbështetet. Përdorni PNG, JPEG, SVG ose WEBP.",
+      "unsupportedFormat": "Formati i skedarit nuk mbështetet. Përdorni PNG, JPEG ose WEBP.",
       "tooLarge": "Skedari është shumë i madh. Madhësia maksimale është 2MB.",
       "tooSmall": "Imazhi duhet të jetë së paku {{size}}x{{size}}px.",
       "uploadedToast": "Logo u ngarkua me sukses.",
-      "uploadFailedToast": "Ngarkimi dështoi. Provoni përsëri.",
       "removedToast": "Logo u hoq.",
       "removeFailedToast": "Gabim. Provoni përsëri.",
       "logoAlt": "Logo e klinikës",

@@ -194,7 +194,8 @@ public class ClinicQueryService : IClinicQueryService
                     FirstName = user.FirstName,
                     LastName = user.LastName,
                     YearsOfExperience = doctor.YearsOfExperience,
-                    Specialties = doctor.DoctorSpecialties.Select(ds => ds.Specialty.Name).ToList()
+                    Specialties = doctor.DoctorSpecialties.Select(ds => ds.Specialty.Name).ToList(),
+                    PhotoUrl = doctor.PhotoUrl
                 })
             .ToListAsync(cancellationToken);
     }

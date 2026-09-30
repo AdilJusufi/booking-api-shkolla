@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using Booking.Application.Common.Models;
 using Booking.Application.Common.Exceptions;
 using Booking.Application.Common.Interfaces;
 using Booking.Application.Common.Security;
@@ -16,7 +17,6 @@ using FluentValidation.Results;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Booking.Infrastructure.Services;
 
@@ -44,7 +44,7 @@ public class ClinicAdminService : IClinicAdminService
     private readonly ITimeZoneService _timeZoneService;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly UserManager<ApplicationUser> _userManager;
-    private readonly CloudinarySettings _cloudinarySettings;
+    private readonly CloudinaryUploadSigner _uploadSigner;
     private readonly IAppointmentNotificationService _notificationService;
     private readonly ILogger<ClinicAdminService> _logger;
 
@@ -56,7 +56,7 @@ public class ClinicAdminService : IClinicAdminService
         ITimeZoneService timeZoneService,
         IDateTimeProvider dateTimeProvider,
         UserManager<ApplicationUser> userManager,
-        IOptions<CloudinarySettings> cloudinarySettings,
+        CloudinaryUploadSigner uploadSigner,
         IAppointmentNotificationService notificationService,
         ILogger<ClinicAdminService> logger)
     {
@@ -67,7 +67,7 @@ public class ClinicAdminService : IClinicAdminService
         _timeZoneService = timeZoneService;
         _dateTimeProvider = dateTimeProvider;
         _userManager = userManager;
-        _cloudinarySettings = cloudinarySettings.Value;
+        _uploadSigner = uploadSigner;
         _notificationService = notificationService;
         _logger = logger;
     }
@@ -148,22 +148,6 @@ public class ClinicAdminService : IClinicAdminService
     {
         await _tenantAccess.EnsureCanManageClinicAsync(clinicId, cancellationToken);
 
-        if (string.IsNullOrWhiteSpace(_cloudinarySettings.CloudName)
-            || string.IsNullOrWhiteSpace(_cloudinarySettings.ApiKey)
-            || string.IsNullOrWhiteSpace(_cloudinarySettings.ApiSecret))
-        {
-            throw new InvalidOperationException(
-                "Cloudinary nuk është konfiguruar — mungon CloudName/ApiKey/ApiSecret.");
-        }
-
-        var timestamp = new DateTimeOffset(_dateTimeProvider.UtcNow, TimeSpan.Zero).ToUnixTimeSeconds();
-        var folder = $"clinics/{clinicId}/logo";
-
-        // Cloudinary signed uploads: nënshkruhen VETËM parametrat që dërgohen te
-        // upload-i (përjashto file, cloud_name, api_key, resource_type) — të
-        // renditur alfabetikisht si "key=value" të bashkuar me "&", plus api_secret,
-        // të hashuar me SHA-1. https://cloudinary.com/documentation/signatures
-        //
         // allowed_formats dhe max_file_size janë brenda nënshkrimit, jo thjesht kontrolle
         // në frontend: kufijtë te ClinicSettingsPage i mbron vetëm një përdorues që përdor
         // UI-në. Nënshkrimi lëshohet për këdo që ka rolin e adminit të klinikës, dhe pastaj
@@ -171,22 +155,8 @@ public class ClinicAdminService : IClinicAdminService
         // dy fusha, kushdo me nënshkrimin në dorë mund të ngarkonte çfarëdo formati dhe
         // çfarëdo madhësie në dosjen e klinikës së vet. Duke qenë të nënshkruara,
         // Cloudinary i zbaton vetë dhe klienti s'i ndryshon dot: çdo prekje e vlerës e
-        // prish nënshkrimin dhe ngarkimi refuzohet.
-        var allowedFormats = string.Join(',', CloudinaryAllowedFormats);
-        var paramsToSign = CloudinaryUploadSignature.BuildParamsToSign(
-            allowedFormats, folder, CloudinaryMaxFileSizeBytes, timestamp);
-        var signature = CloudinaryUploadSignature.Compute(paramsToSign, _cloudinarySettings.ApiSecret);
-
-        return new CloudinarySignatureDto
-        {
-            Signature = signature,
-            Timestamp = timestamp,
-            ApiKey = _cloudinarySettings.ApiKey,
-            CloudName = _cloudinarySettings.CloudName,
-            Folder = folder,
-            AllowedFormats = allowedFormats,
-            MaxFileSizeBytes = CloudinaryMaxFileSizeBytes
-        };
+        // prish nënshkrimin dhe ngarkimi refuzohet. (Shih CloudinaryUploadSigner.)
+        return _uploadSigner.Sign($"clinics/{clinicId}/logo", CloudinaryAllowedFormats, CloudinaryMaxFileSizeBytes);
     }
 
     public async Task<ClinicBranchDto> AddBranchAsync(
@@ -893,6 +863,7 @@ public class ClinicAdminService : IClinicAdminService
                 PhoneNumber = _dbContext.Users.Where(u => u.Id == d.UserId).Select(u => u.PhoneNumber).First(),
                 LicenseNumber = d.LicenseNumber,
                 Biography = d.Biography,
+                PhotoUrl = d.PhotoUrl,
                 YearsOfExperience = d.YearsOfExperience,
                 IsVerified = d.IsVerified,
                 IsActive = d.IsActive,

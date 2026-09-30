@@ -5,11 +5,13 @@
     "navUnavailability": "Unavailability",
     "searchPatientPlaceholder": "Search patient...",
     "breadcrumbPanel": "Dashboard",
-    "breadcrumbSchedule": "Work schedule"
+    "breadcrumbSchedule": "Work schedule",
+    "breadcrumbProfile": "My profile"
   },
   "userMenu": {
     "mySchedule": "My schedule",
-    "unavailability": "Unavailability"
+    "unavailability": "Unavailability",
+    "myProfile": "My profile"
   },
   "calendar": {
     "title": "My Calendar",
@@ -209,5 +211,12 @@
     },
     "createdToast": "Absence added successfully.",
     "conflictToast": "You have confirmed appointments during this period. Please reschedule them first."
+  },
+  "profile": {
+    "title": "My profile",
+    "photoTitle": "Profile photo",
+    "photoDescription": "Your photo appears on your public profile and in search results.",
+    "viewPublic": "View public profile",
+    "loadFailed": "Couldn't load your profile."
   }
 }

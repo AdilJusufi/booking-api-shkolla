@@ -27,7 +27,8 @@ import type { ComponentType } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import type { Clinic, Doctor, Specialty } from '../lib/types'
-import { CustomSelect, initials, specialtyIcon } from '../components/ui'
+import { CustomSelect, specialtyIcon } from '../components/ui'
+import DoctorAvatar from '../components/DoctorAvatar'
 import { useSpecialtyLabel } from '../context/SpecialtyNamesContext'
 import type { CustomSelectOption } from '../components/ui'
 import { KOSOVO_CITIES } from '../lib/kosovoCities'
@@ -379,7 +380,14 @@ export default function HomePage() {
             {hasDoctors
               ? shownDoctors.map((d) => (
                   <article className="lp-doc" key={d.id} data-reveal data-spotlight>
-                    <span className="lp-doc__avatar">{initials(d.firstName, d.lastName)}</span>
+                    <DoctorAvatar
+                      as="span"
+                      className="lp-doc__avatar"
+                      firstName={d.firstName}
+                      lastName={d.lastName}
+                      photoUrl={d.photoUrl}
+                      displayPx={64}
+                    />
                     <h3 className="lp-doc__name">
                       Dr. {d.firstName} {d.lastName} <VerifiedBadge title={t('home.doctorsSection.verified')} />
                     </h3>

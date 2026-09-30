@@ -2,23 +2,20 @@ import { useRef, useState } from 'react'
 import { Image, Loader2, Pencil, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
-import { getErrorMessage } from '../lib/errors'
+import { cloudinaryDisplayUrl, uploadSignedImage } from '../lib/cloudinary'
+import { getErrorMessage, getUploadErrorMessage } from '../lib/errors'
 import type { UpdateClinicRequest } from '../lib/types'
 import { useToast } from '../context/ToastContext'
 import { useClinicContext } from '../components/ClinicDetailLayout'
 import { ErrorBox } from '../components/ui'
 
-const LOGO_ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp']
+// Pa SVG: serveri e nënshkruan ngarkimin vetëm për png,jpg,jpeg,webp (ClinicAdminService),
+// kështu që një SVG i pranuar këtu refuzohej nga Cloudinary me një gabim të paqartë.
+const LOGO_ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp']
 const LOGO_MAX_BYTES = 2 * 1024 * 1024
 const LOGO_MIN_DIMENSION = 200
 
-/** Fut një transformim Cloudinary (f_auto,q_auto + madhësi) menjëherë pas "/upload/". */
-function cloudinaryDisplayUrl(url: string, transform: string): string {
-  return url.includes('/upload/') ? url.replace('/upload/', `/upload/${transform}/`) : url
-}
-
 function readImageDimensions(file: File): Promise<{ width: number; height: number } | null> {
-  if (file.type === 'image/svg+xml') return Promise.resolve(null)
   return new Promise((resolve) => {
     const objectUrl = URL.createObjectURL(file)
     const img = new window.Image()
@@ -247,32 +244,14 @@ function ClinicLogoUpload() {
 
     try {
       const signature = await api.getClinicUploadSignature(clinic.id)
-
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('api_key', signature.apiKey)
-      formData.append('timestamp', String(signature.timestamp))
-      formData.append('signature', signature.signature)
-      formData.append('folder', signature.folder)
-      // Pjesë e vargut të nënshkruar nga serveri — duhen dërguar fjalë për fjalë ashtu siç
-      // erdhën. Po t'i heqësh ose t'i ndryshosh, nënshkrimi s'përputhet dhe Cloudinary e
-      // refuzon ngarkimin; pra kufijtë e formatit dhe madhësisë s'anashkalohen dot nga
-      // klienti, edhe nëse dikush e thërret këtë endpoint jashtë UI-së.
-      formData.append('allowed_formats', signature.allowedFormats)
-      formData.append('max_file_size', String(signature.maxFileSizeBytes))
-
-      const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${signature.cloudName}/image/upload`, {
-        method: 'POST',
-        body: formData,
-      })
-      if (!uploadRes.ok) throw new Error('Cloudinary upload failed')
-      const uploaded = (await uploadRes.json()) as { secure_url: string }
-
-      await api.updateClinic(clinic.id, currentClinicPayload({ logoUrl: uploaded.secure_url }))
+      const uploadedUrl = await uploadSignedImage(signature, file)
+      await api.updateClinic(clinic.id, currentClinicPayload({ logoUrl: uploadedUrl }))
       notify(t('settings.logo.uploadedToast'), 'ok')
       refresh()
-    } catch {
-      notify(t('settings.logo.uploadFailedToast'), 'error')
+    } catch (err) {
+      // Mesazh i veçantë për çdo shkak: Cloudinary pa konfigurim (503), pa leje, imazh i
+      // refuzuar nga Cloudinary, pa lidhje — jo një "ngarkimi dështoi" për të gjitha.
+      notify(getUploadErrorMessage(err), 'error')
     } finally {
       URL.revokeObjectURL(localPreview)
       setPreview(null)

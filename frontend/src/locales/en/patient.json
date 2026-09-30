@@ -368,8 +368,6 @@
   "profile": {
     "loadFailedTitle": "The profile didn't load",
     "loadFailedFallback": "Try refreshing the page.",
-    "changePhoto": "Change photo",
-    "photoComingSoon": "Photo upload is coming soon.",
     "roleBadge": "PATIENT",
     "memberSince": "Member since {{date}}",
     "editCta": "Edit",

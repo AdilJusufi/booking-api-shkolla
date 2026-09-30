@@ -97,3 +97,18 @@ public sealed class ConflictException : Exception
         Details = details;
     }
 }
+
+/// <summary>
+/// Ngarkimi i imazheve s'është i mundur sepse Cloudinary s'është konfiguruar në këtë mjedis
+/// → HTTP 503 me kod "uploads-not-configured". Është gabim konfigurimi, jo gabim i përdoruesit:
+/// klienti tregon një mesazh të qartë në vend të një 500 pa shpjegim.
+/// </summary>
+public sealed class UploadsNotConfiguredException : Exception
+{
+    public const string ErrorCode = "uploads-not-configured";
+
+    public UploadsNotConfiguredException()
+        : base("Ngarkimi i imazheve nuk është i disponueshëm për momentin.")
+    {
+    }
+}

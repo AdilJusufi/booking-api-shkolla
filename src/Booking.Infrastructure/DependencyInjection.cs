@@ -71,7 +71,9 @@ public static class DependencyInjection
         services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<IEmailAbuseGuard, EmailAbuseGuard>();
         services.AddScoped<TenantAccessService>();
+        services.AddScoped<CloudinaryUploadSigner>();
         services.AddScoped<IClinicAdminService, ClinicAdminService>();
+        services.AddScoped<IDoctorPhotoService, DoctorPhotoService>();
         services.AddScoped<ISuperAdminService, SuperAdminService>();
         services.AddScoped<IAdminAppointmentService, AdminAppointmentService>();
         services.AddScoped<IAdminPatientService, AdminPatientService>();

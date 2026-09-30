@@ -5,11 +5,13 @@
     "navUnavailability": "Odsustva",
     "searchPatientPlaceholder": "Pretraga pacijenta...",
     "breadcrumbPanel": "Panel",
-    "breadcrumbSchedule": "Radno vreme"
+    "breadcrumbSchedule": "Radno vreme",
+    "breadcrumbProfile": "Moj profil"
   },
   "userMenu": {
     "mySchedule": "Moj raspored",
-    "unavailability": "Odsustva"
+    "unavailability": "Odsustva",
+    "myProfile": "Moj profil"
   },
   "calendar": {
     "title": "Moj kalendar",
@@ -211,5 +213,12 @@
     },
     "createdToast": "Odsustvo je uspešno dodato.",
     "conflictToast": "Imate potvrđene termine tokom ovog perioda. Molimo prvo ih pomerite."
+  },
+  "profile": {
+    "title": "Moj profil",
+    "photoTitle": "Profilna fotografija",
+    "photoDescription": "Vaša fotografija se prikazuje na javnom profilu i u rezultatima pretrage.",
+    "viewPublic": "Pogledaj javni profil",
+    "loadFailed": "Profil nije učitan."
   }
 }

@@ -33,7 +33,9 @@ import type {
 } from '../lib/types'
 import { useToast } from '../context/ToastContext'
 import { useClinicContext } from '../components/ClinicDetailLayout'
-import { CustomSelect, EmptyState, ErrorBox, Modal, SkeletonRows, TimeField, WeekdayMultiSelect, initials } from '../components/ui'
+import { CustomSelect, EmptyState, ErrorBox, Modal, SkeletonRows, TimeField, WeekdayMultiSelect } from '../components/ui'
+import DoctorAvatar from '../components/DoctorAvatar'
+import DoctorPhotoUpload from '../components/DoctorPhotoUpload'
 import type { CustomSelectOption } from '../components/ui'
 import { DAY_ORDER, monthName, weekdayName } from '../lib/format'
 import ScheduleAffectedList from '../components/ScheduleAffectedList'
@@ -122,6 +124,9 @@ export default function ClinicDoctorsPage() {
   const [editTarget, setEditTarget] = useState<AdminDoctorDetail | null>(null)
   const [servicesTarget, setServicesTarget] = useState<AdminDoctorDetail | null>(null)
   const [deactivateTarget, setDeactivateTarget] = useState<AdminDoctorDetail | null>(null)
+  // Id, jo objekti: pas ngarkimit lista përditësohet dhe modali lexon foton e re prej saj.
+  const [photoTargetId, setPhotoTargetId] = useState<string | null>(null)
+  const photoTarget = doctors.find((d) => d.id === photoTargetId) ?? null
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
 
   const load = useCallback(() => {
@@ -190,6 +195,8 @@ export default function ClinicDoctorsPage() {
       setEditTarget(doctor)
     } else if (action === 'services') {
       setServicesTarget(doctor)
+    } else if (action === 'photo') {
+      setPhotoTargetId(doctor.id)
     } else if (action === 'deactivate') {
       setDeactivateTarget(doctor)
     } else if (action === 'activate') {
@@ -313,6 +320,22 @@ export default function ClinicDoctorsPage() {
         />
       )}
 
+      {photoTarget && (
+        <Modal
+          title={t('doctors.photoModal.title', { name: `${photoTarget.firstName} ${photoTarget.lastName}` })}
+          onClose={() => setPhotoTargetId(null)}
+        >
+          <p className="muted photo-modal__desc">{t('doctors.photoModal.description')}</p>
+          <DoctorPhotoUpload
+            doctorId={photoTarget.id}
+            firstName={photoTarget.firstName}
+            lastName={photoTarget.lastName}
+            photoUrl={photoTarget.photoUrl}
+            onChange={(photoUrl) => replaceDoctor({ ...photoTarget, photoUrl: photoUrl ?? undefined })}
+          />
+        </Modal>
+      )}
+
       {scheduleTarget && (
         <DoctorScheduleModal
           doctor={scheduleTarget}
@@ -395,9 +418,13 @@ function ClinicDoctorCard({
   return (
     <div className={`admin-card doctor-admin-card ${doctor.isActive ? '' : 'doctor-admin-card--inactive'}`}>
       <div className="doctor-admin-card__top">
-        <div className="doctor-admin-card__avatar" aria-hidden>
-          {initials(doctor.firstName, doctor.lastName)}
-        </div>
+        <DoctorAvatar
+          className="doctor-admin-card__avatar"
+          firstName={doctor.firstName}
+          lastName={doctor.lastName}
+          photoUrl={doctor.photoUrl}
+          displayPx={48}
+        />
         <div className="doctor-admin-card__identity">
           <div className="doctor-admin-card__name-row">
             <h3 className="doctor-admin-card__name">Dr. {doctor.firstName} {doctor.lastName}</h3>
@@ -428,6 +455,9 @@ function ClinicDoctorCard({
                 </button>
                 <button type="button" className="dropdown__option" onClick={() => onAction('services')}>
                   {t('doctors.card.manageServicesMenuItem')}
+                </button>
+                <button type="button" className="dropdown__option" onClick={() => onAction('photo')}>
+                  {t('doctors.card.changePhotoMenuItem')}
                 </button>
                 <button type="button" className="dropdown__option" onClick={() => onAction('schedule')}>
                   {t('doctors.card.manageScheduleMenuItem')}

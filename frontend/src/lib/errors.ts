@@ -10,6 +10,7 @@
 // switch made after the module was first imported.
 import i18n from '../i18n'
 import { ApiError } from './api'
+import { classifyUploadError } from './cloudinary'
 import type { ScheduleAffectedAppointment } from './types'
 
 function tCommon(key: string): string {
@@ -177,6 +178,22 @@ export function getErrorCodeMessage(error: unknown): string | null {
   if (typeof data?.code !== 'string') return null
   const key = `errors.codes.${data.code}`
   return i18n.exists(key, { ns: 'common' }) ? tCommon(key) : null
+}
+
+/**
+ * One message per way an image upload can fail (signature → Cloudinary → save), shared by
+ * the clinic logo and the doctor photo. "Not configured" in particular must not read as a
+ * generic failure — retrying can't fix it, and the user should know it isn't their file.
+ */
+export function getUploadErrorMessage(error: unknown): string {
+  logError(error)
+  switch (classifyUploadError(error)) {
+    case 'not-configured': return tCommon('upload.errors.notConfigured')
+    case 'forbidden': return tCommon('upload.errors.forbidden')
+    case 'rejected': return tCommon('upload.errors.rejected')
+    case 'network': return tCommon('upload.errors.network')
+    default: return tCommon('upload.errors.other')
+  }
 }
 
 /**

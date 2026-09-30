@@ -252,6 +252,8 @@ export interface Doctor {
   lastName: string
   yearsOfExperience: number
   specialties: string[]
+  /** URL-ja origjinale te Cloudinary — shfaqet gjithmonë përmes doctorPhotoUrl(). */
+  photoUrl?: string
 }
 
 export interface AdminDoctorSpecialty {
@@ -290,6 +292,7 @@ export interface AdminDoctorDetail {
   phoneNumber?: string
   licenseNumber: string
   biography?: string
+  photoUrl?: string
   yearsOfExperience: number
   isVerified: boolean
   isActive: boolean
@@ -370,6 +373,7 @@ export interface DoctorDetails {
   firstName: string
   lastName: string
   biography?: string
+  photoUrl?: string
   yearsOfExperience: number
   specialties: string[]
   branches: DoctorBranch[]
@@ -636,7 +640,18 @@ export interface UpdateClinicRequest {
   logoUrl?: string
 }
 
-/** Pasqyron CloudinarySignatureDto — GET /api/admin/clinics/{id}/upload-signature. */
+/** Pasqyron DoctorSelfProfileDto — GET /api/doctor/me. */
+export interface DoctorSelfProfile {
+  id: string
+  firstName: string
+  lastName: string
+  photoUrl?: string
+}
+
+/**
+ * Pasqyron CloudinarySignatureDto — GET /api/admin/clinics/{id}/upload-signature
+ * dhe GET /api/doctors/{id}/photo/upload-signature.
+ */
 export interface CloudinarySignature {
   signature: string
   timestamp: number

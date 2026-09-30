@@ -368,8 +368,6 @@
   "profile": {
     "loadFailedTitle": "Profili nuk u ngarkua",
     "loadFailedFallback": "Provoni të rifreskoni faqen.",
-    "changePhoto": "Ndrysho foton",
-    "photoComingSoon": "Ngarkimi i fotografisë vjen së shpejti.",
     "roleBadge": "PACIENT",
     "memberSince": "Anëtar që nga {{date}}",
     "editCta": "Ndrysho",

@@ -188,7 +188,9 @@
       "phone-exists": "Ovaj broj telefona je već registrovan.",
       "license-exists": "Ovaj broj licence je već registrovan.",
       "specialty-exists": "Specijalizacija sa ovim nazivom već postoji.",
-      "admin-already-assigned": "Ovaj korisnik je već administrator ove klinike."
+      "admin-already-assigned": "Ovaj korisnik je već administrator ove klinike.",
+      "uploads-not-configured": "Otpremanje slika trenutno nije dostupno. Pokušajte kasnije ili kontaktirajte podršku.",
+      "invalid-photo-url": "Fotografija nije sačuvana: slika ne potiče iz našeg otpremanja. Otpremite je ponovo."
     }
   },
   "appointment": {
@@ -232,5 +234,25 @@
     "title_few": "Ova izmena bi ostavila {{count}} zakazana termina van radnog vremena:",
     "title_other": "Ova izmena bi ostavila {{count}} zakazanih termina van radnog vremena:",
     "hint": "Pomerite ili otkažite ove termine, pa ponovo sačuvajte izmenu."
+  },
+  "upload": {
+    "errors": {
+      "notConfigured": "Otpremanje slika trenutno nije dostupno. Pokušajte kasnije ili kontaktirajte podršku.",
+      "forbidden": "Nemate dozvolu da promenite ovu sliku.",
+      "rejected": "Servis za skladištenje je odbio sliku. Proverite format i veličinu, pa pokušajte ponovo.",
+      "network": "Povezivanje nije uspelo. Proverite internet vezu i pokušajte ponovo.",
+      "other": "Otpremanje nije uspelo. Pokušajte ponovo."
+    }
+  },
+  "photoUpload": {
+    "upload": "Otpremi fotografiju",
+    "change": "Promeni fotografiju",
+    "remove": "Ukloni fotografiju",
+    "hint": "JPG, PNG ili WEBP, do 5 MB.",
+    "wrongType": "Format nije podržan. Koristite JPG, PNG ili WEBP.",
+    "tooLarge": "Fotografija je prevelika. Maksimalna veličina je 5 MB.",
+    "uploading": "Otpremanje fotografije",
+    "uploadedToast": "Fotografija je ažurirana.",
+    "removedToast": "Fotografija je uklonjena."
   }
 }

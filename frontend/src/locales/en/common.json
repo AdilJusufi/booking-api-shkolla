@@ -188,7 +188,9 @@
       "phone-exists": "This phone number is already registered.",
       "license-exists": "This license number is already registered.",
       "specialty-exists": "A specialty with this name already exists.",
-      "admin-already-assigned": "This user is already an administrator of this clinic."
+      "admin-already-assigned": "This user is already an administrator of this clinic.",
+      "uploads-not-configured": "Image upload isn't available right now. Try again later or contact support.",
+      "invalid-photo-url": "The photo wasn't saved: the image didn't come from our upload. Please upload it again."
     }
   },
   "appointment": {
@@ -230,5 +232,25 @@
     "title_one": "This change would leave {{count}} booked appointment outside working hours:",
     "title_other": "This change would leave {{count}} booked appointments outside working hours:",
     "hint": "Reschedule or cancel these appointments, then save the change again."
+  },
+  "upload": {
+    "errors": {
+      "notConfigured": "Image upload isn't available right now. Try again later or contact support.",
+      "forbidden": "You don't have permission to change this image.",
+      "rejected": "The storage service rejected the image. Check the format and size, then try again.",
+      "network": "Couldn't connect. Check your internet connection and try again.",
+      "other": "Upload failed. Please try again."
+    }
+  },
+  "photoUpload": {
+    "upload": "Upload photo",
+    "change": "Change photo",
+    "remove": "Remove photo",
+    "hint": "JPG, PNG or WEBP, up to 5 MB.",
+    "wrongType": "Format not supported. Use JPG, PNG or WEBP.",
+    "tooLarge": "The photo is too large. Maximum size is 5 MB.",
+    "uploading": "Uploading photo",
+    "uploadedToast": "Photo updated.",
+    "removedToast": "Photo removed."
   }
 }

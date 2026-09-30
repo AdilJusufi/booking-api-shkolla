@@ -84,7 +84,8 @@ public class DoctorQueryService : IDoctorQueryService
                 FirstName = x.User.FirstName,
                 LastName = x.User.LastName,
                 YearsOfExperience = x.Doctor.YearsOfExperience,
-                Specialties = x.Doctor.DoctorSpecialties.Select(ds => ds.Specialty.Name).ToList()
+                Specialties = x.Doctor.DoctorSpecialties.Select(ds => ds.Specialty.Name).ToList(),
+                PhotoUrl = x.Doctor.PhotoUrl
             })
             .ToListAsync(cancellationToken);
 
@@ -109,6 +110,7 @@ public class DoctorQueryService : IDoctorQueryService
                     FirstName = user.FirstName,
                     LastName = user.LastName,
                     Biography = d.Biography,
+                    PhotoUrl = d.PhotoUrl,
                     YearsOfExperience = d.YearsOfExperience,
                     Specialties = d.DoctorSpecialties.Select(ds => ds.Specialty.Name).ToList(),
                     Branches = d.DoctorClinicBranches

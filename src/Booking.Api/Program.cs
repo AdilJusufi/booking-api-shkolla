@@ -156,8 +156,8 @@ try
         || string.IsNullOrWhiteSpace(cloudinarySection["ApiSecret"]))
     {
         Log.Warning(
-            "Cloudinary:CloudName/ApiKey/ApiSecret mungojnë — ngarkimi i logos së klinikës do të dështojë " +
-            "derisa të konfigurohen (p.sh. me Cloudinary__ApiSecret).");
+            "Cloudinary:CloudName/ApiKey/ApiSecret mungojnë — ngarkimi i logos së klinikës dhe i fotos së mjekut " +
+            "do të kthejë 503 derisa të konfigurohen (Cloudinary__CloudName, Cloudinary__ApiKey, Cloudinary__ApiSecret).");
     }
 
     // Vetëm jashtë Development-it: atje IEmailService është qëllimisht LoggingEmailService

@@ -188,7 +188,9 @@
       "phone-exists": "Ky numër telefoni është i regjistruar tashmë.",
       "license-exists": "Ky numër licence është i regjistruar tashmë.",
       "specialty-exists": "Ekziston tashmë një specializim me këtë emër.",
-      "admin-already-assigned": "Ky përdorues është tashmë administrator i kësaj klinike."
+      "admin-already-assigned": "Ky përdorues është tashmë administrator i kësaj klinike.",
+      "uploads-not-configured": "Ngarkimi i imazheve nuk është i disponueshëm për momentin. Provoni më vonë ose kontaktoni mbështetjen.",
+      "invalid-photo-url": "Fotoja nuk u ruajt: imazhi nuk vjen nga ngarkimi ynë. Provoni ta ngarkoni përsëri."
     }
   },
   "appointment": {
@@ -230,5 +232,25 @@
     "title_one": "Ky ndryshim do të linte jashtë orarit {{count}} termin të rezervuar:",
     "title_other": "Ky ndryshim do të linte jashtë orarit {{count}} termine të rezervuara:",
     "hint": "Riplanifikoni ose anuloni këto termine, pastaj ruani përsëri ndryshimin."
+  },
+  "upload": {
+    "errors": {
+      "notConfigured": "Ngarkimi i imazheve nuk është i disponueshëm për momentin. Provoni më vonë ose kontaktoni mbështetjen.",
+      "forbidden": "Nuk keni leje ta ndryshoni këtë imazh.",
+      "rejected": "Imazhi u refuzua nga shërbimi i ruajtjes. Kontrolloni formatin dhe madhësinë, pastaj provoni përsëri.",
+      "network": "Nuk u lidhëm dot. Kontrolloni internetin dhe provoni përsëri.",
+      "other": "Ngarkimi dështoi. Provoni përsëri."
+    }
+  },
+  "photoUpload": {
+    "upload": "Ngarko foto",
+    "change": "Ndrysho foton",
+    "remove": "Hiq foton",
+    "hint": "JPG, PNG ose WEBP, deri në 5 MB.",
+    "wrongType": "Formati nuk mbështetet. Përdorni JPG, PNG ose WEBP.",
+    "tooLarge": "Fotoja është shumë e madhe. Madhësia maksimale është 5 MB.",
+    "uploading": "Duke ngarkuar foton",
+    "uploadedToast": "Fotoja u përditësua.",
+    "removedToast": "Fotoja u hoq."
   }
 }

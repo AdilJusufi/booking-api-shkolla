@@ -20,6 +20,7 @@ import type {
   ClinicDetails,
   ClinicReport,
   CloudinarySignature,
+  DoctorSelfProfile,
   CreateAppointmentRequest,
   CreateBranchRequest,
   CreateClinicRequest,
@@ -330,6 +331,20 @@ export const api = {
     }),
 
   getDoctor: (id: string) => request<DoctorDetails>(`/api/doctors/${id}`),
+
+  // --- Fotoja e mjekut (vetë mjeku ose admini i klinikës së tij) ---
+  getMyDoctorProfile: () => request<DoctorSelfProfile>('/api/doctor/me', { auth: true }),
+
+  getDoctorPhotoUploadSignature: (doctorId: string) =>
+    request<CloudinarySignature>(`/api/doctors/${doctorId}/photo/upload-signature`, { auth: true }),
+
+  /** null e heq foton. Serveri pranon vetëm URL nga cloud-i ynë dhe dosja e këtij mjeku. */
+  setDoctorPhoto: (doctorId: string, photoUrl: string | null) =>
+    request<{ photoUrl?: string | null }>(`/api/doctors/${doctorId}/photo`, {
+      method: 'PUT',
+      body: { photoUrl },
+      auth: true,
+    }),
 
   // Availability is what makes booking possible — sign-in required on the backend.
   getAvailableSlots: (doctorId: string, branchId: string, serviceId: string, date: string) =>

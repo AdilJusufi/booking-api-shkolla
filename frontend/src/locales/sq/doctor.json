@@ -5,11 +5,13 @@
     "navUnavailability": "Mungesat",
     "searchPatientPlaceholder": "Kërko pacient...",
     "breadcrumbPanel": "Paneli",
-    "breadcrumbSchedule": "Orari i punës"
+    "breadcrumbSchedule": "Orari i punës",
+    "breadcrumbProfile": "Profili im"
   },
   "userMenu": {
     "mySchedule": "Orari im",
-    "unavailability": "Mungesat"
+    "unavailability": "Mungesat",
+    "myProfile": "Profili im"
   },
   "calendar": {
     "title": "Kalendari im",
@@ -209,5 +211,12 @@
     },
     "createdToast": "Mungesa u lajmërua me sukses.",
     "conflictToast": "Keni termine të konfirmuara në këtë periudhë. Ju lutem ricaktoni ato fillimisht."
+  },
+  "profile": {
+    "title": "Profili im",
+    "photoTitle": "Fotoja e profilit",
+    "photoDescription": "Fotoja shfaqet në profilin tuaj publik dhe në rezultatet e kërkimit.",
+    "viewPublic": "Shiko profilin publik",
+    "loadFailed": "Profili nuk u ngarkua."
   }
 }

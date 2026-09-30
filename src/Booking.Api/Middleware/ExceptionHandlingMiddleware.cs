@@ -64,6 +64,12 @@ public class ExceptionHandlingMiddleware
             DomainException domainException => CreateProblem(
                 StatusCodes.Status400BadRequest, domainException.ErrorCode, "Kërkesë e pavlefshme", exception.Message),
 
+            // Gabim konfigurimi i mjedisit, jo i kërkesës — log-u i qartë shkruhet te
+            // CloudinaryUploadSigner, aty ku dihet se cila vlerë mungon.
+            UploadsNotConfiguredException => CreateProblem(
+                StatusCodes.Status503ServiceUnavailable, UploadsNotConfiguredException.ErrorCode,
+                "Shërbimi i padisponueshëm", exception.Message),
+
             _ => CreateProblem(
                 StatusCodes.Status500InternalServerError, "internal-error", "Gabim i brendshëm",
                 "Ndodhi një gabim i papritur. Provo përsëri më vonë.")

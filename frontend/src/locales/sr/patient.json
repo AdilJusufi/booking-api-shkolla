@@ -373,8 +373,6 @@
   "profile": {
     "loadFailedTitle": "Profil nije učitan",
     "loadFailedFallback": "Pokušajte da osvežite stranicu.",
-    "changePhoto": "Promeni fotografiju",
-    "photoComingSoon": "Otpremanje fotografije uskoro stiže.",
     "roleBadge": "PACIJENT",
     "memberSince": "Član od {{date}}",
     "editCta": "Izmeni",

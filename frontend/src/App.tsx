@@ -29,6 +29,7 @@ import DoctorCalendarPage from './pages/DoctorCalendarPage'
 import DoctorAppointmentDetailPage from './pages/DoctorAppointmentDetailPage'
 import WorkingSchedulePage from './pages/WorkingSchedulePage'
 import UnavailabilityPage from './pages/UnavailabilityPage'
+import DoctorProfilePage from './pages/DoctorProfilePage'
 import MyClinicsPage from './pages/MyClinicsPage'
 import AdminAppointmentsPage from './pages/AdminAppointmentsPage'
 import ClinicDetailLayout from './components/ClinicDetailLayout'
@@ -100,6 +101,7 @@ export default function App() {
         <Route path="/mjeku-panel/terminet/:id" element={<DoctorAppointmentDetailPage />} />
         <Route path="/mjeku-panel/orari" element={<WorkingSchedulePage />} />
         <Route path="/mjeku-panel/mungesat" element={<UnavailabilityPage />} />
+        <Route path="/mjeku-panel/profili" element={<DoctorProfilePage />} />
       </Route>
       <Route
         element={
