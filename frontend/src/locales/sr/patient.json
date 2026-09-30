@@ -1,6 +1,6 @@
 {
   "home": {
-    "eyebrow": "18 klinika · 120+ lekara · Kosovo",
+    "eyebrow": "Nova platforma, u stalnom rastu · Kosovo",
     "heroLine1": "Pronađite pravog",
     "heroLine2": "lekara.",
     "heroAccent": "Zakažite",
@@ -23,14 +23,7 @@
       "slotCount_one": "{{count}} termin",
       "slotCount_few": "{{count}} termina",
       "slotCount_other": "{{count}} termina",
-      "confirmCta": "Potvrdi termin",
-      "reviewCount": "od 640 pacijenata"
-    },
-    "stats": {
-      "verifiedDoctors": "Verifikovani lekari",
-      "partnerClinics": "Partnerske klinike",
-      "bookedAppointments": "Zakazanih termina",
-      "citiesInKosovo": "Gradova na Kosovu"
+      "confirmCta": "Potvrdi termin"
     },
     "specialtiesSection": {
       "kicker": "Specijalnosti",
@@ -71,8 +64,8 @@
       "hoursLabel": "Zakazivanje onlajn, čak i noću",
       "easyBig": "Lako",
       "easyLabel": "Otkažite ili pomerite jednim klikom",
-      "coverageBig": "7 gradova",
-      "coverageLabel": "Pokrivenost širom Kosova"
+      "coverageBig": "Onlajn",
+      "coverageLabel": "Dostupno sa bilo kog mesta na Kosovu"
     },
     "clinicsSection": {
       "kicker": "Klinike",
@@ -83,10 +76,6 @@
       "doctorCount_one": "{{count}} lekar",
       "doctorCount_few": "{{count}} lekara",
       "doctorCount_other": "{{count}} lekara"
-    },
-    "testimonials": {
-      "kicker": "Iskustva",
-      "title": "Poverenje pacijenata i klinika"
     },
     "finalCta": {
       "kicker": "Besplatno za pacijente",
@@ -135,7 +124,7 @@
       ],
       "clinics": [
         {
-          "name": "Spitali Amerikan",
+          "name": "Klinika Qendrore",
           "city": "Priština",
           "specialties": [
             "Kardiologija",
@@ -159,24 +148,12 @@
             "Pedijatrija"
           ]
         }
-      ],
-      "testimonials": [
-        {
-          "quote": "Zakazala sam termin kod kardiologa za manje od minut, uveče, bez pozivanja bilo koga. Potvrda je stigla odmah.",
-          "name": "Blerta Hoxha",
-          "role": "Pacijent · Priština"
-        },
-        {
-          "quote": "Kao klinika, sav kalendar sada imamo na jednom mestu. Propušteni termini su znatno smanjeni otkako smo prešli na Rezervo Mjekun.",
-          "name": "Dr Fatos Kelmendi",
-          "role": "Direktor klinike · Prizren"
-        }
       ]
     }
   },
   "search": {
     "title": "Pronađite pravog lekara ili kliniku",
-    "subtitle": "Pretražite preko 500 lekara i 80 klinika na Kosovu",
+    "subtitle": "Pretražite verifikovane lekare i klinike širom Kosova",
     "searchPlaceholder": "Pretražite lekara, kliniku ili specijalnost...",
     "allSpecialtiesChip": "Sve",
     "tabClinics": "Klinike",
@@ -186,20 +163,17 @@
     "specialtyLabel": "Specijalnost",
     "showLess": "Prikaži manje ▴",
     "showMore": "Prikaži više ▾",
-    "minRatingLabel": "Minimalna ocena",
-    "andUp": "i više",
-    "anyRating": "Bilo koja ocena",
     "applyFilters": "Primeni filtere",
     "clearAllFilters": "Obriši sve",
     "headingClinicsIn": "Klinike u gradu {{city}}",
     "headingDoctorsIn": "Lekari u gradu {{city}}",
-    "defaultCity": "Kosovo",
+    "headingClinicsAll": "Klinike na Kosovu",
+    "headingDoctorsAll": "Lekari na Kosovu",
     "resultCount_one": "{{count}} rezultat pronađen",
     "resultCount_few": "{{count}} rezultata pronađena",
     "resultCount_other": "{{count}} rezultata pronađeno",
     "sortRelevance": "Sortiraj po: Relevantnosti",
     "sortName": "Ime (A-Š)",
-    "sortRating": "Najbolje ocenjeni",
     "errorTitle": "Došlo je do greške",
     "noResultsTitle": "Nema pronađenih rezultata",
     "noResultsHint": "Pokušajte da promenite filtere ili pojam pretrage.",
@@ -213,7 +187,11 @@
     "servicesTitle": "Usluge i cene",
     "minutesShort": "min",
     "doctorsTitle": "Lekari",
-    "noDoctorsListed": "Nema navedenih lekara"
+    "noDoctorsListed": "Nema navedenih lekara",
+    "servicesHint": "Izaberite uslugu da biste zakazali termin.",
+    "pickDoctorTitle": "Izaberite lekara — {{service}}",
+    "pickDoctorHint": "Ovu uslugu nudi više lekara. Izaberite kod koga želite da zakažete.",
+    "noDoctorForService": "Trenutno nijedan lekar ne nudi ovu uslugu za online zakazivanje."
   },
   "cards": {
     "bookCta": "Zakaži",
@@ -237,19 +215,30 @@
       "date": "Datum",
       "time": "Vreme"
     },
-    "chooseService": "Izaberite uslugu",
-    "changeService": "Promeni uslugu",
     "chooseBranch": "Izaberite ogranak",
-    "changeBranch": "Promeni ogranak",
     "chooseDate": "Izaberite datum",
-    "changeDate": "Promeni datum",
     "chooseTime": "Izaberite vreme",
     "noSlotsForDate": "Nema slobodnih termina za ovaj datum.",
     "tryAnotherDate": "Probajte drugi datum",
     "confirmBooking": "Potvrdi zakazivanje",
     "continueCta": "Nastavi",
-    "loginRequiredHint": "Morate biti prijavljeni da biste zakazali termin.",
-    "loginCta": "Prijavite se"
+    "back": "Nazad",
+    "servicesHint": "Dodirnite uslugu da biste je zakazali.",
+    "selectedLabel": "Izabrano",
+    "pickServiceHint": "Izaberite uslugu sa liste „Usluge“ da biste počeli.",
+    "pickServiceCta": "Pogledaj usluge",
+    "dayClosed": "Klinika ne radi ovog dana",
+    "dayFull": "Nema slobodnih termina ovog dana",
+    "dayPast": "Ovaj dan je prošao",
+    "dayTooFar": "Zakazivanje je moguće do 60 dana unapred",
+    "prevMonth": "Prethodni mesec",
+    "nextMonth": "Sledeći mesec",
+    "legendAvailable": "Slobodno",
+    "legendFull": "Popunjeno",
+    "legendClosed": "Zatvoreno",
+    "loginToBook": "Prijavite se da biste zakazali",
+    "loginToBookHint": "Usluge i cene su prikazane ovde. Da biste videli slobodne termine i zakazali, prijavite se na nalog.",
+    "registerCta": "Nemate nalog? Registrujte se besplatno"
   },
   "appointmentsList": {
     "title": "Moji termini",
@@ -257,7 +246,6 @@
     "newAppointmentCta": "Zakaži novi termin",
     "statsActive": "Aktivni",
     "statsCompleted": "Završeni",
-    "statsPending": "Na čekanju",
     "statsCancelled": "Otkazani",
     "filterAll": "Svi",
     "filterActive": "Aktivni",
@@ -321,7 +309,7 @@
     "bookedEventLabel": "Zakazano",
     "statusDescriptionFallback": "Status ovog termina nije prepoznat.",
     "statusDescriptions": {
-      "pending": "Vaš termin čeka potvrdu klinike.",
+      "pending": "Vaš termin je automatski potvrđen u trenutku zakazivanja.",
       "confirmed": "Vaš termin je potvrđen. Molimo dođite 10 minuta ranije.",
       "checkedIn": "Označeni ste kao prijavljeni u klinici.",
       "inProgress": "Vaš termin je u toku.",
@@ -385,8 +373,6 @@
   "profile": {
     "loadFailedTitle": "Profil nije učitan",
     "loadFailedFallback": "Pokušajte da osvežite stranicu.",
-    "changePhoto": "Promeni fotografiju",
-    "photoComingSoon": "Otpremanje fotografije uskoro stiže.",
     "roleBadge": "PACIJENT",
     "memberSince": "Član od {{date}}",
     "editCta": "Izmeni",
@@ -494,5 +480,12 @@
     "myProfile": "Moj profil",
     "familyMembers": "Članovi porodice",
     "changePassword": "Promeni lozinku"
+  },
+  "seo": {
+    "in": "u",
+    "clinic": "Klinika",
+    "doctorDescription": "Zakažite termin online kod dr {{name}} ({{summary}}). Pogledajte usluge, cene i lokaciju.",
+    "doctorDescriptionBare": "Zakažite termin online kod dr {{name}}. Pogledajte usluge, cene i lokaciju.",
+    "clinicDescription": "{{name}}{{place}}: usluge, cene i lekari. Zakažite termin online."
   }
 }

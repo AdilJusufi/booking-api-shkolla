@@ -1,3 +1,4 @@
+using Booking.Application.Common.Models;
 using Booking.Application.Common.Security;
 using Booking.Application.Features.Admin;
 using Booking.Application.Features.Clinics;

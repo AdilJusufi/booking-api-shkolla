@@ -72,20 +72,34 @@ public class EmailAbuseGuard : IEmailAbuseGuard
             return EmailSendDecision.BlockedByAddressDailyLimit;
         }
 
-        // 3. Tavani ditor GLOBAL — mbron kuotën e Resend nga çdo kombinim enumerimi
-        // (shumë adresa, shumë IP). Këtu llog-u është Error, jo Warning: kjo do të thotë
-        // që dikush po e ngjesh kufirin real të llogarisë Resend, dhe nëse mbetet i
-        // pavërejtur, rivendosja e password-it/konfirmimi ndalojnë për TË GJITHË —
-        // heshtja këtu është vetë dëmi që kufiri synon ta parandalojë.
-        var globalDailyCount = await _dbContext.EmailSendAttempts
-            .CountAsync(a => a.CreatedAt >= startOfDayUtc && a.CreatedAt < endOfDayUtc, cancellationToken);
-        if (globalDailyCount >= _settings.GlobalDailyLimit)
+        // 3. Tavani PËR QËLLIM mbi një dritare RRËSHQITËSE — mbron kuotën e Resend nga çdo
+        // kombinim enumerimi (shumë adresa, shumë IP).
+        //
+        // Dy ndryshime ndaj versionit të mëparshëm, secili për një dështim konkret:
+        //   • Ndarja sipas qëllimit: më parë një numërues i vetëm i përbashkët do të thoshte
+        //     se shterja e tij me ridërgime konfirmimi bllokonte edhe rivendosjen e
+        //     password-it. Tani secili qëllim ka buxhetin e vet dhe s'e uritë dot tjetrin.
+        //   • Dritare rrëshqitëse: më parë numërimi niste nga mesnata UTC, ndaj një shpërthim
+        //     i vetëm i mbante email-et të bllokuara deri në një kufi arbitrar sahati. Tani
+        //     kapaciteti kthehet vetvetiu sapo tentativat e vjetra dalin nga dritarja.
+        //
+        // Log-u mbetet Error, jo Warning: prekja e këtij tavani do të thotë ose abuzim në
+        // vazhdim, ose se kufijtë janë nën trafikun real — të dyja kërkojnë sy njerëzor.
+        var windowStart = now.AddHours(-_settings.PurposeWindowHours);
+        var purposeLimit = _settings.PurposeWindowLimits.TryGetValue(purpose, out var configuredLimit)
+            ? configuredLimit
+            : _settings.DefaultPurposeWindowLimit;
+
+        var purposeWindowCount = await _dbContext.EmailSendAttempts
+            .CountAsync(a => a.Purpose == purpose && a.CreatedAt >= windowStart, cancellationToken);
+        if (purposeWindowCount >= purposeLimit)
         {
             _logger.LogError(
-                "Email i refuzuar (TAVANI GLOBAL DITOR: {Count}/{Limit}) — kërkon vëmendje të menjëhershme. " +
-                "Adresa {NormalizedEmail}, qëllimi {Purpose}, IP {IpAddress}.",
-                globalDailyCount, _settings.GlobalDailyLimit, normalizedEmail, purpose, ipAddress ?? "e panjohur");
-            return EmailSendDecision.BlockedByGlobalDailyLimit;
+                "Email i refuzuar (TAVANI PËR QËLLIM {Purpose}: {Count}/{Limit} në {WindowHours}h) — " +
+                "kërkon vëmendje të menjëhershme. Adresa {NormalizedEmail}, IP {IpAddress}.",
+                purpose, purposeWindowCount, purposeLimit, _settings.PurposeWindowHours,
+                normalizedEmail, ipAddress ?? "e panjohur");
+            return EmailSendDecision.BlockedByPurposeWindowLimit;
         }
 
         _dbContext.EmailSendAttempts.Add(new EmailSendAttempt

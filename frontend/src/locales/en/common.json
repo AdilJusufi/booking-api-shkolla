@@ -30,6 +30,11 @@
     "emptyState": "You'll be able to see appointment notifications here soon.",
     "comingSoon": "Coming soon"
   },
+  "dateField": {
+    "day": "Day",
+    "month": "Month",
+    "year": "Year"
+  },
   "dates": {
     "weekdaysLong": [
       "Sunday",
@@ -95,11 +100,11 @@
     "myAppointments": "My appointments",
     "contactTitle": "Contact",
     "contactCity": "Pristina, Kosovo",
-    "contactEmail": "info@rezervomjekun.com",
+    "contactEmail": "rezervomjekun@gmail.com",
     "legalTitle": "Legal",
     "privacyPolicy": "Privacy Policy",
     "termsOfService": "Terms of Service",
-    "copyright": "© {{year}} Rezervo Mjekun — Demo project."
+    "copyright": "© {{year}} Rezervo Mjekun — Beta."
   },
   "buttons": {
     "retry": "Try again",
@@ -160,7 +165,33 @@
     "500": "A server error occurred. Please try again shortly.",
     "default": "Something went wrong. Please try again shortly.",
     "slotTaken": "This slot was just taken by someone else. Please choose another time.",
-    "staleRecord": "Someone else changed this appointment in the meantime. The page was refreshed with the latest data."
+    "staleRecord": "Someone else changed this appointment in the meantime. The page was refreshed with the latest data.",
+    "codes": {
+      "no-show-before-start": "An appointment can't be marked as a no-show before it starts. Try again after the appointment time has passed.",
+      "complete-before-start": "An appointment can only be marked completed once it has started.",
+      "invalid-status-transition": "This action isn't allowed for the appointment's current status. Refresh to see the latest status.",
+      "not-cancellable": "This appointment can no longer be cancelled in its current status.",
+      "not-reschedulable": "This appointment can't be rescheduled in its current status.",
+      "cancellation-window-passed": "The cancellation window has passed. Please contact the clinic directly.",
+      "appointment-conflict": "That time is no longer available. Please pick another time.",
+      "appointment-in-past": "The appointment can't be in the past.",
+      "patient-appointment-overlap": "The patient already has an appointment at this time.",
+      "doctor-not-at-branch": "The doctor doesn't work at the selected branch.",
+      "service-not-in-clinic": "This service doesn't belong to this branch's clinic.",
+      "service-not-offered-by-doctor": "The doctor doesn't offer this service.",
+      "dependent-not-owned": "This family member isn't on your account.",
+      "schedule-overlap": "This schedule overlaps an existing schedule on the same day.",
+      "schedule-has-booked-appointments": "This change would leave booked appointments outside working hours. Reschedule or cancel those appointments first.",
+      "doctor-has-future-appointments": "The doctor has upcoming active appointments. Reschedule or cancel them first.",
+      "concurrency-conflict": "Someone else changed this in the meantime. Refresh and try again.",
+      "email-exists": "An account with this email already exists.",
+      "phone-exists": "This phone number is already registered.",
+      "license-exists": "This license number is already registered.",
+      "specialty-exists": "A specialty with this name already exists.",
+      "admin-already-assigned": "This user is already an administrator of this clinic.",
+      "uploads-not-configured": "Image upload isn't available right now. Try again later or contact support.",
+      "invalid-photo-url": "The photo wasn't saved: the image didn't come from our upload. Please upload it again."
+    }
   },
   "appointment": {
     "status": {
@@ -196,5 +227,30 @@
     "vushtrri": "Vushtrri",
     "podujeva": "Podujeva",
     "suhareka": "Suhareka"
+  },
+  "scheduleConflict": {
+    "title_one": "This change would leave {{count}} booked appointment outside working hours:",
+    "title_other": "This change would leave {{count}} booked appointments outside working hours:",
+    "hint": "Reschedule or cancel these appointments, then save the change again."
+  },
+  "upload": {
+    "errors": {
+      "notConfigured": "Image upload isn't available right now. Try again later or contact support.",
+      "forbidden": "You don't have permission to change this image.",
+      "rejected": "The storage service rejected the image. Check the format and size, then try again.",
+      "network": "Couldn't connect. Check your internet connection and try again.",
+      "other": "Upload failed. Please try again."
+    }
+  },
+  "photoUpload": {
+    "upload": "Upload photo",
+    "change": "Change photo",
+    "remove": "Remove photo",
+    "hint": "JPG, PNG or WEBP, up to 5 MB.",
+    "wrongType": "Format not supported. Use JPG, PNG or WEBP.",
+    "tooLarge": "The photo is too large. Maximum size is 5 MB.",
+    "uploading": "Uploading photo",
+    "uploadedToast": "Photo updated.",
+    "removedToast": "Photo removed."
   }
 }

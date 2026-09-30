@@ -17,7 +17,7 @@ public interface IAppointmentService
     Task<AppointmentDto> CancelAsync(
         Guid userId, Guid appointmentId, CancelAppointmentRequest request, CancellationToken cancellationToken = default);
 
-    /// <summary>Termini i vjetër → Rescheduled (histori); krijohet termin i ri Pending në orarin e ri.</summary>
+    /// <summary>Termini i vjetër → Rescheduled (histori); krijohet termin i ri Confirmed në orarin e ri.</summary>
     Task<AppointmentDto> RescheduleAsync(
         Guid userId, Guid appointmentId, RescheduleAppointmentRequest request, CancellationToken cancellationToken = default);
 }

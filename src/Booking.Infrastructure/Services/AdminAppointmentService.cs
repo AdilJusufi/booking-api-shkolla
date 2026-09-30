@@ -257,7 +257,7 @@ public class AdminAppointmentService : IAdminAppointmentService
         await SaveChangesGuardedAsync(cancellationToken);
 
         var dto = await GetDtoAsync(appointment.Id, cancellationToken);
-        await NotifySafeAsync(_notificationService.AppointmentCreatedAsync, patient.UserId, dto, cancellationToken);
+        await NotifySafeAsync(_notificationService.AppointmentConfirmedAsync, patient.UserId, dto, cancellationToken);
         await NotifyDoctorSafeAsync(_notificationService.AppointmentCreatedForStaffAsync, appointment.Id, dto, cancellationToken);
         return dto;
     }
@@ -277,6 +277,9 @@ public class AdminAppointmentService : IAdminAppointmentService
                 throw new BookingRuleException(
                     "invalid-status-transition", $"Kalimi nga {appointment.Status} në {targetStatus} nuk lejohet.");
             }
+
+            BookingPolicy.EnsureStartedIfRequired(
+                targetStatus, appointment.StartDateTime, _dateTimeProvider.UtcNow);
 
             appointment.Status = targetStatus;
         }

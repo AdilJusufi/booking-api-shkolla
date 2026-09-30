@@ -9,7 +9,6 @@ import {
   ChevronRight,
   Search,
   SlidersHorizontal,
-  Star,
   Stethoscope,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -18,24 +17,15 @@ import { getErrorMessage } from '../lib/errors'
 import type { Clinic, Doctor, Specialty } from '../lib/types'
 import ClinicCard from '../components/ClinicCard'
 import DoctorCard from '../components/DoctorCard'
-import { Dropdown, EmptyState, specialtyLabel } from '../components/ui'
+import { Dropdown, EmptyState } from '../components/ui'
+import { useSpecialtyLabel } from '../context/SpecialtyNamesContext'
 import { useReveal } from '../lib/motion'
 import { KOSOVO_CITIES } from '../lib/kosovoCities'
 
 type Tab = 'klinika' | 'mjeket'
-type SortOption = 'relevance' | 'name' | 'rating'
+type SortOption = 'relevance' | 'name'
 
 const PAGE_SIZE = 12
-
-function StarRating({ count }: { count: number }) {
-  return (
-    <span className="filter-card__stars">
-      {Array.from({ length: count }).map((_, i) => (
-        <Star key={i} size={14} strokeWidth={1.5} fill="currentColor" />
-      ))}
-    </span>
-  )
-}
 
 function SkeletonCards({ count }: { count: number }) {
   return (
@@ -56,11 +46,11 @@ function SkeletonCards({ count }: { count: number }) {
 
 export default function SearchPage() {
   const { t } = useTranslation('patient')
+  const specialtyLabel = useSpecialtyLabel()
   const { t: tCommon } = useTranslation('common')
   const SORT_OPTIONS: { value: SortOption; label: string }[] = [
     { value: 'relevance', label: t('search.sortRelevance') },
     { value: 'name', label: t('search.sortName') },
-    { value: 'rating', label: t('search.sortRating') },
   ]
   const revealRef = useReveal()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -142,7 +132,7 @@ export default function SearchPage() {
               setTotalPages(r.totalPages)
             })
         : api
-            .searchDoctors({ specialtyId: urlSpecialty, searchTerm: urlQ, page })
+            .searchDoctors({ city: urlCity, specialtyId: urlSpecialty, searchTerm: urlQ, page })
             .then((r) => {
               if (!active) return
               setDoctors(r.items)
@@ -217,10 +207,17 @@ export default function SearchPage() {
   // up its translated display label rather than showing the raw value in an
   // English/Serbian UI.
   const matchedCity = KOSOVO_CITIES.find((c) => c.value === urlCity)
-  const cityHeading = matchedCity ? tCommon(`cities.${matchedCity.key}`) : urlCity || t('search.defaultCity')
-  const resultsHeading = tab === 'klinika'
-    ? t('search.headingClinicsIn', { city: cityHeading })
-    : t('search.headingDoctorsIn', { city: cityHeading })
+  const cityHeading = matchedCity ? tCommon(`cities.${matchedCity.key}`) : urlCity
+  // "Pa qytet" ka varg të vetin sepse shablloni i qytetit nuk është i
+  // zëvendësueshëm gramatikisht: serbishtja thotë "u gradu {{city}}" ("në
+  // qytetin X"), dhe Kosova s'është qytet — "Klinike u gradu Kosovo" del gabim.
+  const resultsHeading = cityHeading
+    ? tab === 'klinika'
+      ? t('search.headingClinicsIn', { city: cityHeading })
+      : t('search.headingDoctorsIn', { city: cityHeading })
+    : tab === 'klinika'
+      ? t('search.headingClinicsAll')
+      : t('search.headingDoctorsAll')
 
   const pageNumbers = useMemo(() => {
     const pages: number[] = []
@@ -333,27 +330,6 @@ export default function SearchPage() {
                 <button className="filter-card__more" onClick={() => setShowMoreSpecs((v) => !v)}>
                   {showMoreSpecs ? t('search.showLess') : t('search.showMore')}
                 </button>
-              )}
-
-              {tab === 'mjeket' && (
-                <>
-                  <div className="filter-card__divider" />
-                  <div className="filter-card__section-label">{t('search.minRatingLabel')}</div>
-                  <div className="filter-card__list">
-                    <label>
-                      <input type="radio" name="rating" /> <StarRating count={5} /> {t('search.andUp')}
-                    </label>
-                    <label>
-                      <input type="radio" name="rating" /> <StarRating count={4} /> {t('search.andUp')}
-                    </label>
-                    <label>
-                      <input type="radio" name="rating" /> <StarRating count={3} /> {t('search.andUp')}
-                    </label>
-                    <label>
-                      <input type="radio" name="rating" defaultChecked /> {t('search.anyRating')}
-                    </label>
-                  </div>
-                </>
               )}
 
               <button className="btn btn--primary btn--block" style={{ marginTop: 16 }} onClick={applyFilters}>

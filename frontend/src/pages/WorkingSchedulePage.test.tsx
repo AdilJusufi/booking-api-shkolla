@@ -47,6 +47,6 @@ describe('WorkingSchedulePage — day grouping contract (3a)', () => {
     server.use(http.get(`${API_BASE_URL}/api/doctor/working-schedules`, () => HttpResponse.json([])))
     renderWithProviders(<WorkingSchedulePage />, { user: 'Doctor' })
 
-    await waitFor(() => expect(screen.getByText('Nuk keni asnjë orar të shtuar ende.')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Nuk keni asnjë orar të krijuar ende.')).toBeInTheDocument())
   })
 })

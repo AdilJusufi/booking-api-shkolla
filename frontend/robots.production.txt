@@ -1,0 +1,15 @@
+# Rezervo Mjekun — profilet publike (klinika, mjekë, kërkimi) lejohen; paneli dhe llogaria jo.
+User-agent: *
+Allow: /
+Disallow: /hyr
+Disallow: /konfirmo-email
+Disallow: /harrova-fjalekalimin
+Disallow: /rivendos-fjalekalimin
+Disallow: /terminet
+Disallow: /llogaria
+Disallow: /rezervo
+Disallow: /mjeku-panel
+Disallow: /admin-panel
+Disallow: /super-admin
+
+Sitemap: https://www.rezervomjekun.com/sitemap.xml

@@ -53,6 +53,9 @@ export const handlers = [
   ),
   http.get(url('/api/patients/me/dependents'), () => HttpResponse.json([buildDependent()])),
 
+  http.get(url('/api/doctor/me'), () =>
+    HttpResponse.json({ id: '55555555-0001-5555-5555-555555555555', firstName: 'Arben', lastName: 'Gashi' }),
+  ),
   http.get(url('/api/doctor/branches'), () => HttpResponse.json([buildDoctorBranch()])),
   http.get(url('/api/doctor/working-schedules'), () => HttpResponse.json([buildWorkingSchedule()])),
   http.get(url('/api/doctor/appointments'), () => HttpResponse.json(pagedResult([buildDoctorAppointment()]))),

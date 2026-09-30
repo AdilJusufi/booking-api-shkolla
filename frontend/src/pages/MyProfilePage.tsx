@@ -254,13 +254,6 @@ export default function MyProfilePage() {
       <div className="card profile-hero">
         <div className="profile-hero__avatar-col">
           <div className="profile-hero__avatar">{initials(profile.firstName, profile.lastName)}</div>
-          <button
-            type="button"
-            className="profile-hero__photo-link"
-            onClick={() => notify(t('profile.photoComingSoon'), 'info')}
-          >
-            {t('profile.changePhoto')}
-          </button>
         </div>
 
         <div className="profile-hero__center">

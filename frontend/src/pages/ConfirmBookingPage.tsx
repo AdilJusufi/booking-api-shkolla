@@ -147,15 +147,15 @@ export default function ConfirmBookingPage() {
             <div className="apptdetail-divider" />
 
             <p className="apptdetail-section-label">{t('confirmBooking.noteLabel')}</p>
-            <textarea
-              className="input"
-              rows={3}
-              maxLength={1000}
-              placeholder={t('confirmBooking.notePlaceholder')}
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              style={{ width: '100%', resize: 'vertical' }}
-            />
+            <div className="field">
+              <textarea
+                rows={3}
+                maxLength={1000}
+                placeholder={t('confirmBooking.notePlaceholder')}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+              />
+            </div>
           </div>
         </div>
 

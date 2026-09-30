@@ -15,7 +15,19 @@ public sealed record WorkingScheduleDto
     public DateOnly? ValidUntil { get; init; }
 }
 
-public sealed record CreateWorkingScheduleRequest
+/// <summary>Fushat e përbashkëta të krijimit dhe ndryshimit — një validator i vetëm për të dyja.</summary>
+public interface IWorkingScheduleRequest
+{
+    Guid ClinicBranchId { get; }
+    DayOfWeek DayOfWeek { get; }
+    TimeOnly StartTime { get; }
+    TimeOnly EndTime { get; }
+    int SlotDurationMinutes { get; }
+    DateOnly? ValidFrom { get; }
+    DateOnly? ValidUntil { get; }
+}
+
+public sealed record CreateWorkingScheduleRequest : IWorkingScheduleRequest
 {
     public required Guid ClinicBranchId { get; init; }
     public required DayOfWeek DayOfWeek { get; init; }
@@ -27,6 +39,34 @@ public sealed record CreateWorkingScheduleRequest
     public required int SlotDurationMinutes { get; init; }
     public DateOnly? ValidFrom { get; init; }
     public DateOnly? ValidUntil { get; init; }
+}
+
+/// <summary>PUT — zëvendëson plotësisht orarin (të njëjtat fusha dhe rregulla si krijimi).</summary>
+public sealed record UpdateWorkingScheduleRequest : IWorkingScheduleRequest
+{
+    public required Guid ClinicBranchId { get; init; }
+    public required DayOfWeek DayOfWeek { get; init; }
+
+    /// <summary>Ora lokale e Prishtinës, format "HH:mm".</summary>
+    public required TimeOnly StartTime { get; init; }
+
+    public required TimeOnly EndTime { get; init; }
+    public required int SlotDurationMinutes { get; init; }
+    public DateOnly? ValidFrom { get; init; }
+    public DateOnly? ValidUntil { get; init; }
+}
+
+/// <summary>Termin i rezervuar që do të mbetej jashtë orarit pas një ndryshimi — kthehet te 409.</summary>
+public sealed record ScheduleAffectedAppointmentDto
+{
+    public required Guid Id { get; init; }
+
+    /// <summary>Ora lokale e Prishtinës.</summary>
+    public required DateTime StartDateTime { get; init; }
+
+    public required DateTime EndDateTime { get; init; }
+    public required string PatientName { get; init; }
+    public required string ServiceName { get; init; }
 }
 
 public sealed record UnavailabilityDto

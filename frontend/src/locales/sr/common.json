@@ -30,6 +30,11 @@
     "emptyState": "Uskoro ćete ovde moći da vidite obaveštenja o terminima.",
     "comingSoon": "Uskoro"
   },
+  "dateField": {
+    "day": "Dan",
+    "month": "Mesec",
+    "year": "Godina"
+  },
   "dates": {
     "weekdaysLong": [
       "Nedelja",
@@ -95,11 +100,11 @@
     "myAppointments": "Moji termini",
     "contactTitle": "Kontakt",
     "contactCity": "Priština, Kosovo",
-    "contactEmail": "info@rezervomjekun.com",
+    "contactEmail": "rezervomjekun@gmail.com",
     "legalTitle": "Pravno",
     "privacyPolicy": "Politika privatnosti",
     "termsOfService": "Uslovi korišćenja",
-    "copyright": "© {{year}} Rezervo Mjekun — Demo projekat."
+    "copyright": "© {{year}} Rezervo Mjekun — Beta verzija."
   },
   "buttons": {
     "retry": "Pokušaj ponovo",
@@ -160,7 +165,33 @@
     "500": "Došlo je do greške na serveru. Pokušajte ponovo uskoro.",
     "default": "Došlo je do greške. Pokušajte ponovo uskoro.",
     "slotTaken": "Ovaj termin je upravo zauzeo neko drugi. Izaberite drugo vreme.",
-    "staleRecord": "Neko drugi je u međuvremenu izmenio ovaj termin. Stranica je osvežena sa najnovijim podacima."
+    "staleRecord": "Neko drugi je u međuvremenu izmenio ovaj termin. Stranica je osvežena sa najnovijim podacima.",
+    "codes": {
+      "no-show-before-start": "Termin ne može biti označen kao „nije došao“ pre nego što počne. Pokušajte nakon što prođe vreme termina.",
+      "complete-before-start": "Termin može biti označen kao završen tek kada počne.",
+      "invalid-status-transition": "Ova radnja nije dozvoljena za trenutni status termina. Osvežite stranicu da vidite najnoviji status.",
+      "not-cancellable": "Ovaj termin više ne može da se otkaže u trenutnom statusu.",
+      "not-reschedulable": "Ovaj termin ne može da se pomeri u trenutnom statusu.",
+      "cancellation-window-passed": "Rok za otkazivanje je prošao. Kontaktirajte kliniku direktno.",
+      "appointment-conflict": "Ovaj termin više nije slobodan. Izaberite drugo vreme.",
+      "appointment-in-past": "Termin ne može biti u prošlosti.",
+      "patient-appointment-overlap": "Pacijent već ima termin u ovo vreme.",
+      "doctor-not-at-branch": "Lekar ne radi u izabranom ogranku.",
+      "service-not-in-clinic": "Ova usluga ne pripada klinici ovog ogranka.",
+      "service-not-offered-by-doctor": "Lekar ne pruža ovu uslugu.",
+      "dependent-not-owned": "Ovaj član porodice nije na vašem nalogu.",
+      "schedule-overlap": "Ovaj raspored se preklapa sa postojećim rasporedom za isti dan.",
+      "schedule-has-booked-appointments": "Ova izmena bi ostavila zakazane termine van radnog vremena. Prvo pomerite ili otkažite te termine.",
+      "doctor-has-future-appointments": "Lekar ima predstojeće aktivne termine. Prvo ih pomerite ili otkažite.",
+      "concurrency-conflict": "Neko drugi je u međuvremenu ovo izmenio. Osvežite stranicu i pokušajte ponovo.",
+      "email-exists": "Nalog sa ovom e-poštom već postoji.",
+      "phone-exists": "Ovaj broj telefona je već registrovan.",
+      "license-exists": "Ovaj broj licence je već registrovan.",
+      "specialty-exists": "Specijalizacija sa ovim nazivom već postoji.",
+      "admin-already-assigned": "Ovaj korisnik je već administrator ove klinike.",
+      "uploads-not-configured": "Otpremanje slika trenutno nije dostupno. Pokušajte kasnije ili kontaktirajte podršku.",
+      "invalid-photo-url": "Fotografija nije sačuvana: slika ne potiče iz našeg otpremanja. Otpremite je ponovo."
+    }
   },
   "appointment": {
     "status": {
@@ -197,5 +228,31 @@
     "vushtrri": "Vučitrn",
     "podujeva": "Podujevo",
     "suhareka": "Suva Reka"
+  },
+  "scheduleConflict": {
+    "title_one": "Ova izmena bi ostavila {{count}} zakazan termin van radnog vremena:",
+    "title_few": "Ova izmena bi ostavila {{count}} zakazana termina van radnog vremena:",
+    "title_other": "Ova izmena bi ostavila {{count}} zakazanih termina van radnog vremena:",
+    "hint": "Pomerite ili otkažite ove termine, pa ponovo sačuvajte izmenu."
+  },
+  "upload": {
+    "errors": {
+      "notConfigured": "Otpremanje slika trenutno nije dostupno. Pokušajte kasnije ili kontaktirajte podršku.",
+      "forbidden": "Nemate dozvolu da promenite ovu sliku.",
+      "rejected": "Servis za skladištenje je odbio sliku. Proverite format i veličinu, pa pokušajte ponovo.",
+      "network": "Povezivanje nije uspelo. Proverite internet vezu i pokušajte ponovo.",
+      "other": "Otpremanje nije uspelo. Pokušajte ponovo."
+    }
+  },
+  "photoUpload": {
+    "upload": "Otpremi fotografiju",
+    "change": "Promeni fotografiju",
+    "remove": "Ukloni fotografiju",
+    "hint": "JPG, PNG ili WEBP, do 5 MB.",
+    "wrongType": "Format nije podržan. Koristite JPG, PNG ili WEBP.",
+    "tooLarge": "Fotografija je prevelika. Maksimalna veličina je 5 MB.",
+    "uploading": "Otpremanje fotografije",
+    "uploadedToast": "Fotografija je ažurirana.",
+    "removedToast": "Fotografija je uklonjena."
   }
 }

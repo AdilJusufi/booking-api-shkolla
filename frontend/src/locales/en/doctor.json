@@ -5,30 +5,30 @@
     "navUnavailability": "Unavailability",
     "searchPatientPlaceholder": "Search patient...",
     "breadcrumbPanel": "Dashboard",
-    "breadcrumbSchedule": "Work schedule"
+    "breadcrumbSchedule": "Work schedule",
+    "breadcrumbProfile": "My profile"
   },
   "userMenu": {
     "mySchedule": "My schedule",
-    "unavailability": "Unavailability"
+    "unavailability": "Unavailability",
+    "myProfile": "My profile"
   },
   "calendar": {
     "title": "My Calendar",
     "viewList": "List",
     "viewDay": "Day",
     "dateRange": {
+      "upcoming": "Next 90 days",
       "today": "Today",
       "week": "This week",
       "month": "This month",
       "3months": "Last 3 months"
     },
     "statusTabAll": "All",
-    "statusTabPending": "Pending",
     "statusTabConfirmed": "Confirmed",
     "statusTabCompleted": "Completed",
     "statTodayLabel": "Today",
     "statTodayCompletedSub": "{{count}} completed",
-    "statPendingLabel": "Pending",
-    "statPendingSub": "Need confirmation",
     "statConfirmedTodayLabel": "Confirmed today",
     "statConfirmedTodaySub": "Ready for visit",
     "statMonthLabel": "This month",
@@ -38,8 +38,6 @@
     "noAppointmentsHint": "No appointments found for this period.",
     "todayPrefix": "TODAY",
     "minutesShort": "min",
-    "confirmCta": "Confirm",
-    "markCancelledTitle": "Mark as cancelled",
     "completeCta": "Complete",
     "markNoShowTitle": "No-show",
     "badges": {
@@ -50,7 +48,6 @@
       "noShow": "NO-SHOW",
       "unknown": "UNKNOWN"
     },
-    "confirmedToast": "Appointment confirmed.",
     "completedToast": "Appointment marked as completed.",
     "noShowToast": "Appointment marked as no-show.",
     "dayView": {
@@ -81,7 +78,7 @@
     "patientNotesLabel": "Patient Notes",
     "statusDescriptionFallback": "This appointment's status is unrecognized.",
     "statusDescriptions": {
-      "pending": "The appointment is waiting for your confirmation.",
+      "pending": "The appointment is pending confirmation.",
       "confirmed": "The appointment is confirmed. The patient has been notified.",
       "checkedIn": "The patient has checked in.",
       "inProgress": "The consultation is in progress.",
@@ -103,7 +100,6 @@
       "unknown": "UNKNOWN"
     },
     "readOnlyNote": "This appointment is read-only — no actions available.",
-    "confirmPrompt": "Are you sure you want to confirm this appointment?",
     "completePrompt": "Are you sure you want to mark it as completed?",
     "noShowPrompt": "Are you sure? The patient will be marked as no-show.",
     "saving": "Saving…",
@@ -115,15 +111,13 @@
     "internalNotesHint": "Visible only to medical staff.",
     "internalNotesPlaceholder": "Write internal notes here...",
     "saveNoteCta": "Save Note",
-    "noteSavedToast": "Note saved."
+    "noteSavedToast": "Note saved.",
+    "actionsAvailableAtStart": "“Complete” and “No-show” become available once the appointment starts ({{time}})."
   },
   "workingSchedule": {
     "title": "Work Schedule",
     "subtitle": "Manage your weekly working hours and slot times for each branch.",
     "addScheduleCta": "Add new schedule",
-    "modeLabel": "Add mode",
-    "modeSingle": "Single day",
-    "modeRange": "Multiple days",
     "infoBanner": "These schedules are weekly templates that repeat automatically. You can set specific validity periods.",
     "loadingLabel": "Loading schedules",
     "emptyTitle": "You haven't added any schedule yet.",
@@ -141,7 +135,6 @@
     "addModalTitle": "Add new schedule",
     "branchLabel": "Branch",
     "noBranchesAvailable": "No branches available. Have an administrator add a branch schedule first, or contact the clinic admin.",
-    "dayOfWeekLabel": "Day of week",
     "daysLabel": "Days",
     "rangeFromLabel": "From",
     "rangeToLabel": "To",
@@ -153,7 +146,6 @@
     "validUntilLabel": "Valid until",
     "optional": "(optional)",
     "saving": "Saving…",
-    "addScheduleSubmit": "Add schedule",
     "addRangeSubmit": "Add schedule for selected days",
     "deleteModalTitle": "Delete schedule",
     "deleteConfirmText": "Are you sure you want to delete the schedule for <0>{{day}}</0> at <1>{{branch}}</1>?",
@@ -166,12 +158,15 @@
       "durationRange": "Slot duration must be between 5 and 240 minutes.",
       "validUntilAfterFrom": "The expiry date must be after the start date."
     },
-    "createdToast": "Schedule added.",
     "deactivatedToast": "Schedule deactivated.",
     "deletedToast": "Schedule deleted.",
     "rangeCreatedToast_one": "Schedule added for {{count}} day.",
     "rangeCreatedToast_other": "Schedule added for {{count}} days.",
-    "rangePartialSuccess": "Schedule added for <0>{{count}} of {{total}}</0> selected days. Details for the days that failed:"
+    "rangePartialSuccess": "Schedule added for <0>{{count}} of {{total}}</0> selected days. Details for the days that failed:",
+    "editModalTitle": "Edit schedule",
+    "saveChangesCta": "Save changes",
+    "updatedToast": "Schedule updated.",
+    "editAria": "Edit the {{day}} schedule at {{branch}}"
   },
   "unavailability": {
     "title": "Absences & Time Off",
@@ -216,5 +211,12 @@
     },
     "createdToast": "Absence added successfully.",
     "conflictToast": "You have confirmed appointments during this period. Please reschedule them first."
+  },
+  "profile": {
+    "title": "My profile",
+    "photoTitle": "Profile photo",
+    "photoDescription": "Your photo appears on your public profile and in search results.",
+    "viewPublic": "View public profile",
+    "loadFailed": "Couldn't load your profile."
   }
 }

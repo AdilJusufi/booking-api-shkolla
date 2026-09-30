@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Calendar, CalendarCheck, CalendarClock, CalendarX, ChevronLeft, ChevronRight, Plus, Search } from 'lucide-react'
+import { Calendar, CalendarCheck, CalendarX, ChevronLeft, ChevronRight, Plus, Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '../context/ToastContext'
 import { api } from '../lib/api'
@@ -10,10 +10,9 @@ import { Badge, EmptyState, ErrorBox, SkeletonRows, initials } from '../componen
 
 const PAGE_SIZE = 20
 
-type StatusTab = 'all' | 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'noShow'
+type StatusTab = 'all' | 'confirmed' | 'completed' | 'cancelled' | 'noShow'
 
 const TAB_STATUS: Partial<Record<StatusTab, AppointmentStatus>> = {
-  pending: AppointmentStatus.Pending,
   confirmed: AppointmentStatus.Confirmed,
   completed: AppointmentStatus.Completed,
   noShow: AppointmentStatus.NoShow,
@@ -87,7 +86,7 @@ export default function AdminAppointmentsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const [stats, setStats] = useState<{ today: number; pending: number; confirmed: number; completed: number; cancelled: number } | null>(null)
+  const [stats, setStats] = useState<{ today: number; confirmed: number; completed: number; cancelled: number } | null>(null)
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
@@ -136,16 +135,14 @@ export default function AdminAppointmentsPage() {
     const today = new Date().toISOString().slice(0, 10)
     Promise.all([
       api.getAdminAppointments({ from: today, to: today, page: 1, pageSize: 1 }),
-      api.getAdminAppointments({ status: AppointmentStatus.Pending, page: 1, pageSize: 1 }),
       api.getAdminAppointments({ status: AppointmentStatus.Confirmed, page: 1, pageSize: 1 }),
       api.getAdminAppointments({ status: AppointmentStatus.Completed, page: 1, pageSize: 1 }),
       api.getAdminAppointments({ status: AppointmentStatus.CancelledByPatient, page: 1, pageSize: 1 }),
       api.getAdminAppointments({ status: AppointmentStatus.CancelledByClinic, page: 1, pageSize: 1 }),
     ])
-      .then(([todayR, pendingR, confirmedR, completedR, cancelledByPatientR, cancelledByClinicR]) => {
+      .then(([todayR, confirmedR, completedR, cancelledByPatientR, cancelledByClinicR]) => {
         setStats({
           today: todayR.totalItems,
-          pending: pendingR.totalItems,
           confirmed: confirmedR.totalItems,
           completed: completedR.totalItems,
           cancelled: cancelledByPatientR.totalItems + cancelledByClinicR.totalItems,
@@ -156,7 +153,6 @@ export default function AdminAppointmentsPage() {
 
   const STATUS_TABS: { value: StatusTab; label: string }[] = [
     { value: 'all', label: t('appointments.filterAll') },
-    { value: 'pending', label: t('appointments.filterPending') },
     { value: 'confirmed', label: t('appointments.filterConfirmed') },
     { value: 'completed', label: t('appointments.statCompleted') },
     { value: 'cancelled', label: t('appointments.filterCancelled') },
@@ -189,7 +185,6 @@ export default function AdminAppointmentsPage() {
 
       <div className="stats-row">
         <StatCard icon={Calendar} label={t('appointments.statToday')} value={stats?.today} />
-        <StatCard icon={CalendarClock} label={t('appointments.statPending')} value={stats?.pending} />
         <StatCard icon={CalendarCheck} label={t('appointments.statConfirmed')} value={stats?.confirmed} />
         <StatCard icon={CalendarCheck} label={t('appointments.statCompleted')} value={stats?.completed} />
         <StatCard icon={CalendarX} label={t('appointments.statCancelled')} value={stats?.cancelled} />

@@ -17,11 +17,8 @@ import {
   Lock,
   MapPin,
   MessageCircleHeart,
-  Quote,
   Scan,
   Search,
-  ShieldCheck,
-  Star,
   Stethoscope,
   Venus,
   type LucideProps,
@@ -30,12 +27,13 @@ import type { ComponentType } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import type { Clinic, Doctor, Specialty } from '../lib/types'
-import { CustomSelect, initials, specialtyIcon, specialtyLabel } from '../components/ui'
+import { CustomSelect, specialtyIcon } from '../components/ui'
+import DoctorAvatar from '../components/DoctorAvatar'
+import { useSpecialtyLabel } from '../context/SpecialtyNamesContext'
 import type { CustomSelectOption } from '../components/ui'
 import { KOSOVO_CITIES } from '../lib/kosovoCities'
-import { formatNumber, weekdayName } from '../lib/format'
+import { weekdayName } from '../lib/format'
 import {
-  useCountUp,
   useReveal,
   useRotatingIndex,
   useSpotlight,
@@ -54,11 +52,6 @@ const DEMO_DOCTOR_EXPERIENCE = [12, 8, 15, 9, 17]
 const DEMO_CLINIC_DOCTOR_COUNTS = [42, 18, 11]
 
 const STEP_ICONS = [Search, CalendarDays, BadgeCheck]
-
-const MARQUEE_PARTNERS = [
-  'Spitali Amerikan', 'Poliklinika Rilindja', 'Klinika Vita', 'Dental Art',
-  'Medica Group', 'Bio Care', 'Klinika Sanus', 'Pediatria Lira',
-]
 
 const PANEL_SLOTS = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30']
 // Decorative demo dates for the booking panel — Monday(1) through Friday(5)
@@ -83,19 +76,6 @@ function SplitWords({ text, from = 0 }: { text: string; from?: number }) {
         </span>
       ))}
     </>
-  )
-}
-
-function Stat({ to, suffix, label }: { to: number; suffix: string; label: string }) {
-  const { ref, value } = useCountUp(to)
-  return (
-    <div className="lp-stat" data-reveal>
-      <span className="lp-stat__value">
-        <span ref={ref}>{formatNumber(value)}</span>
-        {suffix}
-      </span>
-      <span className="lp-stat__label">{label}</span>
-    </div>
   )
 }
 
@@ -146,16 +126,6 @@ function BookingPanel() {
       <Link to="/kerko" className="lp-btn lp-btn--accent lp-btn--block">
         {t('home.panel.confirmCta')}
       </Link>
-
-      <footer className="lp-panel__foot">
-        <span className="lp-stars" aria-hidden>
-          {[0, 1, 2, 3, 4].map((i) => (
-            <Star key={i} size={13} strokeWidth={0} fill="currentColor" />
-          ))}
-        </span>
-        <strong>4.9</strong>
-        <span className="lp-panel__reviews">{t('home.panel.reviewCount')}</span>
-      </footer>
     </aside>
   )
 }
@@ -170,6 +140,7 @@ function VerifiedBadge({ title }: { title: string }) {
 
 export default function HomePage() {
   const { t } = useTranslation('patient')
+  const specialtyLabel = useSpecialtyLabel()
   const { t: tCommon } = useTranslation('common')
   const navigate = useNavigate()
   const [specialties, setSpecialties] = useState<Specialty[]>([])
@@ -213,19 +184,15 @@ export default function HomePage() {
       { value: '', label: t('home.allSpecialties') },
       ...specialties.map((s) => ({ value: s.id, label: specialtyLabel(s.name) })),
     ],
-    [specialties, t],
+    // `specialtyLabel` ndryshon identitet kur ngarkohet harta e përkthimeve ose
+    // kur ndërrohet gjuha — pa të te varësitë, lista do të mbetej me etiketat e
+    // vjetra derisa të ndryshonin `specialties` apo `t`.
+    [specialties, t, specialtyLabel],
   )
 
   const shownDoctors = hasDoctors ? doctors.slice(0, 6) : []
   const shownClinics = hasClinics ? clinics.slice(0, 3) : []
   const shownSpecs = hasSpecs ? specialties.slice(0, 8) : []
-
-  const STATS = [
-    { to: 120, suffix: '+', label: t('home.stats.verifiedDoctors') },
-    { to: 18, suffix: '', label: t('home.stats.partnerClinics') },
-    { to: 4200, suffix: '+', label: t('home.stats.bookedAppointments') },
-    { to: 7, suffix: '', label: t('home.stats.citiesInKosovo') },
-  ]
 
   const STEPS = [
     { icon: STEP_ICONS[0], title: t('home.howItWorks.step1Title'), text: t('home.howItWorks.step1Text') },
@@ -251,8 +218,6 @@ export default function HomePage() {
 
   const demoClinicsRaw = t('home.demo.clinics', { returnObjects: true }) as { name: string; city: string; specialties: string[] }[]
   const DEMO_CLINICS = demoClinicsRaw.map((c, i) => ({ ...c, doctors: DEMO_CLINIC_DOCTOR_COUNTS[i] }))
-
-  const TESTIMONIALS = t('home.demo.testimonials', { returnObjects: true }) as { quote: string; name: string; role: string }[]
 
   return (
     <div className="lp" ref={pageRef}>
@@ -290,6 +255,7 @@ export default function HomePage() {
                   onChange={setCity}
                   open={openField === 'city'}
                   onOpenChange={(isOpen) => setOpenField(isOpen ? 'city' : null)}
+                  panelVariant="hero"
                 />
               </div>
               <span className="lp-search__divider" aria-hidden />
@@ -302,6 +268,7 @@ export default function HomePage() {
                   open={openField === 'specialty'}
                   onOpenChange={(isOpen) => setOpenField(isOpen ? 'specialty' : null)}
                   loading={specialtiesLoading}
+                  panelVariant="hero"
                 />
               </div>
               <button type="submit" className="lp-btn lp-btn--accent lp-search__submit">
@@ -318,28 +285,9 @@ export default function HomePage() {
 
           <BookingPanel />
         </div>
-
-        <div className="lp-marquee" aria-hidden>
-          <div className="lp-marquee__track">
-            {[...MARQUEE_PARTNERS, ...MARQUEE_PARTNERS].map((p, i) => (
-              <span className="lp-marquee__item" key={`${p}-${i}`}>
-                <ShieldCheck size={14} strokeWidth={1.75} /> {p}
-              </span>
-            ))}
-          </div>
-        </div>
       </section>
 
-      {/* ============ 2 — Stats ============ */}
-      <section className="lp-section lp-section--flush">
-        <div className="container lp-stats">
-          {STATS.map((s) => (
-            <Stat key={s.label} {...s} />
-          ))}
-        </div>
-      </section>
-
-      {/* ============ 3 — Specialties (gapless bento) ============ */}
+      {/* ============ 2 — Specialties (gapless bento) ============ */}
       <section className="lp-section container">
         <div className="lp-head lp-head--row">
           <div data-reveal>
@@ -383,7 +331,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ============ 4 — How it works (asymmetric, sticky left) ============ */}
+      {/* ============ 3 — How it works (asymmetric, sticky left) ============ */}
       <section className="lp-section lp-section--soft">
         <div className="container lp-how">
           <div className="lp-how__aside">
@@ -414,7 +362,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ============ 5 — Doctors (horizontal snap rail) ============ */}
+      {/* ============ 4 — Doctors (horizontal snap rail) ============ */}
       <section className="lp-section">
         <div className="container lp-head lp-head--row">
           <div data-reveal>
@@ -432,7 +380,14 @@ export default function HomePage() {
             {hasDoctors
               ? shownDoctors.map((d) => (
                   <article className="lp-doc" key={d.id} data-reveal data-spotlight>
-                    <span className="lp-doc__avatar">{initials(d.firstName, d.lastName)}</span>
+                    <DoctorAvatar
+                      as="span"
+                      className="lp-doc__avatar"
+                      firstName={d.firstName}
+                      lastName={d.lastName}
+                      photoUrl={d.photoUrl}
+                      displayPx={64}
+                    />
                     <h3 className="lp-doc__name">
                       Dr. {d.firstName} {d.lastName} <VerifiedBadge title={t('home.doctorsSection.verified')} />
                     </h3>
@@ -474,7 +429,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ============ 6 — Feature band ============ */}
+      {/* ============ 5 — Feature band ============ */}
       <section className="lp-band">
         <div className="container lp-band__grid">
           {FEATURES.map((f) => (
@@ -489,7 +444,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ============ 7 — Clinics (asymmetric grid) ============ */}
+      {/* ============ 6 — Clinics (asymmetric grid) ============ */}
       <section className="lp-section container">
         <div className="lp-head lp-head--row">
           <div data-reveal>
@@ -559,32 +514,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ============ 8 — Testimonials ============ */}
-      <section className="lp-section lp-section--soft">
-        <div className="container">
-          <div className="lp-head">
-            <span className="lp-kicker" data-reveal>{t('home.testimonials.kicker')}</span>
-            <h2 data-reveal>{t('home.testimonials.title')}</h2>
-          </div>
-          <div className="lp-quotes">
-            {TESTIMONIALS.map((tItem) => (
-              <figure className="lp-quote" key={tItem.name} data-reveal>
-                <Quote className="lp-quote__mark" size={26} strokeWidth={1.5} aria-hidden />
-                <blockquote>{tItem.quote}</blockquote>
-                <figcaption>
-                  <span className="lp-quote__avatar">{initialsFromName(tItem.name)}</span>
-                  <span>
-                    <strong>{tItem.name}</strong>
-                    <em>{tItem.role}</em>
-                  </span>
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ============ 9 — Final CTA ============ */}
+      {/* ============ 7 — Final CTA ============ */}
       <section className="lp-section container">
         <div className="lp-cta" data-reveal>
           <div className="lp-cta__rules" aria-hidden />

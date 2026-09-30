@@ -70,7 +70,19 @@ public sealed record ClinicSearchRequest : PagedRequest
 public sealed record SpecialtyDto
 {
     public required Guid Id { get; init; }
+
+    /// <summary>Emri kanonik shqip — edhe fallback-u kur mungon përkthimi.</summary>
     public required string Name { get; init; }
+
+    /// <summary>
+    /// Të tre emrat udhëtojnë bashkë sepse klienti e ndërron gjuhën pa e
+    /// rifreskuar të dhënat — po ta zgjidhte serveri sipas Accept-Language,
+    /// emrat do të mbeteshin shqip derisa përdoruesi të navigonte.
+    /// </summary>
+    public string? NameEn { get; init; }
+
+    public string? NameSr { get; init; }
+
     public string? Description { get; init; }
     public required bool IsActive { get; init; }
 }

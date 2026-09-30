@@ -33,6 +33,27 @@ describe('getErrorMessage', () => {
     expect(getErrorMessage(error)).toBe(expected)
   })
 
+  it('prefers the backend rule code over the generic 422 copy', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const error = new ApiError('NoShow mund të shënohet…', 422, '/api/doctor/appointments/x/no-show', {
+      code: 'no-show-before-start',
+    })
+    expect(getErrorMessage(error)).toBe(sq.errors.codes['no-show-before-start'])
+    expect(getErrorMessage(error)).not.toBe(sq.errors['422'])
+  })
+
+  it('beats a caller status override when the code is known', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const error = new ApiError('x', 422, undefined, { code: 'complete-before-start' })
+    expect(getErrorMessage(error, { 422: 'caller copy' })).toBe(sq.errors.codes['complete-before-start'])
+  })
+
+  it('falls back to status copy for an unknown code', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const error = new ApiError('x', 422, undefined, { code: 'some-future-code' })
+    expect(getErrorMessage(error)).toBe(sq.errors['422'])
+  })
+
   it('maps a network failure (status 0) to the offline message', () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined)
     const error = new ApiError('Nuk u lidhëm dot me serverin. A është backend-i i ndezur?', 0)

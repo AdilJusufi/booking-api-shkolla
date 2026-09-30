@@ -9,6 +9,7 @@ public sealed record DoctorDto
     public required string LastName { get; init; }
     public required int YearsOfExperience { get; init; }
     public required IReadOnlyList<string> Specialties { get; init; }
+    public string? PhotoUrl { get; init; }
 }
 
 public sealed record DoctorDetailsDto
@@ -17,6 +18,7 @@ public sealed record DoctorDetailsDto
     public required string FirstName { get; init; }
     public required string LastName { get; init; }
     public string? Biography { get; init; }
+    public string? PhotoUrl { get; init; }
     public required int YearsOfExperience { get; init; }
     public required IReadOnlyList<string> Specialties { get; init; }
     public required IReadOnlyList<DoctorBranchDto> Branches { get; init; }
@@ -45,10 +47,39 @@ public sealed record DoctorServiceDto
     public required string Currency { get; init; }
 }
 
+/// <summary>Profili i mjekut të kyçur — për avatarin në panel dhe faqen "Profili im".</summary>
+public sealed record DoctorSelfProfileDto
+{
+    public required Guid Id { get; init; }
+    public required string FirstName { get; init; }
+    public required string LastName { get; init; }
+    public string? PhotoUrl { get; init; }
+}
+
+/// <summary>
+/// URL-ja që Cloudinary ktheu pas ngarkimit (secure_url), ose null për ta hequr foton.
+/// Serveri e pranon vetëm nëse është në cloud-in tonë dhe në dosjen e këtij mjeku.
+/// </summary>
+public sealed record SetDoctorPhotoRequest
+{
+    public string? PhotoUrl { get; init; }
+}
+
+public sealed record DoctorPhotoDto
+{
+    public string? PhotoUrl { get; init; }
+}
+
 public sealed record DoctorSearchRequest : PagedRequest
 {
     /// <summary>Kërkim në emër e mbiemër.</summary>
     public string? SearchTerm { get; init; }
+
+    /// <summary>
+    /// Qyteti i doktorit vjen nga degët ku ai ordinon — një doktor përputhet
+    /// nëse ka të paktën një degë aktive në këtë qytet.
+    /// </summary>
+    public string? City { get; init; }
 
     public Guid? ClinicId { get; init; }
     public Guid? BranchId { get; init; }

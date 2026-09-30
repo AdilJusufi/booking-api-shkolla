@@ -88,14 +88,6 @@ public class DoctorAppointmentService : IDoctorAppointmentService
         return ToDto(row);
     }
 
-    public async Task<DoctorAppointmentDto> ConfirmAsync(Guid userId, Guid appointmentId, CancellationToken cancellationToken = default)
-    {
-        var dto = await TransitionAsync(userId, appointmentId, AppointmentStatus.Confirmed, cancellationToken);
-        // Pacienti pret pikërisht këtë konfirmim — njoftimi i vetëm i doktorit që shkon te pacienti.
-        await NotifyPatientSafeAsync(_notificationService.AppointmentConfirmedAsync, appointmentId, dto, cancellationToken);
-        return dto;
-    }
-
     public Task<DoctorAppointmentDto> CompleteAsync(Guid userId, Guid appointmentId, CancellationToken cancellationToken = default) =>
         TransitionAsync(userId, appointmentId, AppointmentStatus.Completed, cancellationToken);
 
@@ -103,11 +95,6 @@ public class DoctorAppointmentService : IDoctorAppointmentService
         Guid userId, Guid appointmentId, CancellationToken cancellationToken = default)
     {
         var (doctorId, appointment) = await GetOwnedAppointmentAsync(userId, appointmentId, cancellationToken);
-
-        if (_dateTimeProvider.UtcNow <= appointment.StartDateTime)
-        {
-            throw new BookingRuleException("no-show-before-start", "NoShow mund të shënohet vetëm pasi ka kaluar ora e terminit.");
-        }
 
         var dto = await ApplyTransitionAsync(doctorId, appointment, AppointmentStatus.NoShow, cancellationToken);
         // Klinika duhet ta dijë — jo pacienti, i cili tashmë e ka humbur terminin.
@@ -144,6 +131,8 @@ public class DoctorAppointmentService : IDoctorAppointmentService
                 "invalid-status-transition",
                 $"Kalimi nga {appointment.Status} në {targetStatus} nuk lejohet.");
         }
+
+        BookingPolicy.EnsureStartedIfRequired(targetStatus, appointment.StartDateTime, _dateTimeProvider.UtcNow);
 
         appointment.Status = targetStatus;
         await SaveChangesGuardedAsync(cancellationToken);
@@ -191,41 +180,6 @@ public class DoctorAppointmentService : IDoctorAppointmentService
         {
             throw new ConflictException(
                 "concurrency-conflict", "Termini u ndryshua nga një veprim tjetër. Rifresko dhe provo përsëri.");
-        }
-    }
-
-    private async Task NotifyPatientSafeAsync(
-        Func<AppointmentNotificationContext, CancellationToken, Task> send,
-        Guid appointmentId, DoctorAppointmentDto dto, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var info = await _dbContext.Appointments
-                .Where(a => a.Id == appointmentId)
-                .Select(a => new
-                {
-                    PatientEmail = _dbContext.Users.Where(u => u.Id == a.PatientProfile.UserId).Select(u => u.Email).First(),
-                    PatientPhoneNumber = _dbContext.Users.Where(u => u.Id == a.PatientProfile.UserId).Select(u => u.PhoneNumber).First(),
-                    DoctorName = _dbContext.Users.Where(u => u.Id == a.Doctor.UserId).Select(u => u.FirstName + " " + u.LastName).First(),
-                    ClinicName = a.Clinic.Name
-                })
-                .FirstAsync(cancellationToken);
-
-            await send(new AppointmentNotificationContext
-            {
-                AppointmentId = dto.Id,
-                PatientEmail = info.PatientEmail,
-                PatientPhoneNumber = info.PatientPhoneNumber,
-                PatientName = dto.PatientName,
-                DoctorName = info.DoctorName,
-                ClinicName = info.ClinicName,
-                ServiceName = dto.ServiceName,
-                StartDateTimeLocal = dto.StartDateTime
-            }, cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Njoftimi i pacientit dështoi për terminin {AppointmentId}; veprimi mbetet i vlefshëm", dto.Id);
         }
     }
 

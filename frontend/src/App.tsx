@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useOnlineStatus } from './pwa/useOnlineStatus'
 import OfflineFallback from './components/OfflineFallback'
 import ErrorBoundary from './components/ErrorBoundary'
+import ScrollToTop from './components/ScrollToTop'
 import Logo from './components/Logo'
 import Layout from './components/Layout'
 import PatientLayout from './components/PatientLayout'
@@ -28,6 +29,7 @@ import DoctorCalendarPage from './pages/DoctorCalendarPage'
 import DoctorAppointmentDetailPage from './pages/DoctorAppointmentDetailPage'
 import WorkingSchedulePage from './pages/WorkingSchedulePage'
 import UnavailabilityPage from './pages/UnavailabilityPage'
+import DoctorProfilePage from './pages/DoctorProfilePage'
 import MyClinicsPage from './pages/MyClinicsPage'
 import AdminAppointmentsPage from './pages/AdminAppointmentsPage'
 import ClinicDetailLayout from './components/ClinicDetailLayout'
@@ -67,6 +69,7 @@ export default function App() {
 
   return (
     <ErrorBoundary fallback={<RouteCrashFallback />}>
+      <ScrollToTop />
       <Routes>
       <Route path="/hyr" element={<LoginPage />} />
       <Route path="/konfirmo-email" element={<ConfirmEmailPage />} />
@@ -98,6 +101,7 @@ export default function App() {
         <Route path="/mjeku-panel/terminet/:id" element={<DoctorAppointmentDetailPage />} />
         <Route path="/mjeku-panel/orari" element={<WorkingSchedulePage />} />
         <Route path="/mjeku-panel/mungesat" element={<UnavailabilityPage />} />
+        <Route path="/mjeku-panel/profili" element={<DoctorProfilePage />} />
       </Route>
       <Route
         element={

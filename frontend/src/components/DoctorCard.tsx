@@ -2,15 +2,23 @@ import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { Doctor } from '../lib/types'
-import { initials, specialtyIcon, specialtyLabel } from './ui'
+import { specialtyIcon } from './ui'
+import DoctorAvatar from './DoctorAvatar'
+import { useSpecialtyLabel } from '../context/SpecialtyNamesContext'
 
-export default function DoctorCard({ doctor }: { doctor: Doctor }) {
+/** `to` overrides the default profile link, e.g. to carry a preselected service. */
+export default function DoctorCard({ doctor, to }: { doctor: Doctor; to?: string }) {
   const { t } = useTranslation('patient')
+  const specialtyLabel = useSpecialtyLabel()
   return (
-    <Link to={`/mjeku/${doctor.id}`} className="card doctor-card" data-reveal>
-      <div className="doctor-card__avatar" aria-hidden>
-        {initials(doctor.firstName, doctor.lastName)}
-      </div>
+    <Link to={to ?? `/mjeku/${doctor.id}`} className="card doctor-card" data-reveal>
+      <DoctorAvatar
+        className="doctor-card__avatar"
+        firstName={doctor.firstName}
+        lastName={doctor.lastName}
+        photoUrl={doctor.photoUrl}
+        displayPx={56}
+      />
       <div className="doctor-card__body">
         <h3 className="doctor-card__name">Dr. {doctor.firstName} {doctor.lastName}</h3>
         <div className="doctor-card__specs">

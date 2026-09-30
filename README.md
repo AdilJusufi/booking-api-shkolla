@@ -26,6 +26,7 @@ mbi databazë reale.
 11. [Testet](#testet)
 12. [Known limitations](#known-limitations)
 13. [Hapat e ardhshëm](#hapat-e-ardhshëm)
+14. [Mjediset (dev vs prodhim)](#mjediset)
 
 ---
 
@@ -347,6 +348,14 @@ dhe tenant isolation i ClinicAdmin (403 për klinikë të huaj).
 4. Raporte më të pasura për klinikat (no-show rate, orët më të kërkuara).
 5. Vlerësimet/recensionet e doktorëve.
 6. Multi-gjuhësi (sq/en/sr) në mesazhet e gabimeve.
+
+## Mjediset
+
+Projekti ka dy mjedise plotësisht të ndara — `main` (prodhim, patientë realë)
+dhe `dev` (testim, të dhëna fiktive), secili me Vercel/Render/Neon të veta.
+Detajet e plota — variablat e mjedisit, workflow-i i branch-eve, dhe pse `dev`
+drejtohet me `ASPNETCORE_ENVIRONMENT=Production` — janë në
+[`ENVIRONMENTS.md`](./ENVIRONMENTS.md).
 
 ---
 

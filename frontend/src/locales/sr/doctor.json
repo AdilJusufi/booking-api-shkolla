@@ -5,30 +5,30 @@
     "navUnavailability": "Odsustva",
     "searchPatientPlaceholder": "Pretraga pacijenta...",
     "breadcrumbPanel": "Panel",
-    "breadcrumbSchedule": "Radno vreme"
+    "breadcrumbSchedule": "Radno vreme",
+    "breadcrumbProfile": "Moj profil"
   },
   "userMenu": {
     "mySchedule": "Moj raspored",
-    "unavailability": "Odsustva"
+    "unavailability": "Odsustva",
+    "myProfile": "Moj profil"
   },
   "calendar": {
     "title": "Moj kalendar",
     "viewList": "Lista",
     "viewDay": "Dnevni",
     "dateRange": {
+      "upcoming": "Sledećih 90 dana",
       "today": "Danas",
       "week": "Ove nedelje",
       "month": "Ovog meseca",
       "3months": "Poslednja 3 meseca"
     },
     "statusTabAll": "Svi",
-    "statusTabPending": "Na čekanju",
     "statusTabConfirmed": "Potvrđeno",
     "statusTabCompleted": "Završeno",
     "statTodayLabel": "Danas",
     "statTodayCompletedSub": "{{count}} završeno",
-    "statPendingLabel": "Na čekanju",
-    "statPendingSub": "Potrebna potvrda",
     "statConfirmedTodayLabel": "Potvrđeno danas",
     "statConfirmedTodaySub": "Spremno za posetu",
     "statMonthLabel": "Ovog meseca",
@@ -38,8 +38,6 @@
     "noAppointmentsHint": "Nisu pronađeni termini za ovaj period.",
     "todayPrefix": "DANAS",
     "minutesShort": "min",
-    "confirmCta": "Potvrdi",
-    "markCancelledTitle": "Označi kao otkazano",
     "completeCta": "Završi",
     "markNoShowTitle": "Nije se pojavio/la",
     "badges": {
@@ -50,7 +48,6 @@
       "noShow": "NIJE SE POJAVIO/LA",
       "unknown": "NEPOZNATO"
     },
-    "confirmedToast": "Termin je potvrđen.",
     "completedToast": "Termin je označen kao završen.",
     "noShowToast": "Termin je označen kao nedolazak.",
     "dayView": {
@@ -81,7 +78,7 @@
     "patientNotesLabel": "Napomene pacijenta",
     "statusDescriptionFallback": "Status ovog termina nije prepoznat.",
     "statusDescriptions": {
-      "pending": "Termin čeka vašu potvrdu.",
+      "pending": "Termin je na čekanju potvrde.",
       "confirmed": "Termin je potvrđen. Pacijent je obavešten.",
       "checkedIn": "Pacijent je stigao.",
       "inProgress": "Konsultacija je u toku.",
@@ -103,7 +100,6 @@
       "unknown": "NEPOZNATO"
     },
     "readOnlyNote": "Ovaj termin je samo za čitanje — nema dostupnih radnji.",
-    "confirmPrompt": "Da li ste sigurni da želite da potvrdite ovaj termin?",
     "completePrompt": "Da li ste sigurni da želite da ga označite kao završen?",
     "noShowPrompt": "Da li ste sigurni? Pacijent će biti označen kao odsutan.",
     "saving": "Čuvanje…",
@@ -115,15 +111,13 @@
     "internalNotesHint": "Vidljivo samo medicinskom osoblju.",
     "internalNotesPlaceholder": "Unesite interne napomene ovde...",
     "saveNoteCta": "Sačuvaj Napomenu",
-    "noteSavedToast": "Napomena je sačuvana."
+    "noteSavedToast": "Napomena je sačuvana.",
+    "actionsAvailableAtStart": "„Završi“ i „Nije došao“ postaju dostupni kada termin počne ({{time}})."
   },
   "workingSchedule": {
     "title": "Radno vreme",
     "subtitle": "Upravljajte svojim nedeljnim radnim vremenom i terminima za svaki ogranak.",
     "addScheduleCta": "Dodaj novi raspored",
-    "modeLabel": "Način dodavanja",
-    "modeSingle": "Jedan dan",
-    "modeRange": "Više dana",
     "infoBanner": "Ovi rasporedi su nedeljni šabloni koji se automatski ponavljaju. Možete postaviti određene periode važenja.",
     "loadingLabel": "Učitavanje rasporeda",
     "emptyTitle": "Još niste dodali nijedan raspored.",
@@ -142,7 +136,6 @@
     "addModalTitle": "Dodaj novi raspored",
     "branchLabel": "Ogranak",
     "noBranchesAvailable": "Nema dostupnih ogranaka. Neka administrator prvo doda raspored za ogranak, ili kontaktirajte administratora klinike.",
-    "dayOfWeekLabel": "Dan u nedelji",
     "daysLabel": "Dani",
     "rangeFromLabel": "Od",
     "rangeToLabel": "Do",
@@ -154,7 +147,6 @@
     "validUntilLabel": "Važi do",
     "optional": "(opciono)",
     "saving": "Čuvanje…",
-    "addScheduleSubmit": "Dodaj raspored",
     "addRangeSubmit": "Dodaj raspored za izabrane dane",
     "deleteModalTitle": "Obriši raspored",
     "deleteConfirmText": "Da li ste sigurni da želite da obrišete raspored za <0>{{day}}</0> u <1>{{branch}}</1>?",
@@ -167,13 +159,16 @@
       "durationRange": "Trajanje termina mora biti između 5 i 240 minuta.",
       "validUntilAfterFrom": "Datum isteka mora biti posle datuma početka."
     },
-    "createdToast": "Raspored je dodat.",
     "deactivatedToast": "Raspored je deaktiviran.",
     "deletedToast": "Raspored je obrisan.",
     "rangeCreatedToast_one": "Raspored je dodat za {{count}} dan.",
     "rangeCreatedToast_few": "Raspored je dodat za {{count}} dana.",
     "rangeCreatedToast_other": "Raspored je dodat za {{count}} dana.",
-    "rangePartialSuccess": "Raspored je dodat za <0>{{count}} od {{total}}</0> izabranih dana. Detalji za dane koji nisu uspeli:"
+    "rangePartialSuccess": "Raspored je dodat za <0>{{count}} od {{total}}</0> izabranih dana. Detalji za dane koji nisu uspeli:",
+    "editModalTitle": "Izmeni raspored",
+    "saveChangesCta": "Sačuvaj izmene",
+    "updatedToast": "Raspored je ažuriran.",
+    "editAria": "Izmeni raspored za {{day}} u {{branch}}"
   },
   "unavailability": {
     "title": "Odsustva i Slobodni Dani",
@@ -218,5 +213,12 @@
     },
     "createdToast": "Odsustvo je uspešno dodato.",
     "conflictToast": "Imate potvrđene termine tokom ovog perioda. Molimo prvo ih pomerite."
+  },
+  "profile": {
+    "title": "Moj profil",
+    "photoTitle": "Profilna fotografija",
+    "photoDescription": "Vaša fotografija se prikazuje na javnom profilu i u rezultatima pretrage.",
+    "viewPublic": "Pogledaj javni profil",
+    "loadFailed": "Profil nije učitan."
   }
 }

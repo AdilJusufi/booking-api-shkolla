@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using Booking.Application.Common.Models;
 using Booking.Application.Common.Exceptions;
 using Booking.Application.Common.Interfaces;
 using Booking.Application.Common.Security;
@@ -16,12 +17,26 @@ using FluentValidation.Results;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Booking.Infrastructure.Services;
 
 public class ClinicAdminService : IClinicAdminService
 {
+    /// <summary>
+    /// Formatet e lejuara për logon e klinikës. SVG mungon me qëllim: është një dokument
+    /// XML që mund të mbajë skript brenda, dhe një logo s'ka nevojë për të.
+    /// </summary>
+    private static readonly string[] CloudinaryAllowedFormats = ["png", "jpg", "jpeg", "webp"];
+
+    /// <summary>
+    /// 2 MB — e njëjta vlerë si LOGO_MAX_BYTES te ClinicSettingsPage.tsx, qëllimisht jo më
+    /// e lartë. Kontrolli në frontend ekziston për mesazhin e qartë para ngarkimit; ky është
+    /// i njëjti kufi i vendosur aty ku s'anashkalohet dot. Dy numra të ndryshëm do të thoshin
+    /// se ekziston një brez ku UI-ja thotë "shumë i madh" ndërsa serveri do ta kishte pranuar
+    /// — ose e kundërta, ku UI-ja pranon dhe Cloudinary refuzon pa shpjegim.
+    /// </summary>
+    private const long CloudinaryMaxFileSizeBytes = 2 * 1024 * 1024;
+
     private readonly BookingDbContext _dbContext;
     private readonly TenantAccessService _tenantAccess;
     private readonly IScheduleService _scheduleService;
@@ -29,7 +44,7 @@ public class ClinicAdminService : IClinicAdminService
     private readonly ITimeZoneService _timeZoneService;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly UserManager<ApplicationUser> _userManager;
-    private readonly CloudinarySettings _cloudinarySettings;
+    private readonly CloudinaryUploadSigner _uploadSigner;
     private readonly IAppointmentNotificationService _notificationService;
     private readonly ILogger<ClinicAdminService> _logger;
 
@@ -41,7 +56,7 @@ public class ClinicAdminService : IClinicAdminService
         ITimeZoneService timeZoneService,
         IDateTimeProvider dateTimeProvider,
         UserManager<ApplicationUser> userManager,
-        IOptions<CloudinarySettings> cloudinarySettings,
+        CloudinaryUploadSigner uploadSigner,
         IAppointmentNotificationService notificationService,
         ILogger<ClinicAdminService> logger)
     {
@@ -52,7 +67,7 @@ public class ClinicAdminService : IClinicAdminService
         _timeZoneService = timeZoneService;
         _dateTimeProvider = dateTimeProvider;
         _userManager = userManager;
-        _cloudinarySettings = cloudinarySettings.Value;
+        _uploadSigner = uploadSigner;
         _notificationService = notificationService;
         _logger = logger;
     }
@@ -133,33 +148,15 @@ public class ClinicAdminService : IClinicAdminService
     {
         await _tenantAccess.EnsureCanManageClinicAsync(clinicId, cancellationToken);
 
-        if (string.IsNullOrWhiteSpace(_cloudinarySettings.CloudName)
-            || string.IsNullOrWhiteSpace(_cloudinarySettings.ApiKey)
-            || string.IsNullOrWhiteSpace(_cloudinarySettings.ApiSecret))
-        {
-            throw new InvalidOperationException(
-                "Cloudinary nuk është konfiguruar — mungon CloudName/ApiKey/ApiSecret.");
-        }
-
-        var timestamp = new DateTimeOffset(_dateTimeProvider.UtcNow, TimeSpan.Zero).ToUnixTimeSeconds();
-        var folder = $"clinics/{clinicId}/logo";
-
-        // Cloudinary signed uploads: nënshkruhen VETËM parametrat që dërgohen te
-        // upload-i (përjashto file, cloud_name, api_key, resource_type) — të
-        // renditur alfabetikisht si "key=value" të bashkuar me "&", plus api_secret,
-        // të hashuar me SHA-1. https://cloudinary.com/documentation/signatures
-        var paramsToSign = $"folder={folder}&timestamp={timestamp}";
-        var toSign = paramsToSign + _cloudinarySettings.ApiSecret;
-        var signature = Convert.ToHexString(SHA1.HashData(Encoding.UTF8.GetBytes(toSign))).ToLowerInvariant();
-
-        return new CloudinarySignatureDto
-        {
-            Signature = signature,
-            Timestamp = timestamp,
-            ApiKey = _cloudinarySettings.ApiKey,
-            CloudName = _cloudinarySettings.CloudName,
-            Folder = folder
-        };
+        // allowed_formats dhe max_file_size janë brenda nënshkrimit, jo thjesht kontrolle
+        // në frontend: kufijtë te ClinicSettingsPage i mbron vetëm një përdorues që përdor
+        // UI-në. Nënshkrimi lëshohet për këdo që ka rolin e adminit të klinikës, dhe pastaj
+        // ngarkimi shkon DREJT E te Cloudinary pa kaluar më nga API-ja jonë — pra pa këto
+        // dy fusha, kushdo me nënshkrimin në dorë mund të ngarkonte çfarëdo formati dhe
+        // çfarëdo madhësie në dosjen e klinikës së vet. Duke qenë të nënshkruara,
+        // Cloudinary i zbaton vetë dhe klienti s'i ndryshon dot: çdo prekje e vlerës e
+        // prish nënshkrimin dhe ngarkimi refuzohet. (Shih CloudinaryUploadSigner.)
+        return _uploadSigner.Sign($"clinics/{clinicId}/logo", CloudinaryAllowedFormats, CloudinaryMaxFileSizeBytes);
     }
 
     public async Task<ClinicBranchDto> AddBranchAsync(
@@ -593,6 +590,7 @@ public class ClinicAdminService : IClinicAdminService
         Guid doctorId, CreateWorkingScheduleRequest request, CancellationToken cancellationToken = default)
     {
         await _tenantAccess.EnsureCanManageDoctorAsync(doctorId, cancellationToken);
+        await EnsureCanManageBranchAsync(request.ClinicBranchId, cancellationToken);
 
         var schedule = await _scheduleService.AddScheduleAsync(doctorId, request, cancellationToken);
 
@@ -601,6 +599,45 @@ public class ClinicAdminService : IClinicAdminService
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return schedule;
+    }
+
+    public async Task<WorkingScheduleDto> UpdateDoctorScheduleAsync(
+        Guid doctorId, Guid scheduleId, UpdateWorkingScheduleRequest request, CancellationToken cancellationToken = default)
+    {
+        // Tenant: admini i klinikës X menaxhon vetëm doktorët e X; ScheduleService e kufizon
+        // më tej orarin te ky doktor (scheduleId i një doktori tjetër → 404).
+        await _tenantAccess.EnsureCanManageDoctorAsync(doctorId, cancellationToken);
+
+        var before = await _dbContext.DoctorWorkingSchedules
+            .Where(ws => ws.Id == scheduleId && ws.DoctorId == doctorId)
+            .Select(ws => new { ws.ClinicBranchId, ws.DayOfWeek, ws.StartTime, ws.EndTime, ws.SlotDurationMinutes, ws.ValidFrom, ws.ValidUntil })
+            .FirstOrDefaultAsync(cancellationToken)
+            ?? throw new NotFoundException("DoctorWorkingSchedule", scheduleId);
+
+        // Doktori mund të punojë në disa klinika: edhe dega e vjetër edhe e reja duhet t'i
+        // përkasin klinikës së këtij admini, përndryshe prek orarin e një klinike tjetër.
+        await EnsureCanManageBranchAsync(before.ClinicBranchId, cancellationToken);
+        await EnsureCanManageBranchAsync(request.ClinicBranchId, cancellationToken);
+
+        var schedule = await _scheduleService.UpdateScheduleAsync(doctorId, scheduleId, request, cancellationToken);
+
+        _auditService.Record("SCHEDULE_UPDATED_BY_ADMIN", nameof(DoctorWorkingSchedule), scheduleId.ToString(), before,
+            new { request.ClinicBranchId, request.DayOfWeek, request.StartTime, request.EndTime, request.SlotDurationMinutes, request.ValidFrom, request.ValidUntil });
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return schedule;
+    }
+
+    /// <summary>Dega i përket një klinike që ky admin e menaxhon (SuperAdmin kalon gjithmonë).</summary>
+    private async Task EnsureCanManageBranchAsync(Guid branchId, CancellationToken cancellationToken)
+    {
+        var clinicId = await _dbContext.ClinicBranches
+            .Where(b => b.Id == branchId)
+            .Select(b => (Guid?)b.ClinicId)
+            .FirstOrDefaultAsync(cancellationToken)
+            ?? throw new NotFoundException("ClinicBranch", branchId);
+
+        await _tenantAccess.EnsureCanManageClinicAsync(clinicId, cancellationToken);
     }
 
     public async Task<UnavailabilityDto> AddDoctorUnavailabilityAsync(
@@ -826,6 +863,7 @@ public class ClinicAdminService : IClinicAdminService
                 PhoneNumber = _dbContext.Users.Where(u => u.Id == d.UserId).Select(u => u.PhoneNumber).First(),
                 LicenseNumber = d.LicenseNumber,
                 Biography = d.Biography,
+                PhotoUrl = d.PhotoUrl,
                 YearsOfExperience = d.YearsOfExperience,
                 IsVerified = d.IsVerified,
                 IsActive = d.IsActive,

@@ -53,8 +53,9 @@ public class ExceptionHandlingMiddleware
             ForbiddenAccessException => CreateProblem(
                 StatusCodes.Status403Forbidden, "forbidden", "Qasja u refuzua", exception.Message),
 
-            ConflictException conflictException => CreateProblem(
-                StatusCodes.Status409Conflict, conflictException.ErrorCode, "Konflikt", exception.Message),
+            ConflictException conflictException => WithDetails(
+                CreateProblem(StatusCodes.Status409Conflict, conflictException.ErrorCode, "Konflikt", exception.Message),
+                conflictException.Details),
 
             BookingRuleException bookingRuleException => CreateProblem(
                 StatusCodes.Status422UnprocessableEntity, bookingRuleException.ErrorCode,
@@ -62,6 +63,12 @@ public class ExceptionHandlingMiddleware
 
             DomainException domainException => CreateProblem(
                 StatusCodes.Status400BadRequest, domainException.ErrorCode, "Kërkesë e pavlefshme", exception.Message),
+
+            // Gabim konfigurimi i mjedisit, jo i kërkesës — log-u i qartë shkruhet te
+            // CloudinaryUploadSigner, aty ku dihet se cila vlerë mungon.
+            UploadsNotConfiguredException => CreateProblem(
+                StatusCodes.Status503ServiceUnavailable, UploadsNotConfiguredException.ErrorCode,
+                "Shërbimi i padisponueshëm", exception.Message),
 
             _ => CreateProblem(
                 StatusCodes.Status500InternalServerError, "internal-error", "Gabim i brendshëm",
@@ -94,6 +101,19 @@ public class ExceptionHandlingMiddleware
         // `code` është i njëjti identifikues si pjesa e fundit e `type`, por i lexueshëm
         // drejtpërdrejt nga klienti pa e ndarë URL-në.
         problem.Extensions["code"] = errorCode;
+        return problem;
+    }
+
+    private static ProblemDetails WithDetails(ProblemDetails problem, IReadOnlyDictionary<string, object?>? details)
+    {
+        if (details is not null)
+        {
+            foreach (var (key, value) in details)
+            {
+                problem.Extensions[key] = value;
+            }
+        }
+
         return problem;
     }
 

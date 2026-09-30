@@ -12,12 +12,15 @@ import type {
   AuditLog,
   AuditLogQuery,
   AuthResponse,
+  AvailableDay,
   AvailableSlot,
+  UpdateWorkingScheduleRequest,
   Clinic,
   ClinicBranch,
   ClinicDetails,
   ClinicReport,
   CloudinarySignature,
+  DoctorSelfProfile,
   CreateAppointmentRequest,
   CreateBranchRequest,
   CreateClinicRequest,
@@ -50,6 +53,12 @@ import type {
   UpdateSpecialtyRequest,
 } from './types'
 
+import { withRefreshLock } from './crossTabLock'
+
+// The localhost fallback only ever matters in `vite dev`/tests, where
+// .env.development (or the test env) is expected to set VITE_API_URL anyway.
+// A `vite build` output missing it never reaches this: main.tsx renders
+// ConfigErrorPage instead of mounting anything that calls into this module.
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5080'
 
 const TOKEN_KEY = 'rezervo.accessToken'
@@ -98,7 +107,7 @@ export class ApiError extends Error {
 
 /** Raw, non-intercepted call — used only by the refresh itself so a failed
  * refresh can never recursively trigger another refresh attempt. */
-async function refreshAccessToken(): Promise<string> {
+async function postRefreshToken(): Promise<string> {
   const refreshToken = getRefreshToken()
   if (!refreshToken) throw new ApiError('Sesioni juaj ka skaduar.', 401)
 
@@ -116,6 +125,34 @@ async function refreshAccessToken(): Promise<string> {
   setToken(data.accessToken)
   setRefreshToken(data.refreshToken)
   return data.accessToken
+}
+
+/**
+ * Rifreskim i koordinuar mes skedave.
+ *
+ * `refreshInFlight` më poshtë dedupikon brenda NJË skede. Refresh token-i, ndërkaq, jeton
+ * në localStorage dhe e ndajnë të gjitha skedat — pra dy skeda paraqisnin të njëjtin token,
+ * e para e rrotullonte, dhe e dyta paraqiste një token të revokuar. Backend-i e lexon këtë
+ * si vjedhje token-i dhe i revokon të gjitha sesionet: të dyja skedat dilnin nga llogaria,
+ * për faktin krejt të pafajshëm se dikush kishte dy skeda hapur.
+ *
+ * Bllokimi e serializon rifreskimin nëpër skeda; kontrolli brenda tij e bën të panevojshme
+ * thirrjen e dytë. Skeda që pret e merr bllokimit VETËM pasi e para ka mbaruar, e sheh
+ * token-in tashmë të ndryshuar, dhe e kthen atë pa prekur fare rrjetin. Backend-i sheh
+ * saktësisht një rifreskim për rotacion, ndaj s'ka më asgjë që i ngjan ripërdorimit —
+ * pa e prekur aspak zbulimin e vjedhjes, i cili vazhdon të mbrojë rastin e vërtetë.
+ */
+async function refreshAccessToken(): Promise<string> {
+  const tokenBeforeWaiting = getToken()
+
+  return withRefreshLock(async () => {
+    const tokenNow = getToken()
+    if (tokenNow && tokenNow !== tokenBeforeWaiting) {
+      // Një skedë tjetër e rrotulloi ndërsa prisnim — ky është pikërisht rasti i garës.
+      return tokenNow
+    }
+    return postRefreshToken()
+  })
 }
 
 // Concurrent 401s share one in-flight refresh instead of each racing the backend.
@@ -269,16 +306,25 @@ export const api = {
       },
     }),
 
+  // Profiles are public and read-only (Google indexes them); no token is sent, so an
+  // expired session can't turn a public page into a "session expired" bounce.
   getClinic: (id: string) => request<ClinicDetails>(`/api/clinics/${id}`),
   getClinicDoctors: (id: string) => request<Doctor[]>(`/api/clinics/${id}/doctors`),
   getClinicServices: (id: string) => request<MedicalService[]>(`/api/clinics/${id}/services`),
 
-  searchDoctors: (params: { searchTerm?: string; specialtyId?: string; clinicId?: string; page?: number }) =>
+  searchDoctors: (params: {
+    searchTerm?: string
+    specialtyId?: string
+    clinicId?: string
+    city?: string
+    page?: number
+  }) =>
     request<PagedResult<Doctor>>('/api/doctors', {
       query: {
         SearchTerm: params.searchTerm,
         SpecialtyId: params.specialtyId,
         ClinicId: params.clinicId,
+        City: params.city,
         Page: params.page ?? 1,
         PageSize: 12,
       },
@@ -286,9 +332,31 @@ export const api = {
 
   getDoctor: (id: string) => request<DoctorDetails>(`/api/doctors/${id}`),
 
+  // --- Fotoja e mjekut (vetë mjeku ose admini i klinikës së tij) ---
+  getMyDoctorProfile: () => request<DoctorSelfProfile>('/api/doctor/me', { auth: true }),
+
+  getDoctorPhotoUploadSignature: (doctorId: string) =>
+    request<CloudinarySignature>(`/api/doctors/${doctorId}/photo/upload-signature`, { auth: true }),
+
+  /** null e heq foton. Serveri pranon vetëm URL nga cloud-i ynë dhe dosja e këtij mjeku. */
+  setDoctorPhoto: (doctorId: string, photoUrl: string | null) =>
+    request<{ photoUrl?: string | null }>(`/api/doctors/${doctorId}/photo`, {
+      method: 'PUT',
+      body: { photoUrl },
+      auth: true,
+    }),
+
+  // Availability is what makes booking possible — sign-in required on the backend.
   getAvailableSlots: (doctorId: string, branchId: string, serviceId: string, date: string) =>
     request<AvailableSlot[]>(`/api/doctors/${doctorId}/available-slots`, {
+      auth: true,
       query: { BranchId: branchId, ServiceId: serviceId, Date: date },
+    }),
+
+  getAvailableDays: (doctorId: string, branchId: string, serviceId: string, from: string, to: string) =>
+    request<AvailableDay[]>(`/api/doctors/${doctorId}/available-days`, {
+      auth: true,
+      query: { BranchId: branchId, ServiceId: serviceId, From: from, To: to },
     }),
 
   // --- Pacient (kërkon token) ---
@@ -351,9 +419,6 @@ export const api = {
   getDoctorAppointmentDetail: (id: string) =>
     request<DoctorAppointment>(`/api/doctor/appointments/${id}`, { auth: true }),
 
-  confirmDoctorAppointment: (id: string) =>
-    request<DoctorAppointment>(`/api/doctor/appointments/${id}/confirm`, { method: 'POST', auth: true }),
-
   completeDoctorAppointment: (id: string) =>
     request<DoctorAppointment>(`/api/doctor/appointments/${id}/complete`, { method: 'POST', auth: true }),
 
@@ -377,6 +442,9 @@ export const api = {
   getMyBranches: () => request<DoctorBranch[]>('/api/doctor/branches', { auth: true }),
 
   getWorkingSchedules: () => request<DoctorWorkingSchedule[]>('/api/doctor/working-schedules', { auth: true }),
+
+  updateWorkingSchedule: (id: string, payload: UpdateWorkingScheduleRequest) =>
+    request<DoctorWorkingSchedule>(`/api/doctor/working-schedules/${id}`, { method: 'PUT', body: payload, auth: true }),
 
   createWorkingSchedule: (payload: CreateWorkingScheduleRequest) =>
     request<DoctorWorkingSchedule>('/api/doctor/working-schedules', { method: 'POST', body: payload, auth: true }),
@@ -564,6 +632,13 @@ export const api = {
 
   getDoctorSchedulesAsAdmin: (doctorId: string) =>
     request<DoctorWorkingSchedule[]>(`/api/admin/doctors/${doctorId}/working-schedules`, { auth: true }),
+
+  updateDoctorScheduleAsAdmin: (doctorId: string, scheduleId: string, payload: UpdateWorkingScheduleRequest) =>
+    request<DoctorWorkingSchedule>(`/api/admin/doctors/${doctorId}/working-schedules/${scheduleId}`, {
+      method: 'PUT',
+      body: payload,
+      auth: true,
+    }),
 
   createDoctorScheduleAsAdmin: (doctorId: string, payload: CreateWorkingScheduleRequest) =>
     request<DoctorWorkingSchedule>(`/api/admin/doctors/${doctorId}/working-schedules`, {

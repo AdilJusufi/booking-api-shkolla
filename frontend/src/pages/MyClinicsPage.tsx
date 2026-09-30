@@ -167,7 +167,7 @@ function ClinicCard({ data }: { data: ClinicCardData }) {
   const overflow = doctors.length - shownDoctors.length
 
   return (
-    <div className="admin-card" data-reveal>
+    <div className={`admin-card ${isPending ? '' : 'card-link'}`} data-reveal>
       <span className={`admin-card__status ${isPending ? 'admin-card__status--pending' : 'admin-card__status--approved'}`}>
         {isPending ? t('myClinics.card.statusPending') : t('myClinics.card.statusApproved')}
       </span>
@@ -224,7 +224,7 @@ function ClinicCard({ data }: { data: ClinicCardData }) {
             <Lock size={13} strokeWidth={1.5} /> {t('myClinics.card.manageCta')}
           </span>
         ) : (
-          <Link to={`/admin-panel/klinikat/${clinic.id}`} className="admin-card__manage">
+          <Link to={`/admin-panel/klinikat/${clinic.id}`} className="admin-card__manage card-link__target">
             {t('myClinics.card.manageCta')} <ArrowRight size={14} strokeWidth={1.5} />
           </Link>
         )}

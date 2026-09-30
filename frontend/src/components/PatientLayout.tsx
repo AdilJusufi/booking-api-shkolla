@@ -31,7 +31,7 @@ export default function PatientLayout() {
           <Logo variant="horizontal" size={26} />
         </Link>
 
-        <div className="patient-topbar__crumbs">
+        <div className="patient-topbar__crumbs hide-mobile">
           <Link to="/llogaria">{t('layout.breadcrumbAccount')}</Link>
           <span>›</span>
           {isProfile ? (
@@ -54,7 +54,7 @@ export default function PatientLayout() {
         <div className="patient-topbar__right">
           <button
             type="button"
-            className="theme-toggle"
+            className="theme-toggle hide-mobile"
             aria-label={theme === 'dark' ? tCommon('theme.switchToLight') : tCommon('theme.switchToDark')}
             onClick={toggleTheme}
           >

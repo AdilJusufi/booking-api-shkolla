@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using Booking.Application.Common.Interfaces;
 using Booking.Application.Common.Models;
 using Booking.Application.Features.Auth;
+using Booking.Domain.Enums;
 using Booking.Infrastructure.Notifications;
 using Booking.Infrastructure.Persistence;
 using FluentAssertions;
@@ -202,46 +203,134 @@ public class EmailAbuseLimitsTests
         afterOneMore.Should().HaveCount(afterLimit.Count, "tavani ditor për-adresë duhet ta ketë refuzuar këtë");
     }
 
-    // ---------- Tavani ditor GLOBAL ----------
+    // ---------- Tavani për QËLLIM, mbi dritare rrëshqitëse ----------
 
     [Fact]
-    public async Task GlobalDailyLimit_BlocksAfterConfiguredCount_AcrossDistinctAddresses()
+    public async Task PurposeWindowLimit_BlocksAfterConfiguredCount_AcrossDistinctAddresses()
     {
-        // EmailSendAttempts ndahet me GJITHË testet e tjera në këtë collection (i njëjti
-        // DB), kështu që "dita" e këtij testi caktohet nga vetë ManualClock-u (datë
-        // rastësore — shih ManualClock) dhe limiti llogaritet mbi numrin AKTUAL të
-        // rreshtave për ATË ditë specifike, jo mbi 0. Në praktikë kjo është pothuajse
-        // gjithmonë 0 (ditë e re rastësore), por testi mbetet korrekt edhe nëse jo.
+        // EmailSendAttempts ndahet me gjithë testet e tjera në këtë collection (i njëjti DB).
+        // ManualClock zgjedh një datë rastësore, ndaj rreshtat e testeve të tjera bien
+        // pothuajse gjithmonë jashtë kësaj dritareje — por numërohen gjithsesi, që testi të
+        // mbetet korrekt edhe kur nuk bien.
         const int allowedMore = 2;
         var clock = new ManualClock();
-        var existingForThisDay = await CountEmailSendAttemptsOnDayAsync(clock.UtcNow.Date);
-        var limit = existingForThisDay + allowedMore;
+        var existing = await CountAttemptsInWindowAsync(
+            EmailSendPurpose.EmailConfirmation, clock.UtcNow.AddHours(-24));
+        var limit = existing + allowedMore;
 
-        await using var factory = WithManualClock(clock, globalDailyLimit: limit);
+        await using var factory = WithManualClock(
+            clock, purposeWindowLimit: (EmailSendPurpose.EmailConfirmation, limit));
         var client = factory.CreateClient();
 
-        // Adresa TË NDRYSHME — asnjë s'e prek cooldown-in/tavanin për-adresë të vetes,
-        // kështu që vetëm tavani global mund t'i bllokojë.
+        // Adresa TË NDRYSHME — asnjë s'e prek cooldown-in ose tavanin për-adresë të vetes,
+        // kështu që vetëm tavani për-qëllim mund t'i bllokojë.
         for (var i = 0; i < allowedMore; i++)
         {
-            var email = $"tavan-global-{i}-{Guid.NewGuid():N}@test.dev";
+            var email = $"tavan-qellim-{i}-{Guid.NewGuid():N}@test.dev";
             await TestHelpers.RegisterPatientAsync(client, email);
             var response = await client.PostAsJsonAsync(
                 "/api/auth/resend-confirmation", new ResendConfirmationRequest(email), TestHelpers.Json);
             response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-            var inbox = await DevEmailsAsync(client, email);
-            inbox.Should().HaveCount(2, "regjistrimi + ridërgimi i lejuar");
+            (await DevEmailsAsync(client, email)).Should().HaveCount(2, "regjistrimi + ridërgimi i lejuar");
         }
 
-        var blockedEmail = $"tavan-global-blloku-{Guid.NewGuid():N}@test.dev";
+        var blockedEmail = $"tavan-qellim-blloku-{Guid.NewGuid():N}@test.dev";
         await TestHelpers.RegisterPatientAsync(client, blockedEmail);
-        var blockedResponse = await client.PostAsJsonAsync(
+        var blocked = await client.PostAsJsonAsync(
             "/api/auth/resend-confirmation", new ResendConfirmationRequest(blockedEmail), TestHelpers.Json);
-        blockedResponse.StatusCode.Should().Be(HttpStatusCode.NoContent, "përgjigja mbetet e njëjtë edhe nën tavanin global");
+        blocked.StatusCode.Should().Be(HttpStatusCode.NoContent, "përgjigja mbetet e njëjtë edhe nën tavan");
 
-        var blockedInbox = await DevEmailsAsync(client, blockedEmail);
-        blockedInbox.Should().HaveCount(1, "vetëm regjistrimi — ridërgimi u refuzua nga tavani global");
+        (await DevEmailsAsync(client, blockedEmail)).Should().HaveCount(
+            1, "vetëm regjistrimi — ridërgimi u refuzua nga tavani për-qëllim");
+    }
+
+    /// <summary>
+    /// Vetë arsyeja e ndarjes sipas qëllimit, dhe skenari 8-adresësh nga rishikimi: më parë
+    /// një numërues i vetëm i përbashkët do të thoshte se shterja e tij me ridërgime
+    /// konfirmimi bllokonte NË HESHTJE rivendosjen e password-it për të gjithë përdoruesit.
+    /// </summary>
+    [Fact]
+    public async Task ExhaustingOnePurpose_DoesNotStarveTheOther()
+    {
+        var clock = new ManualClock();
+        var existingConfirmations = await CountAttemptsInWindowAsync(
+            EmailSendPurpose.EmailConfirmation, clock.UtcNow.AddHours(-24));
+
+        // Tavan i ngushtë vetëm për konfirmimet; PasswordReset mbetet me parazgjedhjen e vet.
+        await using var factory = WithManualClock(
+            clock, purposeWindowLimit: (EmailSendPurpose.EmailConfirmation, existingConfirmations + 1));
+        var client = factory.CreateClient();
+
+        // Shtere buxhetin e konfirmimeve.
+        var firstEmail = $"shterje-{Guid.NewGuid():N}@test.dev";
+        await TestHelpers.RegisterPatientAsync(client, firstEmail);
+        await client.PostAsJsonAsync(
+            "/api/auth/resend-confirmation", new ResendConfirmationRequest(firstEmail), TestHelpers.Json);
+
+        var starvedEmail = $"shterje-bllok-{Guid.NewGuid():N}@test.dev";
+        await TestHelpers.RegisterPatientAsync(client, starvedEmail);
+        await client.PostAsJsonAsync(
+            "/api/auth/resend-confirmation", new ResendConfirmationRequest(starvedEmail), TestHelpers.Json);
+        (await DevEmailsAsync(client, starvedEmail)).Should().HaveCount(
+            1, "buxheti i konfirmimeve duhet të jetë shterur tashmë");
+
+        // Rivendosja e password-it duhet të mbetet krejt e paprekur — adresë tjetër, pra
+        // as cooldown-i për-adresë nuk hyn në lojë.
+        var resetEmail = $"rivendosje-{Guid.NewGuid():N}@test.dev";
+        await TestHelpers.RegisterPatientAsync(client, resetEmail);
+        var before = (await DevEmailsAsync(client, resetEmail)).Count;
+
+        clock.UtcNow = clock.UtcNow.AddMinutes(5);
+        var reset = await client.PostAsJsonAsync(
+            "/api/auth/forgot-password", new ForgotPasswordRequest(resetEmail), TestHelpers.Json);
+        reset.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        (await DevEmailsAsync(client, resetEmail)).Should().HaveCount(
+            before + 1,
+            "rivendosja e password-it ka buxhetin e vet — shterja e konfirmimeve s'duhet ta prekë");
+    }
+
+    /// <summary>
+    /// Dritarja rrëshqet, nuk pret mesnatën. Dritarja vendoset 2-orëshe dhe sahati çohet
+    /// 3 orë përpara BRENDA së njëjtës ditë UTC (ManualClock nis në 08:00): me numërimin e
+    /// vjetër kalendarik kjo do të mbetej ende e bllokuar, sepse dita s'ka ndryshuar.
+    /// </summary>
+    [Fact]
+    public async Task RollingWindow_RecoversWithoutWaitingForMidnight()
+    {
+        var clock = new ManualClock();
+        var existing = await CountAttemptsInWindowAsync(
+            EmailSendPurpose.EmailConfirmation, clock.UtcNow.AddHours(-2));
+
+        await using var factory = WithManualClock(
+            clock,
+            perAddressCooldownMinutes: 0,
+            purposeWindowLimit: (EmailSendPurpose.EmailConfirmation, existing + 1),
+            purposeWindowHours: 2);
+        var client = factory.CreateClient();
+
+        var firstEmail = $"dritare-{Guid.NewGuid():N}@test.dev";
+        await TestHelpers.RegisterPatientAsync(client, firstEmail);
+        await client.PostAsJsonAsync(
+            "/api/auth/resend-confirmation", new ResendConfirmationRequest(firstEmail), TestHelpers.Json);
+
+        var blockedEmail = $"dritare-bllok-{Guid.NewGuid():N}@test.dev";
+        await TestHelpers.RegisterPatientAsync(client, blockedEmail);
+        await client.PostAsJsonAsync(
+            "/api/auth/resend-confirmation", new ResendConfirmationRequest(blockedEmail), TestHelpers.Json);
+        (await DevEmailsAsync(client, blockedEmail)).Should().HaveCount(1, "tavani duhet ta ketë refuzuar");
+
+        var startingDay = clock.UtcNow.Date;
+        clock.UtcNow = clock.UtcNow.AddHours(3);
+        clock.UtcNow.Date.Should().Be(startingDay, "testi provon rrëshqitjen, jo kalimin e mesnatës");
+
+        var recovered = await client.PostAsJsonAsync(
+            "/api/auth/resend-confirmation", new ResendConfirmationRequest(blockedEmail), TestHelpers.Json);
+        recovered.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        (await DevEmailsAsync(client, blockedEmail)).Should().HaveCount(
+            2, "tentativat e vjetra dolën nga dritarja — kapaciteti u kthye pa pritur mesnatën");
     }
 
     // ---------- Ndihmësa ----------
@@ -252,16 +341,18 @@ public class EmailAbuseLimitsTests
     /// fixture-in e përbashkët, i cili s'e ka ManualClock dhe s'duhet t'i ndryshohen numrat.
     /// </summary>
     private WebApplicationFactory<Program> WithManualClock(
-        out ManualClock clock, int? perAddressDailyLimit = null, int? perAddressCooldownMinutes = null, int? globalDailyLimit = null)
+        out ManualClock clock, int? perAddressDailyLimit = null, int? perAddressCooldownMinutes = null,
+        (EmailSendPurpose Purpose, int Limit)? purposeWindowLimit = null, int? purposeWindowHours = null)
     {
         clock = new ManualClock();
-        return WithManualClock(clock, perAddressDailyLimit, perAddressCooldownMinutes, globalDailyLimit);
+        return WithManualClock(clock, perAddressDailyLimit, perAddressCooldownMinutes, purposeWindowLimit, purposeWindowHours);
     }
 
     /// <summary>Mbinguarkim që pranon një ManualClock tashmë të krijuar — p.sh. kur testi
     /// duhet ta pyesë bazën e të dhënave PËR DITËN E ASAJ ORE, para se factory-ja të ngrihet.</summary>
     private WebApplicationFactory<Program> WithManualClock(
-        ManualClock clock, int? perAddressDailyLimit = null, int? perAddressCooldownMinutes = null, int? globalDailyLimit = null)
+        ManualClock clock, int? perAddressDailyLimit = null, int? perAddressCooldownMinutes = null,
+        (EmailSendPurpose Purpose, int Limit)? purposeWindowLimit = null, int? purposeWindowHours = null)
     {
         return _factory.WithWebHostBuilder(builder =>
             builder.ConfigureTestServices(services =>
@@ -269,26 +360,33 @@ public class EmailAbuseLimitsTests
                 services.RemoveAll<IDateTimeProvider>();
                 services.AddSingleton<IDateTimeProvider>(clock);
 
-                if (perAddressDailyLimit is not null || perAddressCooldownMinutes is not null || globalDailyLimit is not null)
+                if (perAddressDailyLimit is not null || perAddressCooldownMinutes is not null
+                    || purposeWindowLimit is not null || purposeWindowHours is not null)
                 {
                     services.Configure<EmailAbuseLimitSettings>(o =>
                     {
                         if (perAddressDailyLimit is not null) o.PerAddressDailyLimit = perAddressDailyLimit.Value;
                         if (perAddressCooldownMinutes is not null) o.PerAddressCooldownMinutes = perAddressCooldownMinutes.Value;
-                        if (globalDailyLimit is not null) o.GlobalDailyLimit = globalDailyLimit.Value;
+                        if (purposeWindowLimit is not null)
+                        {
+                            o.PurposeWindowLimits[purposeWindowLimit.Value.Purpose] = purposeWindowLimit.Value.Limit;
+                        }
+                        if (purposeWindowHours is not null) o.PurposeWindowHours = purposeWindowHours.Value;
                     });
                 }
             }));
     }
 
-    /// <summary>Numri i EmailSendAttempts për ditën UTC që fillon në <paramref name="dayStartUtc"/>.</summary>
-    private async Task<int> CountEmailSendAttemptsOnDayAsync(DateTime dayStartUtc)
+    /// <summary>
+    /// Numri i tentativave për një qëllim brenda dritares rrëshqitëse që nis në
+    /// <paramref name="windowStart"/> — baza ndahet me testet e tjera të collection-it,
+    /// ndaj limitet llogariten mbi numrin AKTUAL, jo mbi zero.
+    /// </summary>
+    private async Task<int> CountAttemptsInWindowAsync(EmailSendPurpose purpose, DateTime windowStart)
     {
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
-        var dayEndUtc = dayStartUtc.AddDays(1);
-        return await db.EmailSendAttempts
-            .CountAsync(a => a.CreatedAt >= dayStartUtc && a.CreatedAt < dayEndUtc);
+        return await db.EmailSendAttempts.CountAsync(a => a.Purpose == purpose && a.CreatedAt >= windowStart);
     }
 
     private static (string Token, string Email) ExtractTokenAndEmail(string body)
