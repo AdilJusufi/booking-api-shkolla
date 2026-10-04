@@ -10,6 +10,7 @@ using Booking.Application.Features.Clinics;
 using Booking.Application.Features.Schedules;
 using Booking.Domain.Entities;
 using Booking.Domain.Enums;
+using Booking.Domain.Exceptions;
 using Booking.Infrastructure.Identity;
 using Booking.Infrastructure.Persistence;
 using FluentValidation;
@@ -124,6 +125,21 @@ public class ClinicAdminService : IClinicAdminService
         var clinic = await _dbContext.Clinics.FirstOrDefaultAsync(c => c.Id == clinicId, cancellationToken)
             ?? throw new NotFoundException("Clinic", clinicId);
 
+        var newLogoUrl = string.IsNullOrWhiteSpace(request.LogoUrl) ? null : request.LogoUrl.Trim();
+
+        // URL-ja që ruhet tashmë NUK rivlerësohet (logo e vjetër, p.sh. te clinics/{id}/logo/... pa
+        // rrënjë, vazhdon të funksionojë; frontend-i e ridërgon në çdo ruajtje të cilësimeve). Çdo
+        // URL e RE duhet të jetë saktësisht {RootFolder}/clinics/{ky id}/logo/current.
+        if (newLogoUrl is not null
+            && newLogoUrl != clinic.LogoUrl
+            && !_uploadSigner.IsOwnImageUrl(
+                newLogoUrl, CloudinaryFolders.ClinicLogo(clinicId), CloudinaryAllowedFormats))
+        {
+            throw new DomainException(
+                "invalid-logo-url",
+                "Logoja duhet të jetë një imazh i ngarkuar në dosjen e kësaj klinike.");
+        }
+
         var oldValues = new { clinic.Name, clinic.Description, clinic.PhoneNumber, clinic.Email, clinic.Website, clinic.LogoUrl };
 
         clinic.Name = request.Name;
@@ -131,7 +147,7 @@ public class ClinicAdminService : IClinicAdminService
         clinic.PhoneNumber = request.PhoneNumber;
         clinic.Email = request.Email;
         clinic.Website = request.Website;
-        clinic.LogoUrl = request.LogoUrl;
+        clinic.LogoUrl = newLogoUrl;
 
         _auditService.Record("CLINIC_UPDATED", nameof(Clinic), clinicId.ToString(), oldValues,
             new { clinic.Name, clinic.Description, clinic.PhoneNumber, clinic.Email, clinic.Website, clinic.LogoUrl });
@@ -156,7 +172,7 @@ public class ClinicAdminService : IClinicAdminService
         // çfarëdo madhësie në dosjen e klinikës së vet. Duke qenë të nënshkruara,
         // Cloudinary i zbaton vetë dhe klienti s'i ndryshon dot: çdo prekje e vlerës e
         // prish nënshkrimin dhe ngarkimi refuzohet. (Shih CloudinaryUploadSigner.)
-        return _uploadSigner.Sign($"clinics/{clinicId}/logo", CloudinaryAllowedFormats, CloudinaryMaxFileSizeBytes);
+        return _uploadSigner.Sign(CloudinaryFolders.ClinicLogo(clinicId), CloudinaryAllowedFormats, CloudinaryMaxFileSizeBytes);
     }
 
     public async Task<ClinicBranchDto> AddBranchAsync(

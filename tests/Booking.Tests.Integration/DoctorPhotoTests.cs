@@ -23,6 +23,7 @@ namespace Booking.Tests.Integration;
 public class DoctorPhotoTests
 {
     private const string CloudName = "test-cloud";
+    private const string Root = "rezervomjekun/test";
     private const string ApiSecret = "test-secret-qe-s-duhet-te-dale-kurre";
 
     private static readonly Guid Arben = DbSeeder.Ids.DoctorArben;
@@ -35,13 +36,14 @@ public class DoctorPhotoTests
         _factory = factory;
     }
 
-    private WebApplicationFactory<Program> WithCloudinary(bool configured) =>
+    private WebApplicationFactory<Program> WithCloudinary(bool configured, string? rootFolder = Root) =>
         _factory.WithWebHostBuilder(builder => builder.ConfigureServices(services =>
             services.PostConfigure<CloudinarySettings>(o =>
             {
                 o.CloudName = configured ? CloudName : "";
                 o.ApiKey = configured ? "123456789" : "";
                 o.ApiSecret = configured ? ApiSecret : "";
+                o.RootFolder = configured ? rootFolder ?? "" : "";
             })));
 
     private static async Task<HttpClient> SignInAsync(WebApplicationFactory<Program> app, string email, string password)
@@ -56,8 +58,9 @@ public class DoctorPhotoTests
     private static Task<HttpClient> DardaniaAdminAsync(WebApplicationFactory<Program> app) =>
         SignInAsync(app, DbSeeder.ClinicAdminEmail, BookingApiFactory.DefaultUserPassword);
 
-    private static string PhotoUrlFor(Guid doctorId, string cloud = CloudName, string ext = "jpg") =>
-        $"https://res.cloudinary.com/{cloud}/image/upload/v1712345678/doctors/{doctorId}/photo/abc123XYZ.{ext}";
+    private static string PhotoUrlFor(
+        Guid doctorId, string cloud = CloudName, string ext = "jpg", string root = Root, string publicId = "current") =>
+        $"https://res.cloudinary.com/{cloud}/image/upload/v1712345678/{root}/doctors/{doctorId}/photo/{publicId}.{ext}";
 
     // ---------- Kush e merr nënshkrimin ----------
 
@@ -74,7 +77,10 @@ public class DoctorPhotoTests
         body.Should().NotContain(ApiSecret);
 
         var signature = JsonSerializer.Deserialize<CloudinarySignatureDto>(body, TestHelpers.Json)!;
-        signature.Folder.Should().Be($"doctors/{Arben}/photo");
+        signature.Folder.Should().Be($"{Root}/doctors/{Arben}/photo");
+        signature.PublicId.Should().Be("current");
+        signature.Overwrite.Should().BeTrue();
+        signature.Invalidate.Should().BeTrue();
         signature.AllowedFormats.Should().Be("jpg,jpeg,png,webp");
         signature.MaxFileSizeBytes.Should().Be(5 * 1024 * 1024);
         signature.CloudName.Should().Be(CloudName);
@@ -230,13 +236,23 @@ public class DoctorPhotoTests
         // Format që s'lejohet (SVG mund të mbajë skript).
         PhotoUrlFor(Arben, ext: "svg"),
         // Host krejt tjetër.
-        $"https://evil.example/doctors/{Arben}/photo/abc.jpg",
+        $"https://evil.example/{Root}/doctors/{Arben}/photo/current.jpg",
         // http, jo https.
         PhotoUrlFor(Arben).Replace("https://", "http://"),
         // Nën-dosje / traversim.
-        $"https://res.cloudinary.com/{CloudName}/image/upload/doctors/{Arben}/photo/../../{Elira}/photo/a.jpg",
+        $"https://res.cloudinary.com/{CloudName}/image/upload/v1/{Root}/doctors/{Arben}/photo/../../{Elira}/photo/current.jpg",
         // Transformim i futur para dosjes.
-        $"https://res.cloudinary.com/{CloudName}/image/upload/l_text:x/doctors/{Arben}/photo/a.jpg",
+        $"https://res.cloudinary.com/{CloudName}/image/upload/l_text:x/v1/{Root}/doctors/{Arben}/photo/current.jpg",
+        // Mjedisi tjetër (dev vs prod) — e njëjta strukturë, rrënjë tjetër.
+        PhotoUrlFor(Arben, root: "rezervomjekun/prod"),
+        // Struktura e vjetër, pa rrënjë (p.sh. foto e ngarkuar para kësaj ndryshimi).
+        $"https://res.cloudinary.com/{CloudName}/image/upload/v1712345678/doctors/{Arben}/photo/abc123XYZ.jpg",
+        // Struktura e vjetër me emrin "current" por pa rrënjë.
+        $"https://res.cloudinary.com/{CloudName}/image/upload/v1712345678/doctors/{Arben}/photo/current.jpg",
+        // public_id tjetër nga "current".
+        PhotoUrlFor(Arben, publicId: "abc123XYZ"),
+        // Pa version.
+        $"https://res.cloudinary.com/{CloudName}/image/upload/{Root}/doctors/{Arben}/photo/current.jpg",
     };
 
     [Theory]
@@ -250,6 +266,40 @@ public class DoctorPhotoTests
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         (await CodeOf(response)).Should().Be("invalid-photo-url");
+    }
+
+    // ---------- RootFolder i detyrueshëm ----------
+
+    [Fact]
+    public async Task Missing_root_folder_returns_503_even_when_keys_are_set()
+    {
+        var client = await ArbenAsync(WithCloudinary(configured: true, rootFolder: ""));
+
+        var signature = await client.GetAsync($"/api/doctors/{Arben}/photo/upload-signature");
+        var save = await client.PutAsJsonAsync($"/api/doctors/{Arben}/photo",
+            new SetDoctorPhotoRequest { PhotoUrl = PhotoUrlFor(Arben) }, TestHelpers.Json);
+
+        signature.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
+        (await CodeOf(signature)).Should().Be("uploads-not-configured");
+        save.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
+    }
+
+    [Theory]
+    [InlineData("..")]
+    [InlineData("rezervomjekun/../prod")]
+    [InlineData("/rezervomjekun/dev")]
+    [InlineData("rezervomjekun/dev/")]
+    [InlineData("Rezervomjekun/Dev")]
+    [InlineData("rezervo mjekun")]
+    [InlineData("rezervomjekun//dev")]
+    public async Task Invalid_root_folder_returns_503_never_falls_back_to_account_root(string root)
+    {
+        var client = await ArbenAsync(WithCloudinary(configured: true, rootFolder: root));
+
+        var response = await client.GetAsync($"/api/doctors/{Arben}/photo/upload-signature");
+
+        response.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
+        (await CodeOf(response)).Should().Be("uploads-not-configured");
     }
 
     private static async Task<string?> CodeOf(HttpResponseMessage response)

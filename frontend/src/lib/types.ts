@@ -662,6 +662,10 @@ export interface CloudinarySignature {
   allowedFormats: string
   /** Po ashtu i nënshkruar; kufiri i vërtetë, i zbatuar nga Cloudinary, jo vetëm nga UI-ja. */
   maxFileSizeBytes: number
+  /** public_id fiks ("current") + overwrite + invalidate: të nënshkruara, dërgohen siç vijnë. */
+  publicId: string
+  overwrite: boolean
+  invalidate: boolean
 }
 
 /** Pasqyron CreateClinicRequest — POST /api/admin/clinics (vetëm SuperAdmin). */

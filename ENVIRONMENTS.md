@@ -69,7 +69,13 @@ krijohen shërbimet përkatëse.
 | `Seed__Enabled` | `false` | `true` |
 | `Seed__AllowOutsideDevelopment` | (s'vendoset kurrë) | `true` |
 | `Resend__ApiKey`, `Resend__FromAddress` | çelësi real | çelës testimi/i njëjti, sipas nevojës |
-| `Cloudinary__*` | llogaria reale | llogaria reale ose një bucket/folder i veçantë |
+| `Cloudinary__CloudName`, `Cloudinary__ApiKey`, `Cloudinary__ApiSecret` | llogaria reale | e njëjta llogari (ndarja bëhet me `RootFolder`) |
+| `Cloudinary__RootFolder` | `rezervomjekun/prod` | `rezervomjekun/dev` |
+
+`Cloudinary__RootFolder` është **e detyrueshme dhe pa vlerë parazgjedhje**. Nëse mungon ose është e pavlefshme,
+ngarkimi i imazheve kthen **503 `uploads-not-configured`** (dhe logu emëron variablën) — kurrë nuk bie te rrënja e
+llogarisë, sepse pikërisht kështu përzihen mjediset. Format: vetëm `a-z`, `0-9`, `-` dhe `/` mes segmenteve; pa `..`,
+pa `/` në fillim ose në fund, pa shkronja të mëdha.
 
 **Frontend (Vercel), sipas branch-it:**
 
@@ -83,6 +89,38 @@ ekranit ("DEV"/"TESTING") që shfaqet sa herë s'është `production` — shih
 `src/components/EnvironmentBadge.tsx`; qëllimi: askush s'duhet të ngatërrojë
 kurrë një sesion testimi me prodhimin real, thjesht duke parë ekranin — dhe
 (2) **indeksimin nga motorët e kërkimit**.
+
+### Struktura e dosjeve në Cloudinary
+
+Dev dhe prod ndajnë të njëjtën llogari Cloudinary, por secili shkruan vetëm nën rrënjën e vet. Të gjitha shtigjet
+ndërtohen në një vend të vetëm (`CloudinaryFolders`), dhe e njëjta klasë përdoret edhe nga nënshkrimi edhe nga
+validimi i URL-ve — klienti nuk zgjedh kurrë dosjen as `public_id`.
+
+```
+rezervomjekun/
+├── prod/
+│   ├── clinics/{clinicId}/logo/current     ← NË PËRDORIM (logo e klinikës)
+│   ├── clinics/{clinicId}/cover/           ← e rezervuar (foto kopertinë e klinikës)
+│   ├── clinics/{clinicId}/gallery/         ← e rezervuar (galeria e klinikës)
+│   ├── branches/{branchId}/photo/          ← e rezervuar (foto e degës)
+│   ├── doctors/{doctorId}/photo/current    ← NË PËRDORIM (foto e mjekut)
+│   ├── users/{userId}/avatar/              ← e rezervuar (avatari i pacientit; NUK ndërtohet tani)
+│   └── system/                             ← e rezervuar (logo për email-et, imazhe Open Graph)
+└── dev/
+    └── (e njëjta strukturë)
+```
+
+- **`public_id` fiks `current` + `overwrite` + `invalidate`**, të gjitha brenda nënshkrimit: një ngarkim i ri e
+  zëvendëson të vjetrin, pa imazhe të papërdorura. Cache-i rifreskohet sepse URL-ja përmban versionin
+  (`.../upload/v1712345678/...`), prandaj ruhet dhe shfaqet **me version**.
+- **Validimi në server** (foto e mjekut) pranon vetëm
+  `https://res.cloudinary.com/{cloud ynë}/image/upload/v{shifra}/{RootFolder}/doctors/{id}/photo/current.{jpg|jpeg|png|webp}`.
+  URL-të nga mjedisi tjetër, nga struktura e vjetër (pa `RootFolder`), me `public_id` tjetër ose pa version refuzohen.
+- **Imazhet ekzistuese nuk preken.** Logoja që prod ka tashmë te `clinics/{id}/logo/...` mbetet ku është; URL-ja është
+  ruajtur në databazë dhe vazhdon të funksionojë. Ngarkimi i radhës shkon vetë në strukturën e re.
+- **Dokumentet mjekësore të pacientëve NUK hyjnë kurrë në këtë strukturë.** Gjithçka këtu është asset publik
+  (`upload`): kushdo me URL-në e lexon. Nëse ndonjëherë duhen dokumente, kërkojnë `type: authenticated` dhe një dizajn
+  të veçantë.
 
 ### Indeksimi (SEO): vetëm `production` indeksohet
 

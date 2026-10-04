@@ -9,15 +9,21 @@ import DoctorPhotoUpload, { PHOTO_MAX_BYTES } from './DoctorPhotoUpload'
 
 const DOCTOR_ID = '55555555-0001-5555-5555-555555555555'
 const CLOUD = 'test-cloud'
-const UPLOADED_URL = `https://res.cloudinary.com/${CLOUD}/image/upload/v1/doctors/${DOCTOR_ID}/photo/abc.jpg`
+const ROOT = 'rezervomjekun/dev'
+const FOLDER = `${ROOT}/doctors/${DOCTOR_ID}/photo`
+// The saved/displayed URL keeps the version (v123…): that is what refreshes the cache after an overwrite.
+const UPLOADED_URL = `https://res.cloudinary.com/${CLOUD}/image/upload/v1712345678/${FOLDER}/current.jpg`
 const SIGNATURE = {
   signature: 'sig',
   timestamp: 1790000000,
   apiKey: '123',
   cloudName: CLOUD,
-  folder: `doctors/${DOCTOR_ID}/photo`,
+  folder: FOLDER,
   allowedFormats: 'jpg,jpeg,png,webp',
   maxFileSizeBytes: PHOTO_MAX_BYTES,
+  publicId: 'current',
+  overwrite: true,
+  invalidate: true,
 }
 const CLOUDINARY_UPLOAD = `https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`
 
@@ -76,9 +82,12 @@ describe('DoctorPhotoUpload', () => {
       api_key: '123',
       timestamp: '1790000000',
       signature: 'sig',
-      folder: `doctors/${DOCTOR_ID}/photo`,
+      folder: FOLDER,
       allowed_formats: 'jpg,jpeg,png,webp',
       max_file_size: String(PHOTO_MAX_BYTES),
+      public_id: 'current',
+      overwrite: 'true',
+      invalidate: 'true',
     })
     expect(savedBody).toEqual({ photoUrl: UPLOADED_URL })
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()

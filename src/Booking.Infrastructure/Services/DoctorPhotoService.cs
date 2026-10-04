@@ -83,7 +83,7 @@ public sealed class DoctorPhotoService : IDoctorPhotoService
         return new DoctorPhotoDto { PhotoUrl = newUrl };
     }
 
-    private static string FolderFor(Guid doctorId) => $"doctors/{doctorId}/photo";
+    private static string FolderFor(Guid doctorId) => CloudinaryFolders.DoctorPhoto(doctorId);
 
     /// <summary>
     /// Vetë mjeku, ose kushdo që e menaxhon (admini i një klinike ku ai punon, SuperAdmin-i).

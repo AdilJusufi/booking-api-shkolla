@@ -11,8 +11,8 @@ namespace Booking.Infrastructure.Services;
 /// E vetmja pikë ku lëshohen nënshkrime Cloudinary dhe ku verifikohen URL-të që kthehen
 /// pas ngarkimit — e përbashkët për logon e klinikës dhe foton e mjekut.
 ///
-/// Dosja caktohet GJITHMONË nga thirrësi në server (p.sh. "doctors/{doctorId}/photo"),
-/// kurrë nga klienti; klienti s'dërgon as folder as public_id. Formatet dhe kufiri i
+/// Dosja ndërtohet GJITHMONË në server nga CloudinaryFolders (rrënja e mjedisit + shtegu i entitetit),
+/// kurrë nga klienti; public_id është fiks ("current") me overwrite+invalidate. Formatet dhe kufiri i
 /// madhësisë hyjnë në nënshkrim, kështu që Cloudinary i zbaton vetë.
 /// </summary>
 public sealed class CloudinaryUploadSigner
@@ -31,13 +31,16 @@ public sealed class CloudinaryUploadSigner
         _logger = logger;
     }
 
-    public CloudinarySignatureDto Sign(string folder, IReadOnlyCollection<string> allowedFormats, long maxFileSizeBytes)
+    /// <param name="relativeFolder">Nga <see cref="CloudinaryFolders"/> (p.sh. DoctorPhoto(id)); rrënja shtohet këtu.</param>
+    public CloudinarySignatureDto Sign(string relativeFolder, IReadOnlyCollection<string> allowedFormats, long maxFileSizeBytes)
     {
         EnsureConfigured();
+        var folder = CloudinaryFolders.Combine(_settings.RootFolder, relativeFolder);
 
         var timestamp = new DateTimeOffset(_dateTimeProvider.UtcNow, TimeSpan.Zero).ToUnixTimeSeconds();
         var formats = string.Join(',', allowedFormats);
-        var paramsToSign = CloudinaryUploadSignature.BuildParamsToSign(formats, folder, maxFileSizeBytes, timestamp);
+        var paramsToSign = CloudinaryUploadSignature.BuildParamsToSign(
+            formats, folder, CloudinaryFolders.PublicId, maxFileSizeBytes, timestamp);
 
         return new CloudinarySignatureDto
         {
@@ -47,24 +50,28 @@ public sealed class CloudinaryUploadSigner
             CloudName = _settings.CloudName,
             Folder = folder,
             AllowedFormats = formats,
-            MaxFileSizeBytes = maxFileSizeBytes
+            MaxFileSizeBytes = maxFileSizeBytes,
+            PublicId = CloudinaryFolders.PublicId
         };
     }
 
     /// <summary>
-    /// True vetëm për një URL dorëzimi të një imazhi në cloud-in TONË dhe DREJTPËRDREJT në
-    /// <paramref name="folder"/>: https://res.cloudinary.com/{cloud}/image/upload/[v123/]{folder}/{id}.{ext}.
+    /// True vetëm për një URL dorëzimi të një imazhi në cloud-in TONË, në dosjen e këtij mjedisi
+    /// dhe të këtij entiteti, me public_id "current":
+    /// https://res.cloudinary.com/{cloud}/image/upload/v{digits}/{RootFolder}/{relativeFolder}/current.{ext}.
     /// Pa këtë, një përdorues që ka të drejtë ta ndryshojë foton mund të vendoste çfarëdo URL
-    /// (një imazh i huaj, një gjurmues, foton e një mjeku tjetër) duke anashkaluar ngarkimin.
+    /// (një imazh i huaj, një gjurmues, foton e një mjeku tjetër, një imazh të mjedisit tjetër).
     /// </summary>
-    public bool IsOwnImageUrl(string url, string folder, IReadOnlyCollection<string> allowedFormats)
+    public bool IsOwnImageUrl(string url, string relativeFolder, IReadOnlyCollection<string> allowedFormats)
     {
         EnsureConfigured();
+        var folder = CloudinaryFolders.Combine(_settings.RootFolder, relativeFolder);
 
         var pattern =
             "^https://res\\.cloudinary\\.com/" + Regex.Escape(_settings.CloudName)
-            + "/image/upload/(?:v\\d+/)?" + Regex.Escape(folder)
-            + "/[A-Za-z0-9_-]+\\.(?:" + string.Join('|', allowedFormats.Select(Regex.Escape)) + ")$";
+            + "/image/upload/v\\d+/" + Regex.Escape(folder)
+            + "/" + Regex.Escape(CloudinaryFolders.PublicId)
+            + "\\.(?:" + string.Join('|', allowedFormats.Select(Regex.Escape)) + ")$";
 
         return Regex.IsMatch(url, pattern, RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
     }
@@ -75,7 +82,8 @@ public sealed class CloudinaryUploadSigner
             {
                 ("Cloudinary__CloudName", _settings.CloudName),
                 ("Cloudinary__ApiKey", _settings.ApiKey),
-                ("Cloudinary__ApiSecret", _settings.ApiSecret)
+                ("Cloudinary__ApiSecret", _settings.ApiSecret),
+                ("Cloudinary__RootFolder", _settings.RootFolder)
             }
             .Where(s => string.IsNullOrWhiteSpace(s.Value))
             .Select(s => s.Name)
@@ -83,7 +91,17 @@ public sealed class CloudinaryUploadSigner
 
         if (missing.Count == 0)
         {
-            return;
+            if (CloudinaryFolders.IsValidRoot(_settings.RootFolder))
+            {
+                return;
+            }
+
+            // Rrënja e pavlefshme trajtohet si mungesë konfigurimi: s'bie kurrë te rrënja e llogarisë.
+            _logger.LogError(
+                "Cloudinary__RootFolder është i pavlefshëm (lejohet vetëm a-z, 0-9, \"-\" dhe \"/\" mes segmenteve, " +
+                "p.sh. \"rezervomjekun/dev\"; pa \"..\", pa \"/\" në fillim ose në fund). Ngarkimi i imazheve " +
+                "refuzohet me 503 derisa të korrigjohet.");
+            throw new UploadsNotConfiguredException();
         }
 
         // Vetëm EMRAT e variablave që mungojnë — asnjëherë vlerat.

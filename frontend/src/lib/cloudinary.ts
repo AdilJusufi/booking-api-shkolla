@@ -28,7 +28,7 @@ export class CloudinaryRejectedError extends Error {
 
 /**
  * Dërgon skedarin me fushat e nënshkruara SAKTËSISHT siç erdhën nga serveri. Po t'i heqësh
- * ose t'i ndryshosh (folder, allowed_formats, max_file_size), nënshkrimi s'përputhet dhe
+ * ose t'i ndryshosh (folder, public_id, overwrite, invalidate, allowed_formats, max_file_size), nënshkrimi s'përputhet dhe
  * Cloudinary e refuzon — pra kufijtë s'anashkalohen dot nga klienti.
  */
 export async function uploadSignedImage(signature: CloudinarySignature, file: File): Promise<string> {
@@ -40,6 +40,9 @@ export async function uploadSignedImage(signature: CloudinarySignature, file: Fi
   formData.append('folder', signature.folder)
   formData.append('allowed_formats', signature.allowedFormats)
   formData.append('max_file_size', String(signature.maxFileSizeBytes))
+  formData.append('public_id', signature.publicId)
+  formData.append('overwrite', String(signature.overwrite))
+  formData.append('invalidate', String(signature.invalidate))
 
   const res = await fetch(`https://api.cloudinary.com/v1_1/${signature.cloudName}/image/upload`, {
     method: 'POST',

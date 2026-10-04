@@ -153,11 +153,12 @@ try
     var cloudinarySection = builder.Configuration.GetSection("Cloudinary");
     if (string.IsNullOrWhiteSpace(cloudinarySection["CloudName"])
         || string.IsNullOrWhiteSpace(cloudinarySection["ApiKey"])
-        || string.IsNullOrWhiteSpace(cloudinarySection["ApiSecret"]))
+        || string.IsNullOrWhiteSpace(cloudinarySection["ApiSecret"])
+        || string.IsNullOrWhiteSpace(cloudinarySection["RootFolder"]))
     {
         Log.Warning(
-            "Cloudinary:CloudName/ApiKey/ApiSecret mungojnë — ngarkimi i logos së klinikës dhe i fotos së mjekut " +
-            "do të kthejë 503 derisa të konfigurohen (Cloudinary__CloudName, Cloudinary__ApiKey, Cloudinary__ApiSecret).");
+            "Cloudinary:CloudName/ApiKey/ApiSecret/RootFolder mungojnë — ngarkimi i logos së klinikës dhe i fotos së mjekut " +
+            "do të kthejë 503 derisa të konfigurohen (Cloudinary__CloudName, Cloudinary__ApiKey, Cloudinary__ApiSecret, Cloudinary__RootFolder).");
     }
 
     // Vetëm jashtë Development-it: atje IEmailService është qëllimisht LoggingEmailService

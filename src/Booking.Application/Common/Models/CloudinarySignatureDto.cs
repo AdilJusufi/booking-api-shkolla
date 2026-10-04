@@ -22,4 +22,14 @@ public sealed record CloudinarySignatureDto
     public required string AllowedFormats { get; init; }
 
     public required long MaxFileSizeBytes { get; init; }
+
+    /// <summary>
+    /// public_id fiks ("current"), overwrite dhe invalidate — gjithashtu të nënshkruara; klienti i
+    /// dërgon si <c>public_id</c>, <c>overwrite=true</c>, <c>invalidate=true</c>.
+    /// </summary>
+    public required string PublicId { get; init; }
+
+    public bool Overwrite { get; init; } = true;
+
+    public bool Invalidate { get; init; } = true;
 }
