@@ -18,6 +18,17 @@ public static class EnvironmentGuard
 {
     private const string DevelopmentEnvironment = "Development";
 
+    /// <summary>
+    /// Password-e seed-i që ndodhen publikisht në repo (appsettings.Development.json,
+    /// docker-compose.yml, README.md). Kurrë s'duhet të përdoren jashtë Development-it:
+    /// kushdo që lexon repo-n i di. Shih kontrollin 3 te <see cref="Validate"/>.
+    /// </summary>
+    private static readonly string[] RepoPublicSeedPasswords =
+    [
+        "Dev123!SuperAdmin",
+        "Dev123!Booking"
+    ];
+
     public static void Validate(string environmentName, IConfiguration configuration)
     {
         var isDevelopment = string.Equals(environmentName, DevelopmentEnvironment, StringComparison.OrdinalIgnoreCase);
@@ -62,6 +73,34 @@ public static class EnvironmentGuard
                 + "llogari me password-e të marra nga konfigurimi i zhvillimit, të cilat janë publike "
                 + "në repo. Vendos Seed__Enabled=false, ose — nëse kjo ËSHTË vërtet një instancë "
                 + "dev/testimi pa asnjë patient real, jo prodhimi — Seed__AllowOutsideDevelopment=true.");
+        }
+
+        // 3. Password-et e seed-it KURRË s'duhet të jenë ato të repo-s në një mjedis jo-Development
+        //    pa opt-in: janë publike, pra llogaritë do të kishin kredenciale që i di kushdo.
+        //    Pavarësisht Seed:Enabled — një password i tillë i lënë në konfigurim është minë edhe
+        //    nëse seed-i është fikur sot dhe ndizet nesër. Përjashtim: Seed__AllowOutsideDevelopment=true
+        //    është deklarim eksplicit se kjo është instancë dev/testimi e hedhshme, ku vlerat e repo-s
+        //    lejohen qëllimisht.
+        if (!isDevelopment && !allowSeedOutsideDevelopment)
+        {
+            var offendingKeys = new[]
+                {
+                    ("Seed__SuperAdminPassword", configuration["Seed:SuperAdminPassword"]),
+                    ("Seed__DefaultUserPassword", configuration["Seed:DefaultUserPassword"])
+                }
+                .Where(entry => RepoPublicSeedPasswords.Contains(entry.Item2, StringComparer.Ordinal))
+                .Select(entry => entry.Item1)
+                .ToList();
+
+            if (offendingKeys.Count > 0)
+            {
+                throw new InvalidOperationException(
+                    $"NISJA U NDAL: {string.Join(" dhe ", offendingKeys)} ka vlerë që ndodhet publikisht "
+                    + "në repo (p.sh. \"Dev123!SuperAdmin\"/\"Dev123!Booking\" te appsettings.Development.json, "
+                    + $"docker-compose.yml dhe README.md). Në mjedisin '{environmentName}' kjo do të krijonte "
+                    + "llogari me password që i di kushdo që lexon repo-n. Vendos një vlerë unike, jo-publike "
+                    + "me env var (Seed__SuperAdminPassword / Seed__DefaultUserPassword).");
+            }
         }
     }
 

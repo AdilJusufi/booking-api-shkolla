@@ -434,3 +434,6 @@ FodyWeavers.xsd
 # JetBrains Rider
 .idea/
 
+
+# Local security audit report — findings kept out of version control
+SECURITY-AUDIT.md

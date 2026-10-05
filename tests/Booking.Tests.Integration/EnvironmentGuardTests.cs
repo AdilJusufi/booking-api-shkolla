@@ -104,4 +104,73 @@ public class EnvironmentGuardTests
 
         act.Should().NotThrow();
     }
+
+    [Theory]
+    [InlineData("Seed:SuperAdminPassword", "Dev123!SuperAdmin")]
+    [InlineData("Seed:DefaultUserPassword", "Dev123!Booking")]
+    public void Refuses_to_boot_when_a_seed_password_is_a_public_repo_value_outside_development(
+        string key, string repoPassword)
+    {
+        // Prodhim pa opt-in: një password i marrë nga repo-ja duhet ta ndalë nisjen.
+        var act = () => EnvironmentGuard.Validate("Production", Config(
+            ("ConnectionStrings:BookingDb", "Host=ep-x.aws.neon.tech;Database=booking"),
+            ("Seed:Enabled", "false"),
+            (key, repoPassword)));
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*NISJA U NDAL*")
+            .WithMessage($"*{key.Replace(":", "__")}*");
+    }
+
+    [Fact]
+    public void Refuses_to_boot_on_a_public_repo_seed_password_even_when_seeding_is_disabled()
+    {
+        // Pavarësisht Seed:Enabled: një password publik i lënë në konfigurim është minë.
+        var act = () => EnvironmentGuard.Validate("Production", Config(
+            ("ConnectionStrings:BookingDb", "Host=ep-x.aws.neon.tech;Database=booking"),
+            ("Seed:Enabled", "false"),
+            ("Seed:SuperAdminPassword", "Dev123!SuperAdmin")));
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*NISJA U NDAL*");
+    }
+
+    [Fact]
+    public void Allows_seeding_outside_development_with_unique_non_public_passwords()
+    {
+        var act = () => EnvironmentGuard.Validate("Production", Config(
+            ("ConnectionStrings:BookingDb", "Host=ep-x.aws.neon.tech;Database=booking"),
+            ("Seed:Enabled", "true"),
+            ("Seed:AllowOutsideDevelopment", "true"),
+            ("Seed:SuperAdminPassword", "a-unique-not-in-repo-secret-01"),
+            ("Seed:DefaultUserPassword", "another-unique-not-in-repo-02")));
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Allows_the_public_repo_seed_passwords_inside_development()
+    {
+        // Brenda Development-it vlerat e repo-s janë pikërisht ato që priten (DB lokale).
+        var act = () => EnvironmentGuard.Validate("Development", Config(
+            ("ConnectionStrings:BookingDb", "Host=localhost;Port=5433;Database=booking"),
+            ("Seed:Enabled", "true"),
+            ("Seed:SuperAdminPassword", "Dev123!SuperAdmin"),
+            ("Seed:DefaultUserPassword", "Dev123!Booking")));
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Allows_the_public_repo_seed_passwords_on_an_explicit_dev_instance_outside_development()
+    {
+        // Seed__AllowOutsideDevelopment=true = instancë dev e hedhshme: vlerat e repo-s lejohen.
+        var act = () => EnvironmentGuard.Validate("Production", Config(
+            ("ConnectionStrings:BookingDb", "Host=ep-x.aws.neon.tech;Database=booking"),
+            ("Seed:Enabled", "true"),
+            ("Seed:AllowOutsideDevelopment", "true"),
+            ("Seed:SuperAdminPassword", "Dev123!SuperAdmin"),
+            ("Seed:DefaultUserPassword", "Dev123!Booking")));
+
+        act.Should().NotThrow();
+    }
 }
