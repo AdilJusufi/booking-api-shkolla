@@ -1,6 +1,6 @@
 {
   "home": {
-    "eyebrow": "18 clinics · 120+ doctors · Kosovo",
+    "eyebrow": "New platform, growing every week · Kosovo",
     "heroLine1": "Find the right",
     "heroLine2": "doctor.",
     "heroAccent": "Book",
@@ -22,14 +22,7 @@
       "freeSlotsLabel": "Open slots",
       "slotCount_one": "{{count}} slot",
       "slotCount_other": "{{count}} slots",
-      "confirmCta": "Confirm appointment",
-      "reviewCount": "from 640 patients"
-    },
-    "stats": {
-      "verifiedDoctors": "Verified doctors",
-      "partnerClinics": "Partner clinics",
-      "bookedAppointments": "Appointments booked",
-      "citiesInKosovo": "Cities in Kosovo"
+      "confirmCta": "Confirm appointment"
     },
     "specialtiesSection": {
       "kicker": "Specialties",
@@ -69,8 +62,8 @@
       "hoursLabel": "Book online, even at night",
       "easyBig": "Easy",
       "easyLabel": "Cancel or reschedule in one click",
-      "coverageBig": "7 cities",
-      "coverageLabel": "Coverage across all of Kosovo"
+      "coverageBig": "Online",
+      "coverageLabel": "Accessible from anywhere in Kosovo"
     },
     "clinicsSection": {
       "kicker": "Clinics",
@@ -80,10 +73,6 @@
       "viewClinic": "View clinic",
       "doctorCount_one": "{{count}} doctor",
       "doctorCount_other": "{{count}} doctors"
-    },
-    "testimonials": {
-      "kicker": "Testimonials",
-      "title": "Trusted by patients and clinics"
     },
     "finalCta": {
       "kicker": "Free for patients",
@@ -132,7 +121,7 @@
       ],
       "clinics": [
         {
-          "name": "Spitali Amerikan",
+          "name": "Klinika Qendrore",
           "city": "Pristina",
           "specialties": [
             "Cardiology",
@@ -156,24 +145,12 @@
             "Pediatrics"
           ]
         }
-      ],
-      "testimonials": [
-        {
-          "quote": "I booked my cardiologist appointment in under a minute, in the evening, without calling anyone. The confirmation came instantly.",
-          "name": "Blerta Hoxha",
-          "role": "Patient · Pristina"
-        },
-        {
-          "quote": "As a clinic, our whole calendar is now in one place. Missed appointments have dropped noticeably since we switched to Rezervo Mjekun.",
-          "name": "Dr. Fatos Kelmendi",
-          "role": "Clinic Director · Prizren"
-        }
       ]
     }
   },
   "search": {
     "title": "Find the right doctor or clinic",
-    "subtitle": "Search from 500+ doctors and 80+ clinics in Kosovo",
+    "subtitle": "Search verified doctors and clinics across Kosovo",
     "searchPlaceholder": "Search doctor, clinic, or specialty...",
     "allSpecialtiesChip": "All",
     "tabClinics": "Clinics",
@@ -183,19 +160,16 @@
     "specialtyLabel": "Specialty",
     "showLess": "Show less ▴",
     "showMore": "Show more ▾",
-    "minRatingLabel": "Minimum rating",
-    "andUp": "& up",
-    "anyRating": "Any rating",
     "applyFilters": "Apply filters",
     "clearAllFilters": "Clear all",
     "headingClinicsIn": "Clinics in {{city}}",
     "headingDoctorsIn": "Doctors in {{city}}",
-    "defaultCity": "Kosovo",
+    "headingClinicsAll": "Clinics in Kosovo",
+    "headingDoctorsAll": "Doctors in Kosovo",
     "resultCount_one": "{{count}} result found",
     "resultCount_other": "{{count}} results found",
     "sortRelevance": "Sort by: Relevance",
     "sortName": "Name (A-Z)",
-    "sortRating": "Top rated",
     "errorTitle": "Something went wrong",
     "noResultsTitle": "No results found",
     "noResultsHint": "Try changing your filters or search term.",
@@ -209,7 +183,11 @@
     "servicesTitle": "Services & pricing",
     "minutesShort": "min",
     "doctorsTitle": "Doctors",
-    "noDoctorsListed": "No doctors listed"
+    "noDoctorsListed": "No doctors listed",
+    "servicesHint": "Pick a service to book an appointment.",
+    "pickDoctorTitle": "Choose a doctor — {{service}}",
+    "pickDoctorHint": "Several doctors offer this service. Choose who you'd like to book with.",
+    "noDoctorForService": "No doctor currently offers this service for online booking."
   },
   "cards": {
     "bookCta": "Book",
@@ -232,19 +210,30 @@
       "date": "Date",
       "time": "Time"
     },
-    "chooseService": "Choose a service",
-    "changeService": "Change service",
     "chooseBranch": "Choose a branch",
-    "changeBranch": "Change branch",
     "chooseDate": "Choose a date",
-    "changeDate": "Change date",
     "chooseTime": "Choose a time",
     "noSlotsForDate": "No open slots for this date.",
     "tryAnotherDate": "Try another date",
     "confirmBooking": "Confirm booking",
     "continueCta": "Continue",
-    "loginRequiredHint": "You need to be logged in to book.",
-    "loginCta": "Log in"
+    "back": "Back",
+    "servicesHint": "Tap a service to book it.",
+    "selectedLabel": "Selected",
+    "pickServiceHint": "Pick a service from the “Services” list to start.",
+    "pickServiceCta": "See services",
+    "dayClosed": "The clinic is closed on this day",
+    "dayFull": "No free times on this day",
+    "dayPast": "This day has passed",
+    "dayTooFar": "Bookings open up to 60 days ahead",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "legendAvailable": "Available",
+    "legendFull": "Fully booked",
+    "legendClosed": "Closed",
+    "loginToBook": "Log in to book",
+    "loginToBookHint": "Services and prices are shown here. To see free times and book, log in to your account.",
+    "registerCta": "No account? Register for free"
   },
   "appointmentsList": {
     "title": "My Appointments",
@@ -252,7 +241,6 @@
     "newAppointmentCta": "Book a new appointment",
     "statsActive": "Active",
     "statsCompleted": "Completed",
-    "statsPending": "Pending",
     "statsCancelled": "Cancelled",
     "filterAll": "All",
     "filterActive": "Active",
@@ -316,7 +304,7 @@
     "bookedEventLabel": "Booked",
     "statusDescriptionFallback": "This appointment's status is unrecognized.",
     "statusDescriptions": {
-      "pending": "Your appointment is waiting for confirmation from the clinic.",
+      "pending": "Your appointment was confirmed automatically the moment you booked it.",
       "confirmed": "Your appointment is confirmed. Please arrive 10 minutes early.",
       "checkedIn": "You've been marked as checked in at the clinic.",
       "inProgress": "Your appointment is in progress.",
@@ -380,8 +368,6 @@
   "profile": {
     "loadFailedTitle": "The profile didn't load",
     "loadFailedFallback": "Try refreshing the page.",
-    "changePhoto": "Change photo",
-    "photoComingSoon": "Photo upload is coming soon.",
     "roleBadge": "PATIENT",
     "memberSince": "Member since {{date}}",
     "editCta": "Edit",
@@ -489,5 +475,12 @@
     "myProfile": "My profile",
     "familyMembers": "Family members",
     "changePassword": "Change password"
+  },
+  "seo": {
+    "in": "in",
+    "clinic": "Clinic",
+    "doctorDescription": "Book an appointment online with Dr. {{name}} ({{summary}}). See services, prices and location.",
+    "doctorDescriptionBare": "Book an appointment online with Dr. {{name}}. See services, prices and location.",
+    "clinicDescription": "{{name}}{{place}}: services, prices and doctors. Book an appointment online."
   }
 }

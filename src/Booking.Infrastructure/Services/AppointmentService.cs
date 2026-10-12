@@ -152,7 +152,9 @@ public class AppointmentService : IAppointmentService
             DependentId = request.DependentId,
             StartDateTime = startUtc,
             EndDateTime = endUtc,
-            Status = AppointmentStatus.Pending,
+            // Orari i publikuar i doktorit ËSHTË angazhimi — rezervimi konfirmohet menjëherë,
+            // pa hap rishikimi. Sloti mbyllet që në momentin e krijimit (shih BlockingStatuses).
+            Status = AppointmentStatus.Confirmed,
             PatientNote = request.PatientNote
         };
         _dbContext.Appointments.Add(appointment);
@@ -163,7 +165,7 @@ public class AppointmentService : IAppointmentService
         await SaveChangesGuardedAsync(cancellationToken);
 
         var dto = await GetMyAppointmentByIdAsync(userId, appointment.Id, cancellationToken);
-        await NotifySafeAsync(_notificationService.AppointmentCreatedAsync, userId, dto, cancellationToken);
+        await NotifySafeAsync(_notificationService.AppointmentConfirmedAsync, userId, dto, cancellationToken);
         await NotifyStaffSafeAsync(_notificationService.AppointmentCreatedForStaffAsync, userId, dto, cancellationToken);
         return dto;
     }
@@ -239,7 +241,8 @@ public class AppointmentService : IAppointmentService
             throw new ConflictException("appointment-conflict", "Sloti i ri nuk është i lirë.");
         }
 
-        // Termini i vjetër mbetet si histori (Rescheduled = jo-bllokues); krijohet termin i ri.
+        // Termini i vjetër mbetet si histori (Rescheduled = jo-bllokues); krijohet termin i ri,
+        // konfirmuar direkt — njësoj si rezervimi fillestar (shih CreateAsync).
         // Të dy ndryshimet ruhen në një SaveChanges → një transaksion databaze.
         existing.Status = AppointmentStatus.Rescheduled;
 
@@ -253,7 +256,7 @@ public class AppointmentService : IAppointmentService
             DependentId = existing.DependentId,
             StartDateTime = newStartUtc,
             EndDateTime = newEndUtc,
-            Status = AppointmentStatus.Pending,
+            Status = AppointmentStatus.Confirmed,
             PatientNote = existing.PatientNote
         };
         _dbContext.Appointments.Add(replacement);

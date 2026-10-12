@@ -176,8 +176,7 @@ export default function MyAppointmentsPage() {
 
   const stats = useMemo(() => {
     return {
-      active: appointments.filter((a) => ACTIVE_STATUSES.includes(a.status) && a.status !== AppointmentStatus.Pending).length,
-      pending: appointments.filter((a) => a.status === AppointmentStatus.Pending).length,
+      active: appointments.filter((a) => ACTIVE_STATUSES.includes(a.status)).length,
       completed: appointments.filter((a) => a.status === AppointmentStatus.Completed).length,
       cancelled: appointments.filter((a) => CANCELLED_STATUSES.includes(a.status)).length,
     }
@@ -251,15 +250,6 @@ export default function MyAppointmentsPage() {
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-card__icon" style={{ background: 'var(--warn-bg)' }}>
-            <Clock size={20} strokeWidth={1.5} color="var(--warn)" />
-          </div>
-          <div>
-            <div className="stat-card__count" style={{ color: 'var(--warn)' }}>{stats.pending}</div>
-            <div className="stat-card__label">{t('appointmentsList.statsPending')}</div>
-          </div>
-        </div>
-        <div className="stat-card">
           <div className="stat-card__icon" style={{ background: 'var(--danger-bg)' }}>
             <X size={20} strokeWidth={1.5} color="var(--danger)" />
           </div>
@@ -319,7 +309,7 @@ export default function MyAppointmentsPage() {
               const showCancel = canCancel(a)
               const showNote = isWithin12Hours(a) && !canCancel(a)
               return (
-                <div className="appt-row" key={a.id} data-reveal>
+                <div className="appt-row card-link" key={a.id} data-reveal>
                   <div className="appt-row__date">
                     <div className="appt-row__day">{d.getDate()}</div>
                     <div className="appt-row__month">{monthName(d.getMonth(), 'short').toUpperCase()}</div>
@@ -327,7 +317,9 @@ export default function MyAppointmentsPage() {
                   </div>
 
                   <div className="appt-row__main">
-                    <div className="appt-row__doctor">Dr. {a.doctorName}</div>
+                    {/* Stretched link: its ::after covers the whole card, so the card is one
+                        focusable, Enter-to-open target; the cancel controls sit above it. */}
+                    <Link to={`/terminet/${a.id}`} className="appt-row__doctor card-link__target">Dr. {a.doctorName}</Link>
                     <div className="appt-row__meta">
                       <span className="chip">{a.serviceName}</span>
                       <span className="appt-row__clinic">
@@ -338,7 +330,7 @@ export default function MyAppointmentsPage() {
                       <Clock size={12} strokeWidth={1.5} /> {formatTime(a.startDateTime)} – {formatTime(a.endDateTime)}
                     </div>
                     {confirmingCancelId === a.id && (
-                      <div className="appt-row__cancel-confirm">
+                      <div className="appt-row__cancel-confirm card-link__raise">
                         <span>{t('appointmentsList.confirmCancelPrompt')}</span>
                         <button
                           type="button"
@@ -362,11 +354,10 @@ export default function MyAppointmentsPage() {
                   <div className="appt-row__side">
                     {statusBadge(a.status, t)}
                     <div className="appt-row__actions">
-                      <Link to={`/terminet/${a.id}`} className="btn btn--ghost btn--sm">{t('appointmentsList.viewDetails')}</Link>
                       {showCancel && confirmingCancelId !== a.id && (
                         <button
                           type="button"
-                          className="btn btn--sm btn--danger-outline"
+                          className="btn btn--sm btn--danger-outline card-link__raise"
                           onClick={() => setConfirmingCancelId(a.id)}
                         >
                           {tCommon('appointment.actions.cancel')}

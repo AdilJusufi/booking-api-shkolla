@@ -54,6 +54,39 @@ describe('SearchPage — paginated envelope unwrapping (3b)', () => {
   })
 })
 
+describe('SearchPage — city filter reaches the API on both tabs', () => {
+  it('sends City on the Mjekët tab, not just on Klinika', async () => {
+    // Regression guard: the Doctors tab used to drop the city entirely — the
+    // request went out with no City param, so picking a city silently did
+    // nothing while the heading still claimed to be filtered.
+    const doctorCities: (string | null)[] = []
+    server.use(
+      http.get(`${API_BASE_URL}/api/doctors`, ({ request }) => {
+        doctorCities.push(new URL(request.url).searchParams.get('City'))
+        return HttpResponse.json(pagedResult([buildDoctor({ firstName: 'Fatos', lastName: 'Rexhepi' })], { totalItems: 1 }))
+      }),
+    )
+    renderWithProviders(<SearchPage />, { route: '/kerko?tab=mjeket&city=Vushtrri' })
+
+    await waitFor(() => expect(screen.getByText('Dr. Fatos Rexhepi')).toBeInTheDocument())
+    expect(doctorCities).toContain('Vushtrri')
+  })
+
+  it('omits City when no city is selected', async () => {
+    const doctorCities: (string | null)[] = []
+    server.use(
+      http.get(`${API_BASE_URL}/api/doctors`, ({ request }) => {
+        doctorCities.push(new URL(request.url).searchParams.get('City'))
+        return HttpResponse.json(pagedResult([buildDoctor({ firstName: 'Arben', lastName: 'Gashi' })], { totalItems: 1 }))
+      }),
+    )
+    renderWithProviders(<SearchPage />, { route: '/kerko?tab=mjeket' })
+
+    await waitFor(() => expect(screen.getByText('Dr. Arben Gashi')).toBeInTheDocument())
+    expect(doctorCities.every((c) => c === null)).toBe(true)
+  })
+})
+
 describe('SearchPage — loading / error states (3f)', () => {
   it('renders skeleton cards while the request is in flight', async () => {
     server.use(
@@ -100,5 +133,22 @@ describe('SearchPage — loading / error states (3f)', () => {
       ).toBeInTheDocument(),
     )
     expect(screen.queryByText(/backend-i i ndezur/)).not.toBeInTheDocument()
+  })
+})
+
+describe('SearchPage — public listing', () => {
+  it('shows full pagination to logged-out visitors (no preview cap, no login prompt)', async () => {
+    const clinics = Array.from({ length: 12 }, (_, i) => buildClinic({ name: `Klinika ${i + 1}` }))
+    server.use(
+      http.get(`${API_BASE_URL}/api/clinics`, () =>
+        HttpResponse.json(pagedResult(clinics, { totalItems: 14, totalPages: 2 })),
+      ),
+    )
+    renderWithProviders(<SearchPage />, { route: '/kerko' })
+
+    await waitFor(() => expect(screen.getByText('Klinika 1')).toBeInTheDocument())
+    expect(screen.getByText('14 rezultate të gjetur')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '2' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Hyni' })).not.toBeInTheDocument()
   })
 })

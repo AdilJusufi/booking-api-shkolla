@@ -22,13 +22,37 @@ async function fillMinimalForm(user: ReturnType<typeof userEvent.setup>) {
 
   const emailField = document.querySelector('input[type="email"]') as HTMLInputElement
   const phoneField = screen.getByPlaceholderText('+383 4x xxx xxx')
-  const dobField = document.querySelector('input[type="date"]') as HTMLInputElement
   const passwordField = document.querySelector('input[type="password"]') as HTMLInputElement
 
   await user.type(emailField, 'postuar@tashme.dev')
   await user.type(phoneField, '+383 44 123 456')
-  await user.type(dobField, '1995-05-05')
   await user.type(passwordField, 'StrongPass1')
+
+  await selectDateOfBirth(user, { day: '5', month: '5', year: '1995' })
+  await selectGender(user, 'Mashkull')
+}
+
+/**
+ * Data e lindjes është tre <select> (ditë/muaj/vit), jo `input[type="date"]` —
+ * shih DateField për arsyen (formati vendas del `mm/dd/yyyy` te shfletuesit në
+ * anglishten amerikane).
+ */
+async function selectDateOfBirth(
+  user: ReturnType<typeof userEvent.setup>,
+  { day, month, year }: { day: string; month: string; year: string },
+) {
+  const [dayField, monthField, yearField] = document.querySelectorAll('.date-field select')
+  await user.selectOptions(dayField as HTMLSelectElement, day)
+  await user.selectOptions(monthField as HTMLSelectElement, month)
+  await user.selectOptions(yearField as HTMLSelectElement, year)
+}
+
+/** Gjinia s'ka vlerë të parazgjedhur — duhet zgjedhur shprehimisht. */
+async function selectGender(user: ReturnType<typeof userEvent.setup>, label: string) {
+  // Qyteti dhe gjinia shfaqin të dyja "Zgjidh…", prandaj triggeri gjendet me
+  // emrin e aksesueshëm (aria-labelledby → teksti i etiketës), jo me vlerën.
+  await user.click(screen.getByRole('button', { name: /Gjinia/ }))
+  await user.click(await screen.findByRole('option', { name: label }))
 }
 
 /**
@@ -81,7 +105,7 @@ describe('RegisterPage — duplicate email handling (409)', () => {
         ),
       ),
     )
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     renderWithProviders(<RegisterPage />)
 
     await fillMinimalForm(user)
@@ -115,7 +139,7 @@ describe('RegisterPage — duplicate email handling (409)', () => {
         ),
       ),
     )
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     renderWithProviders(<RegisterPage />)
 
     await fillMinimalForm(user)
@@ -131,16 +155,16 @@ describe('RegisterPage — duplicate email handling (409)', () => {
 
 describe('RegisterPage — account type toggle', () => {
   it('defaults to the patient form and switches to the clinic form on toggle, without leaving patient-only fields behind', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     renderWithProviders(<RegisterPage />)
 
     // Patient-only fields present by default.
-    expect(document.querySelector('input[type="date"]')).not.toBeNull()
+    expect(document.querySelector('.date-field')).not.toBeNull()
 
     await user.click(screen.getByRole('tab', { name: 'Klinikë' }))
 
     // Patient-only fields (date of birth, gender select) are gone…
-    expect(document.querySelector('input[type="date"]')).toBeNull()
+    expect(document.querySelector('.date-field')).toBeNull()
     // …and clinic-only fields have appeared.
     expect(screen.getByText('Të dhënat e klinikës')).toBeInTheDocument()
     expect(screen.getByText('Degët')).toBeInTheDocument()
@@ -148,12 +172,12 @@ describe('RegisterPage — account type toggle', () => {
     expect(document.querySelectorAll('input[type="password"]')).toHaveLength(2)
 
     await user.click(screen.getByRole('tab', { name: 'Pacient' }))
-    expect(document.querySelector('input[type="date"]')).not.toBeNull()
+    expect(document.querySelector('.date-field')).not.toBeNull()
     expect(document.querySelectorAll('input[type="password"]')).toHaveLength(1)
   })
 
   it('lets a second branch be added and removed', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     renderWithProviders(<RegisterPage />)
     await user.click(screen.getByRole('tab', { name: 'Klinikë' }))
 
@@ -180,7 +204,7 @@ describe('RegisterPage — clinic registration', () => {
         )
       }),
     )
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     renderWithProviders(<RegisterPage />)
 
     await user.click(screen.getByRole('tab', { name: 'Klinikë' }))
@@ -229,7 +253,7 @@ describe('RegisterPage — clinic registration', () => {
         ),
       ),
     )
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     renderWithProviders(<RegisterPage />)
 
     await user.click(screen.getByRole('tab', { name: 'Klinikë' }))
@@ -248,7 +272,7 @@ describe('RegisterPage — clinic registration', () => {
         return HttpResponse.json({}, { status: 201 })
       }),
     )
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     renderWithProviders(<RegisterPage />)
 
     await user.click(screen.getByRole('tab', { name: 'Klinikë' }))
@@ -261,6 +285,66 @@ describe('RegisterPage — clinic registration', () => {
 
     expect(await screen.findByText('Fjalëkalimet nuk përputhen.')).toBeInTheDocument()
     expect(called).toBe(false)
+  })
+})
+
+describe('RegisterPage — gender must be chosen explicitly', () => {
+  it('does not preselect a gender', () => {
+    renderWithProviders(<RegisterPage />)
+
+    // Rregresion: fusha ishte e parazgjedhur si "Mashkull", kështu që shumica
+    // e dorëzonin formën pa e parë fare — dhe të dhënat dilnin të gabuara.
+    expect(screen.getByRole('button', { name: /Gjinia/ })).toHaveTextContent('Zgjidh')
+    expect(screen.queryByRole('button', { name: /Gjinia.*Mashkull/ })).not.toBeInTheDocument()
+  })
+
+  it('blocks submission and shows an inline error when gender is left unset', async () => {
+    let registerCalled = false
+    server.use(
+      http.post(REGISTER_URL, () => {
+        registerCalled = true
+        return HttpResponse.json({}, { status: 201 })
+      }),
+    )
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<RegisterPage />)
+
+    const [firstName, lastName] = screen.getAllByRole('textbox')
+    await user.type(firstName, 'Testi')
+    await user.type(lastName, 'Përdorues')
+    await user.type(document.querySelector('input[type="email"]') as HTMLInputElement, 'pa.gjini@test.dev')
+    await user.type(screen.getByPlaceholderText('+383 4x xxx xxx'), '+383 44 123 456')
+    await user.type(document.querySelector('input[type="password"]') as HTMLInputElement, 'StrongPass1')
+    await selectDateOfBirth(user, { day: '5', month: '5', year: '1995' })
+
+    await user.click(screen.getByRole('button', { name: /Regjistrohu/i }))
+
+    expect(await screen.findByText('Zgjidhni gjininë.')).toBeInTheDocument()
+    expect(registerCalled).toBe(false)
+  })
+})
+
+describe('RegisterPage — date of birth is unambiguous', () => {
+  it('uses day/month/year selects with named months rather than a locale-formatted date input', () => {
+    renderWithProviders(<RegisterPage />)
+
+    // `input[type="date"]` shfaqet `mm/dd/yyyy` te shfletuesit në anglishten
+    // amerikane pavarësisht `lang`-ut të faqes — muaji me emër e heq dykuptimësinë.
+    expect(document.querySelector('input[type="date"]')).toBeNull()
+    const selects = document.querySelectorAll('.date-field select')
+    expect(selects).toHaveLength(3)
+    expect(within(selects[1] as HTMLElement).getByRole('option', { name: 'Maj' })).toBeInTheDocument()
+  })
+
+  it('clamps an impossible day to the end of the chosen month', async () => {
+    const user = userEvent.setup({ delay: null })
+    renderWithProviders(<RegisterPage />)
+
+    // 31 + shkurt: data s'duhet të dalë kurrë 31 shkurt.
+    await selectDateOfBirth(user, { day: '31', month: '2', year: '1990' })
+
+    const [dayField] = document.querySelectorAll('.date-field select')
+    expect((dayField as HTMLSelectElement).value).toBe('28')
   })
 })
 
@@ -291,7 +375,7 @@ describe('RegisterPage — patient path is unaffected by the clinic path', () =>
         return HttpResponse.json({}, { status: 201 })
       }),
     )
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     renderWithProviders(<RegisterPage />)
 
     await fillMinimalForm(user)

@@ -24,6 +24,14 @@ public interface IScheduleService
     Task<WorkingScheduleDto> AddScheduleAsync(
         Guid doctorId, CreateWorkingScheduleRequest request, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Ndryshon orarin me të njëjtat kontrolle si krijimi (degë + mbivendosje, duke e përjashtuar
+    /// vetveten). Refuzohet me 409 "schedule-has-booked-appointments" nëse ndryshimi do të linte
+    /// termine të ardhshme të rezervuara jashtë çdo orari aktiv — lista kthehet te "affectedAppointments".
+    /// </summary>
+    Task<WorkingScheduleDto> UpdateScheduleAsync(
+        Guid doctorId, Guid scheduleId, UpdateWorkingScheduleRequest request, CancellationToken cancellationToken = default);
+
     Task DeactivateScheduleAsync(Guid doctorId, Guid scheduleId, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<UnavailabilityDto>> GetUnavailabilitiesAsync(

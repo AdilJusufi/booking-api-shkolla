@@ -31,6 +31,9 @@
     "editModalTitle": "Izmeni Specijalnost",
     "addModalTitle": "Dodaj Specijalnost",
     "nameLabel": "Naziv",
+    "nameEnLabel": "Naziv na engleskom",
+    "nameSrLabel": "Naziv na srpskom",
+    "translationHint": "Bez prevoda, albanski naziv se prikazuje na svim jezicima.",
     "descriptionLabel": "Opis",
     "optional": "(opciono)",
     "activeCheckbox": "Aktivno",
@@ -46,12 +49,10 @@
     "bookAppointmentCta": "Zakaži Termin",
     "featureInDevelopmentToast": "Funkcija u razvoju.",
     "statToday": "Danas",
-    "statPending": "Na čekanju",
     "statConfirmed": "Potvrđeno",
     "statCompleted": "Završeno",
     "statCancelled": "Otkazano",
     "filterAll": "Svi",
-    "filterPending": "Na čekanju",
     "filterConfirmed": "Potvrđeno",
     "filterCancelled": "Otkazano",
     "searchLabel": "Pretraga",
@@ -148,7 +149,8 @@
       "activateMenuItem": "Reaktiviraj",
       "deactivatedToast": "Dr. {{firstName}} {{lastName}} je deaktiviran.",
       "reactivatedToast": "Dr. {{firstName}} {{lastName}} je reaktiviran.",
-      "noServiceAssignedCta": "Dodeli usluge"
+      "noServiceAssignedCta": "Dodeli usluge",
+      "changePhotoMenuItem": "Fotografija lekara"
     },
     "multiSelect": {
       "noOptions": "Nema dostupnih opcija."
@@ -202,9 +204,6 @@
     "scheduleModal": {
       "title": "Radno vreme — dr {{firstName}} {{lastName}}",
       "existingSectionTitle": "Postojeći rasporedi",
-      "modeLabel": "Način dodavanja",
-      "modeSingle": "Jedan dan",
-      "modeRange": "Više dana",
       "loadingLabel": "Učitavanje rasporeda",
       "emptyTitle": "Ovaj lekar još uvek nema dodat nijedan raspored.",
       "sessionCount_one": "{{count}} Sesija",
@@ -222,7 +221,6 @@
       "branchFieldLabel": "Ogranak",
       "selectBranchPlaceholder": "Izaberite ogranak",
       "noBranchNote": "Ovaj lekar još uvek nema dodeljen ogranak.",
-      "dayFieldLabel": "Dan",
       "daysLabel": "Dani",
       "rangeFromLabel": "Od",
       "rangeToLabel": "Do",
@@ -233,17 +231,20 @@
       "validFromLabel": "Važi od",
       "validUntilLabel": "Važi do",
       "savingCta": "Čuvanje…",
-      "addScheduleCta": "Dodaj raspored",
       "addRangeCta": "Dodaj raspored za izabrane dane",
       "branchRequired": "Izaberite ogranak.",
       "timeRequired": "Vreme početka i završetka su obavezni.",
       "slotDurationInvalid": "Trajanje termina mora biti veće od 0.",
       "daysRequired": "Izaberite bar jedan dan.",
-      "addedToast": "Raspored je dodat.",
       "rangeAddedToast_one": "Raspored je dodat za {{count}} dan.",
       "rangeAddedToast_few": "Raspored je dodat za {{count}} dana.",
       "rangeAddedToast_other": "Raspored je dodat za {{count}} dana.",
-      "rangePartialSuccess": "Raspored je dodat za <0>{{count}} od {{total}}</0> izabranih dana. Detalji za dane koji nisu uspeli:"
+      "rangePartialSuccess": "Raspored je dodat za <0>{{count}} od {{total}}</0> izabranih dana. Detalji za dane koji nisu uspeli:",
+      "editSectionTitle": "Izmeni raspored — {{day}}",
+      "saveChangesCta": "Sačuvaj izmene",
+      "cancelEditCta": "Otkaži izmenu",
+      "updatedToast": "Raspored je ažuriran.",
+      "editAria": "Izmeni raspored za {{day}} u {{branch}}"
     },
     "pendingTitle": "Klinika još uvek čeka odobrenje",
     "pendingHint": "Upravljanje lekarima se otvara čim SuperAdmin odobri kliniku.",
@@ -271,6 +272,10 @@
       "deactivatingCta": "Deaktiviranje…",
       "cancelAppointmentsPrompt": "Da biste ipak deaktivirali, predstojeći termini moraju prvo biti otkazani — pogođeni pacijenti se automatski obaveštavaju.",
       "cancelAndDeactivateCta": "Otkaži termine i deaktiviraj"
+    },
+    "photoModal": {
+      "title": "Fotografija dr {{name}}",
+      "description": "Fotografija se prikazuje na javnom profilu lekara i u rezultatima pretrage."
     }
   },
   "services": {
@@ -445,11 +450,10 @@
     "deactivateCta": "Deaktiviraj kliniku",
     "deactivateNote": "Deaktiviranje vrši samo centralno osoblje Rezervo Mjekun. Kontaktirajte centralnog administratora.",
     "logo": {
-      "unsupportedFormat": "Format fajla nije podržan. Koristite PNG, JPEG, SVG ili WEBP.",
+      "unsupportedFormat": "Format fajla nije podržan. Koristite PNG, JPEG ili WEBP.",
       "tooLarge": "Fajl je prevelik. Maksimalna veličina je 2MB.",
       "tooSmall": "Slika mora biti najmanje {{size}}x{{size}}px.",
       "uploadedToast": "Logo je uspešno otpremljen.",
-      "uploadFailedToast": "Otpremanje nije uspelo. Pokušajte ponovo.",
       "removedToast": "Logo je uklonjen.",
       "removeFailedToast": "Greška. Pokušajte ponovo.",
       "logoAlt": "Logo klinike",

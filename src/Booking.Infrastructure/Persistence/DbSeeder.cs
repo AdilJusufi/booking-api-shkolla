@@ -86,9 +86,7 @@ public static class DbSeeder
     /// </summary>
     private static async Task SeedSpecialtiesAsync(BookingDbContext dbContext, Microsoft.Extensions.Logging.ILogger logger)
     {
-        var existing = await dbContext.Specialties
-            .Select(s => new { s.Id, s.Name })
-            .ToListAsync();
+        var existing = await dbContext.Specialties.ToListAsync();
         var existingIds = existing.Select(s => s.Id).ToHashSet();
         var existingNames = new HashSet<string>(existing.Select(s => s.Name), StringComparer.OrdinalIgnoreCase);
 
@@ -96,32 +94,62 @@ public static class DbSeeder
             .Where(s => s.Id.HasValue ? !existingIds.Contains(s.Id.Value) : !existingNames.Contains(s.Name))
             .ToList();
 
-        if (missing.Count == 0)
-        {
-            return;
-        }
-
         dbContext.Specialties.AddRange(missing.Select(s => new Specialty
         {
             Id = s.Id ?? Guid.NewGuid(),
             Name = s.Name,
+            NameEn = s.NameEn,
+            NameSr = s.NameSr,
             Description = s.Description
         }));
 
+        // Rimbush përkthimet te rreshtat që ekzistojnë prej më parë: bazat e
+        // mbjella para se të shtoheshin kolonat i kanë null, dhe pa këtë hap
+        // s'do t'i merrnin kurrë (rreshti s'është "missing"). Prek vetëm ato
+        // që janë ende bosh — një emër i ndryshuar dorazi nga SuperAdmin nuk
+        // mbishkruhet.
+        var backfilled = 0;
+        foreach (var row in existing)
+        {
+            var reference = ReferenceSpecialties.FirstOrDefault(r =>
+                string.Equals(r.Name, row.Name, StringComparison.OrdinalIgnoreCase));
+            if (reference.Name is null)
+            {
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(row.NameEn))
+            {
+                row.NameEn = reference.NameEn;
+                backfilled++;
+            }
+            if (string.IsNullOrWhiteSpace(row.NameSr))
+            {
+                row.NameSr = reference.NameSr;
+            }
+        }
+
+        if (missing.Count == 0 && backfilled == 0)
+        {
+            return;
+        }
+
         await dbContext.SaveChangesAsync();
-        logger.LogInformation("U shtuan {Count} specializime referuese që mungonin.", missing.Count);
+        logger.LogInformation(
+            "Specializimet referuese: {Added} të shtuara, {Backfilled} me përkthime të rimbushura.",
+            missing.Count, backfilled);
     }
 
-    private static readonly (Guid? Id, string Name, string Description)[] ReferenceSpecialties =
+    private static readonly (Guid? Id, string Name, string NameEn, string NameSr, string Description)[] ReferenceSpecialties =
     [
-        (Ids.SpecialtyDentist, "Stomatologji", "Kujdes për dhëmbët dhe gojën."),
-        (Ids.SpecialtyPediatrician, "Pediatri", "Kujdes shëndetësor për fëmijët."),
-        (null, "Oftalmologji", "Diagnostikim dhe trajtim i syve dhe shikimit."),
-        (null, "Dermatologji", "Diagnostikim dhe trajtim i lëkurës."),
-        (null, "Kardiologji", "Diagnostikim dhe trajtim i zemrës dhe sistemit vaskular."),
-        (null, "Gjinekologji", "Kujdes shëndetësor për femrat."),
-        (null, "Otorinolaringologji", "Diagnostikim dhe trajtim i veshëve, hundës dhe fytit."),
-        (null, "Mjekësi Familjare", "Kujdes shëndetësor i përgjithshëm për të gjitha moshat.")
+        (Ids.SpecialtyDentist, "Stomatologji", "Dentistry", "Stomatologija", "Kujdes për dhëmbët dhe gojën."),
+        (Ids.SpecialtyPediatrician, "Pediatri", "Pediatrics", "Pedijatrija", "Kujdes shëndetësor për fëmijët."),
+        (null, "Oftalmologji", "Ophthalmology", "Oftalmologija", "Diagnostikim dhe trajtim i syve dhe shikimit."),
+        (null, "Dermatologji", "Dermatology", "Dermatologija", "Diagnostikim dhe trajtim i lëkurës."),
+        (null, "Kardiologji", "Cardiology", "Kardiologija", "Diagnostikim dhe trajtim i zemrës dhe sistemit vaskular."),
+        (null, "Gjinekologji", "Gynecology", "Ginekologija", "Kujdes shëndetësor për femrat."),
+        (null, "Otorinolaringologji", "Otolaryngology (ENT)", "Otorinolaringologija (ORL)", "Diagnostikim dhe trajtim i veshëve, hundës dhe fytit."),
+        (null, "Mjekësi Familjare", "Family Medicine", "Porodična medicina", "Kujdes shëndetësor i përgjithshëm për të gjitha moshat.")
     ];
 
     private static async Task SeedRolesAsync(IServiceProvider serviceProvider)

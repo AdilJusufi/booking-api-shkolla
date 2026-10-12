@@ -62,6 +62,9 @@ public interface IClinicAdminService
     Task<WorkingScheduleDto> AddDoctorScheduleAsync(
         Guid doctorId, CreateWorkingScheduleRequest request, CancellationToken cancellationToken = default);
 
+    Task<WorkingScheduleDto> UpdateDoctorScheduleAsync(
+        Guid doctorId, Guid scheduleId, UpdateWorkingScheduleRequest request, CancellationToken cancellationToken = default);
+
     Task<UnavailabilityDto> AddDoctorUnavailabilityAsync(
         Guid doctorId, CreateUnavailabilityRequest request, CancellationToken cancellationToken = default);
 

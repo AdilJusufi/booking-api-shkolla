@@ -7,7 +7,7 @@ import type { CreateSpecialtyRequest, Specialty, UpdateSpecialtyRequest } from '
 import { useToast } from '../context/ToastContext'
 import { EmptyState, ErrorBox, Modal, SkeletonRows } from '../components/ui'
 
-const EMPTY_FORM = { name: '', description: '', isActive: true }
+const EMPTY_FORM = { name: '', nameEn: '', nameSr: '', description: '', isActive: true }
 
 export default function SpecialtiesPage() {
   const { t } = useTranslation('admin')
@@ -173,7 +173,15 @@ function SpecialtyFormModal({
   const { t } = useTranslation('admin')
   const { t: tCommon } = useTranslation('common')
   const [form, setForm] = useState(() =>
-    editing ? { name: editing.name, description: editing.description ?? '', isActive: true } : EMPTY_FORM,
+    editing
+      ? {
+          name: editing.name,
+          nameEn: editing.nameEn ?? '',
+          nameSr: editing.nameSr ?? '',
+          description: editing.description ?? '',
+          isActive: true,
+        }
+      : EMPTY_FORM,
   )
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
@@ -187,13 +195,22 @@ function SpecialtyFormModal({
       if (editing) {
         const payload: UpdateSpecialtyRequest = {
           name: form.name.trim(),
+          // Bosh dërgohet si null, që backend-i ta ruajë si "pa përkthim" dhe
+          // ndërfaqja të bjerë te emri shqip.
+          nameEn: form.nameEn.trim() || null,
+          nameSr: form.nameSr.trim() || null,
           description: form.description.trim() || undefined,
           isActive: form.isActive,
         }
         await api.updateSpecialty(editing.id, payload)
         notify(t('specialties.updatedToast'), 'ok')
       } else {
-        const payload: CreateSpecialtyRequest = { name: form.name.trim(), description: form.description.trim() || undefined }
+        const payload: CreateSpecialtyRequest = {
+          name: form.name.trim(),
+          nameEn: form.nameEn.trim() || null,
+          nameSr: form.nameSr.trim() || null,
+          description: form.description.trim() || undefined,
+        }
         await api.createSpecialty(payload)
         notify(t('specialties.createdToast'), 'ok')
       }
@@ -211,6 +228,15 @@ function SpecialtyFormModal({
       <div className="field">
         <label>{t('specialties.nameLabel')}</label>
         <input type="text" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+      </div>
+      <div className="field">
+        <label>{t('specialties.nameEnLabel')} <span className="muted">{t('specialties.optional')}</span></label>
+        <input type="text" value={form.nameEn} onChange={(e) => setForm((f) => ({ ...f, nameEn: e.target.value }))} />
+        <p className="field__hint">{t('specialties.translationHint')}</p>
+      </div>
+      <div className="field">
+        <label>{t('specialties.nameSrLabel')} <span className="muted">{t('specialties.optional')}</span></label>
+        <input type="text" value={form.nameSr} onChange={(e) => setForm((f) => ({ ...f, nameSr: e.target.value }))} />
       </div>
       <div className="field">
         <label>{t('specialties.descriptionLabel')} <span className="muted">{t('specialties.optional')}</span></label>

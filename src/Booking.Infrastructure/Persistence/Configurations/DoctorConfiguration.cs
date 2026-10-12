@@ -10,6 +10,7 @@ public class DoctorConfiguration : IEntityTypeConfiguration<Doctor>
     {
         builder.Property(d => d.LicenseNumber).HasMaxLength(50).IsRequired();
         builder.Property(d => d.Biography).HasMaxLength(2000);
+        builder.Property(d => d.PhotoUrl).HasMaxLength(500);
 
         builder.HasIndex(d => d.UserId).IsUnique();
         builder.HasIndex(d => d.LicenseNumber).IsUnique();

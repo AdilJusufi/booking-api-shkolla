@@ -7,6 +7,9 @@ public class Doctor : AuditableEntity
     public Guid UserId { get; set; }
     public string LicenseNumber { get; set; } = null!;
     public string? Biography { get; set; }
+
+    /// <summary>URL-ja e fotos te Cloudinary — gjithmonë brenda dosjes doctors/{Id}/photo (shih DoctorPhotoService).</summary>
+    public string? PhotoUrl { get; set; }
     public int YearsOfExperience { get; set; }
     public bool IsVerified { get; set; }
     public bool IsActive { get; set; } = true;

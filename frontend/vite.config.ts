@@ -1,14 +1,51 @@
 /// <reference types="vitest/config" />
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
+import { readFileSync } from 'node:fs'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import type { RuntimeCaching } from 'workbox-build'
 import { runtimeCaching } from './src/pwa/runtimeCaching'
+import { injectNoindex, isIndexable, robotsTxtFor } from './src/build/indexing'
+
+/**
+ * Keeps every non-production deployment out of search engines (see src/build/indexing.ts):
+ * a disallow-all robots.txt plus a static noindex tag in index.html. Production is untouched
+ * and serves robots.production.txt. VITE_ENVIRONMENT is read at build time, so each Vercel
+ * deployment gets the right answer from its own environment variable.
+ */
+function indexingPolicy(): Plugin {
+  let environment: string | undefined
+  let productionRobots = ''
+  return {
+    name: 'indexing-policy',
+    configResolved(config) {
+      environment = loadEnv(config.mode, config.root, 'VITE_').VITE_ENVIRONMENT
+      productionRobots = readFileSync(`${config.root}/robots.production.txt`, 'utf8')
+      if (config.command === 'build' && !isIndexable(environment)) {
+        config.logger.warn(
+          `[indexing-policy] VITE_ENVIRONMENT=${environment ?? '(unset)'} — this build is closed to search engines (noindex + disallow-all robots.txt). Only "production" is indexable.`,
+        )
+      }
+    },
+    transformIndexHtml: (html) => injectNoindex(html, environment),
+    // `vite dev` / `vite preview` serve it too, so local behaviour matches the deployed one.
+    configureServer(server) {
+      server.middlewares.use('/robots.txt', (_req, res) => {
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+        res.end(robotsTxtFor(environment, productionRobots))
+      })
+    },
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'robots.txt', source: robotsTxtFor(environment, productionRobots) })
+    },
+  }
+}
 
 // FE-ja niset në http://localhost:5173 (i lejuar tashmë në CORS të backend-it).
 export default defineConfig({
   plugins: [
     react(),
+    indexingPolicy(),
     VitePWA({
       // 'prompt', not 'autoUpdate': a silent reload mid-session could wipe a
       // half-filled booking form. The user is asked first — see PwaUpdatePrompt.

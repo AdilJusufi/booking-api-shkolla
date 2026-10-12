@@ -8,7 +8,7 @@ import { ApiError } from '../lib/api'
 import { getErrorMessage, getFieldErrors } from '../lib/errors'
 import { useCooldown } from '../lib/useCooldown'
 import type { Gender, RegisterClinicBranchRequest } from '../lib/types'
-import { CustomSelect, ErrorBox } from '../components/ui'
+import { CustomSelect, DateField, ErrorBox } from '../components/ui'
 import type { CustomSelectOption } from '../components/ui'
 import { ROLE_HOME } from '../components/ProtectedRoute'
 import { KOSOVO_CITIES } from '../lib/kosovoCities'
@@ -63,10 +63,13 @@ export default function RegisterPage() {
       label: tCommon(`cities.${key}`),
     })),
   ]
-  const GENDER_OPTIONS: CustomSelectOption[] = GENDER_OPTION_VALUES.map((value, i) => ({
-    value,
-    label: t(`register.${GENDER_OPTION_KEYS[i]}`),
-  }))
+  const GENDER_OPTIONS: CustomSelectOption[] = [
+    { value: '', label: t('register.genderSelectPlaceholder'), disabled: true },
+    ...GENDER_OPTION_VALUES.map((value, i) => ({
+      value,
+      label: t(`register.${GENDER_OPTION_KEYS[i]}`),
+    })),
+  ]
 
   // --- Pacienti (i pandryshuar) ---
   const [form, setForm] = useState({
@@ -76,7 +79,9 @@ export default function RegisterPage() {
     phoneNumber: '',
     password: '',
     dateOfBirth: '',
-    gender: 1 as Gender,
+    // Bosh me qëllim: një gjini e parazgjedhur bën që shumica ta dorëzojnë
+    // formën pa e parë fare fushën, dhe të dhënat dalin të gabuara pa e ditur.
+    gender: '' as '' | `${Gender}`,
     city: '',
   })
   const [openSelect, setOpenSelect] = useState<'city' | 'gender' | null>(null)
@@ -132,6 +137,10 @@ export default function RegisterPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     resetSubmitState()
+    if (!form.gender) {
+      setFieldErrors({ gender: t('register.genderRequired') })
+      return
+    }
     setLoading(true)
     try {
       const authUser = await register({
@@ -141,7 +150,7 @@ export default function RegisterPage() {
         phoneNumber: form.phoneNumber,
         password: form.password,
         dateOfBirth: form.dateOfBirth,
-        gender: form.gender,
+        gender: Number(form.gender) as Gender,
         city: form.city || undefined,
       })
       // Public registration only ever produces a Patient account today, but
@@ -327,26 +336,25 @@ export default function RegisterPage() {
             </div>
 
             <div className="form-row">
-              <div className="field">
-                <label>{t('register.dobLabel')}</label>
-                <input
-                  type="date"
-                  required
-                  max={maxBirth()}
-                  value={form.dateOfBirth}
-                  onChange={(e) => set('dateOfBirth', e.target.value)}
-                />
-                {fieldErrors.dateOfBirth && <span className="field__error">{fieldErrors.dateOfBirth}</span>}
-              </div>
+              <DateField
+                label={t('register.dobLabel')}
+                value={form.dateOfBirth}
+                onChange={(v) => set('dateOfBirth', v)}
+                maxYear={maxBirthYear()}
+                required
+                error={fieldErrors.dateOfBirth}
+              />
               <div className="field">
                 <CustomSelect
                   label={t('register.genderLabel')}
                   options={GENDER_OPTIONS}
-                  value={String(form.gender)}
-                  onChange={(v) => set('gender', Number(v) as Gender)}
+                  value={form.gender}
+                  placeholder={t('register.genderSelectPlaceholder')}
+                  onChange={(v) => set('gender', v as `${Gender}`)}
                   open={openSelect === 'gender'}
                   onOpenChange={(isOpen) => setOpenSelect(isOpen ? 'gender' : null)}
                 />
+                {fieldErrors.gender && <span className="field__error">{fieldErrors.gender}</span>}
               </div>
             </div>
 
@@ -358,8 +366,11 @@ export default function RegisterPage() {
                 minLength={8}
                 value={form.password}
                 onChange={(e) => set('password', e.target.value)}
-                placeholder={t('register.passwordPlaceholder')}
               />
+              {/* Rregullat qëndrojnë nën fushë e jo te placeholder-i: placeholder-i
+                  zhduket sapo shkruhet shkronja e parë — pikërisht kur duhen — dhe
+                  pritet nga gjerësia e input-it. */}
+              <p className="field__hint">{t('register.passwordRules')}</p>
               {fieldErrors.password && <span className="field__error">{fieldErrors.password}</span>}
             </div>
 
@@ -430,14 +441,14 @@ export default function RegisterPage() {
                   minLength={8}
                   value={clinicForm.password}
                   onChange={(e) => setClinicField('password', e.target.value)}
-                  placeholder={t('register.passwordPlaceholder')}
                 />
+                <p className="field__hint">{t('register.passwordRules')}</p>
                 {fieldErrors.password && <span className="field__error">{fieldErrors.password}</span>}
               </div>
             </div>
 
             <div className="field">
-              <label>{t('fields.confirmPassword.label')}</label>
+              <label>{t('fields.confirmPassword.labelSignup')}</label>
               <input
                 type="password"
                 required
@@ -567,8 +578,6 @@ export default function RegisterPage() {
   )
 }
 
-function maxBirth(): string {
-  const d = new Date()
-  d.setFullYear(d.getFullYear() - 16)
-  return d.toISOString().slice(0, 10)
+function maxBirthYear(): number {
+  return new Date().getFullYear() - 16
 }

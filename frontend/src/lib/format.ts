@@ -32,10 +32,6 @@ function activeLocale(): string {
   return INTL_LOCALES[(i18n.resolvedLanguage as SupportedLanguage) ?? 'sq'] ?? 'sq'
 }
 
-function capitalizeFirst(s: string): string {
-  return s.length === 0 ? s : s.charAt(0).toUpperCase() + s.slice(1)
-}
-
 /**
  * Localized weekday name for a JS Date.getDay() index (0 = Sunday .. 6 =
  * Saturday). Looked up from a static translation table (common.json
@@ -68,20 +64,21 @@ export function formatTime(iso: string): string {
   return m ? `${m[1]}:${m[2]}` : iso
 }
 
-/** e.g. "Monday, July 20, 2026" / "E hënë, 20 korrik 2026" */
+/**
+ * e.g. "E Premte, 4 Shtator 2026". Built from the static weekdayName/monthName
+ * tables rather than Intl.DateTimeFormat — see the comment on weekdayName for
+ * why: Intl silently drops to English on ICU-limited runtimes for "sq", and a
+ * full date string inherits that defect just as much as a bare weekday name.
+ */
 export function formatDateLong(iso: string): string {
   const d = parseLocal(iso)
-  return capitalizeFirst(
-    new Intl.DateTimeFormat(activeLocale(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(d),
-  )
+  return `${weekdayName(d.getDay())}, ${d.getDate()} ${monthName(d.getMonth())} ${d.getFullYear()}`
 }
 
-/** e.g. "July 20, 2026, 09:00" / "20 korrik 2026, 09:00" */
+/** e.g. "4 Shtator 2026, 09:00" — see formatDateLong for why this avoids Intl.DateTimeFormat. */
 export function formatDateTime(iso: string): string {
   const d = parseLocal(iso)
-  const date = capitalizeFirst(
-    new Intl.DateTimeFormat(activeLocale(), { day: 'numeric', month: 'long', year: 'numeric' }).format(d),
-  )
+  const date = `${d.getDate()} ${monthName(d.getMonth())} ${d.getFullYear()}`
   return `${date}, ${formatTime(iso)}`
 }
 

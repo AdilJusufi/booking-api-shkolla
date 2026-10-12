@@ -51,7 +51,7 @@ function mockAppointmentAndDoctor() {
 }
 
 async function openRescheduleAndPickSlot(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(await screen.findByRole('button', { name: /Rischeduloni terminin/i }))
+  await user.click(await screen.findByRole('button', { name: /Ricaktoni terminin/i }))
 
   const dayButtons = await screen.findAllByRole('button', { name: /^\d+$/ })
   const enabledDay = dayButtons.find((b) => !b.hasAttribute('disabled'))
@@ -92,7 +92,7 @@ describe('AppointmentDetailPage — reschedule 409 handling (3g)', () => {
     await openRescheduleAndPickSlot(user)
     const slotsCallsBeforeConfirm = slotsCalls
 
-    await user.click(screen.getByRole('button', { name: /Konfirmo rischedulimin/i }))
+    await user.click(screen.getByRole('button', { name: /Konfirmo ricaktimin/i }))
 
     await waitFor(() =>
       expect(
@@ -136,7 +136,7 @@ describe('AppointmentDetailPage — reschedule 409 handling (3g)', () => {
     })
 
     await openRescheduleAndPickSlot(user)
-    await user.click(screen.getByRole('button', { name: /Konfirmo rischedulimin/i }))
+    await user.click(screen.getByRole('button', { name: /Konfirmo ricaktimin/i }))
     await waitFor(() =>
       expect(
         screen.getByText('Ky termin sapo u zu nga dikush tjetër. Ju lutem zgjidhni një kohë tjetër.'),
@@ -146,7 +146,7 @@ describe('AppointmentDetailPage — reschedule 409 handling (3g)', () => {
     // Pick the (refetched) slot again and retry — no reload, same component instance.
     const retrySlot = await screen.findByRole('button', { name: '10:00' })
     await user.click(retrySlot)
-    await user.click(screen.getByRole('button', { name: /Konfirmo rischedulimin/i }))
+    await user.click(screen.getByRole('button', { name: /Konfirmo ricaktimin/i }))
 
     await waitFor(() => expect(rescheduleCalls).toBe(2))
   })

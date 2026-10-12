@@ -23,7 +23,8 @@ import { AppointmentStatus } from '../lib/types'
 import type { Appointment, AvailableSlot, ClinicDetails, DoctorDetails } from '../lib/types'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
-import { Badge, ErrorBox, Pending, initials, specialtyLabel } from '../components/ui'
+import { Badge, ErrorBox, Pending, initials } from '../components/ui'
+import { useSpecialtyLabel } from '../context/SpecialtyNamesContext'
 import { monthName, toDateInput, weekdayName } from '../lib/format'
 
 function parseLocal(iso: string): Date {
@@ -129,6 +130,7 @@ function DetailSkeleton() {
 
 export default function AppointmentDetailPage() {
   const { t } = useTranslation('patient')
+  const specialtyLabel = useSpecialtyLabel()
   const { t: tCommon } = useTranslation('common')
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()

@@ -7,6 +7,13 @@ public interface IAvailabilityService
         Guid doctorId, AvailableSlotsQuery query, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gjendja e çdo dite në [From, To]: pa orar (Closed), pa slote të lira (Full), ose e rezervueshme.
+    /// Përdor të njëjtin gjenerator slotesh si available-slots, që kalendari dhe lista e orareve të mos kundërshtohen.
+    /// </summary>
+    Task<IReadOnlyList<AvailableDayDto>> GetAvailableDaysAsync(
+        Guid doctorId, AvailableDaysQuery query, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// A është i lirë sloti që fillon në 'localStartDateTime' (ora e Prishtinës)?
     /// Përdoret nga krijimi i rezervimit — i njëjti burim i së vërtetës si available-slots.
     /// </summary>

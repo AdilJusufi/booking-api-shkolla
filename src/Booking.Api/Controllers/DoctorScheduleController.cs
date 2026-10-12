@@ -54,6 +54,18 @@ public class DoctorScheduleController : ControllerBase
         return StatusCode(StatusCodes.Status201Created, schedule);
     }
 
+    /// <summary>Ndryshon një orar të vetin — 409 "schedule-has-booked-appointments" nëse do të linte termine jashtë orarit.</summary>
+    [HttpPut("working-schedules/{id:guid}")]
+    [ProducesResponseType(typeof(WorkingScheduleDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<WorkingScheduleDto>> UpdateSchedule(
+        Guid id, UpdateWorkingScheduleRequest request, CancellationToken cancellationToken)
+    {
+        var doctorId = await ResolveDoctorIdAsync(cancellationToken);
+        return Ok(await _scheduleService.UpdateScheduleAsync(doctorId, id, request, cancellationToken));
+    }
+
     [HttpDelete("working-schedules/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> DeactivateSchedule(Guid id, CancellationToken cancellationToken)

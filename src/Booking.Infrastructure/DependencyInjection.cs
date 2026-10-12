@@ -9,6 +9,7 @@ using Booking.Application.Features.Patients;
 using Booking.Application.Features.Availability;
 using Booking.Application.Features.Clinics;
 using Booking.Application.Features.Doctors;
+using Booking.Application.Features.Seo;
 using Booking.Application.Features.Schedules;
 using Booking.Infrastructure.Auth;
 using Booking.Infrastructure.Queries;
@@ -59,6 +60,7 @@ public static class DependencyInjection
 
         services.AddScoped<IClinicQueryService, ClinicQueryService>();
         services.AddScoped<IDoctorQueryService, DoctorQueryService>();
+        services.AddScoped<ISitemapQueryService, SitemapQueryService>();
         services.AddScoped<IAvailabilityService, AvailabilityService>();
         services.AddScoped<IScheduleService, ScheduleService>();
         services.AddScoped<IAppointmentService, AppointmentService>();
@@ -69,7 +71,9 @@ public static class DependencyInjection
         services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<IEmailAbuseGuard, EmailAbuseGuard>();
         services.AddScoped<TenantAccessService>();
+        services.AddScoped<CloudinaryUploadSigner>();
         services.AddScoped<IClinicAdminService, ClinicAdminService>();
+        services.AddScoped<IDoctorPhotoService, DoctorPhotoService>();
         services.AddScoped<ISuperAdminService, SuperAdminService>();
         services.AddScoped<IAdminAppointmentService, AdminAppointmentService>();
         services.AddScoped<IAdminPatientService, AdminPatientService>();

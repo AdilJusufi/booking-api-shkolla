@@ -62,6 +62,31 @@ public class AuthService : IAuthService
         _logger = logger;
     }
 
+    /// <summary>
+    /// Objekt bosh vetëm si argument për VerifyHashedPassword — hasher-i i Identity-t nuk
+    /// e lexon fare user-in, e merr çdo parametër nga vetë hash-i i koduar.
+    /// </summary>
+    private static readonly ApplicationUser TimingEqualisationUser = new();
+
+    /// <summary>
+    /// Hash-i ndaj të cilit verifikohet password-i kur llogaria nuk ekziston. Llogaritet
+    /// një herë për proces dhe ruhet, sepse vetë HashPassword është po aq i shtrenjtë sa
+    /// verifikimi — ta rillogarisnim për çdo kërkesë do ta dyfishonte koston pa asnjë
+    /// përfitim.
+    ///
+    /// Gjenerohet nga hasher-i AKTUAL i konfiguruar, jo i koduar si konstante: numri i
+    /// iteracioneve dhe formati janë të ngulitura brenda hash-it, kështu që një konstante
+    /// e ngurtë do ta mbante koston e vjetër nëse politika e Identity-t ndryshon — dhe
+    /// hendeku kohor do të rihapej pa e vënë re askush.
+    /// </summary>
+    private static string? _timingEqualisationHash;
+
+    private string GetTimingEqualisationHash() =>
+        // Gara mes thread-eve është e padëmshme: rezultati është i njëjti hash i vlefshëm,
+        // vetëm i llogaritur dy herë në rastin më të keq.
+        _timingEqualisationHash ??= _userManager.PasswordHasher.HashPassword(
+            TimingEqualisationUser, "timing-equalisation-placeholder-not-a-real-credential");
+
     public async Task<AuthResponse> RegisterPatientAsync(RegisterRequest request, CancellationToken cancellationToken = default)
     {
         var existing = await _userManager.FindByEmailAsync(request.Email);
@@ -252,6 +277,20 @@ public class AuthService : IAuthService
         var user = await _userManager.FindByEmailAsync(request.Email);
         if (user is null)
         {
+            // Barazim kohe — jo dekor. Pa këtë, rruga "email-i s'ekziston" kthehet menjëherë
+            // (~2.5 ms e matur), ndërsa "email-i ekziston, password i gabuar" paguan
+            // verifikimin e plotë PBKDF2 (~95 ms e matur). Trupi i përgjigjes është
+            // identik në të dyja rastet, prandaj ai hendek prej ~93 ms ishte vetë sinjali:
+            // dallohej pa asnjë mbivendosje shpërndarjeje, pra mjaftonte një matje e
+            // thjeshtë për të konfirmuar nëse një adresë ka llogari — e dhënë private
+            // në vetvete për një platformë shëndetësore, pavarësisht password-it.
+            //
+            // SignInManager e bën këtë kompensim brenda vetes; ky kod thërret UserManager
+            // drejtpërdrejt, ndaj duhet i shprehur. Rezultati injorohet me qëllim: na
+            // intereson KOHA e llogaritjes, jo përgjigjja.
+            _userManager.PasswordHasher.VerifyHashedPassword(
+                TimingEqualisationUser, GetTimingEqualisationHash(), request.Password);
+
             throw AuthenticationFailedException.InvalidCredentials();
         }
 

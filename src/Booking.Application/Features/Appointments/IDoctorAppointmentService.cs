@@ -11,8 +11,6 @@ public interface IDoctorAppointmentService
     Task<DoctorAppointmentDto> GetByIdAsync(
         Guid userId, Guid appointmentId, CancellationToken cancellationToken = default);
 
-    Task<DoctorAppointmentDto> ConfirmAsync(Guid userId, Guid appointmentId, CancellationToken cancellationToken = default);
-
     Task<DoctorAppointmentDto> CompleteAsync(Guid userId, Guid appointmentId, CancellationToken cancellationToken = default);
 
     /// <summary>NoShow lejohet vetëm pasi ka kaluar ora e fillimit të terminit.</summary>

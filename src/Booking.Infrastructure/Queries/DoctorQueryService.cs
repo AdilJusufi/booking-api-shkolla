@@ -29,6 +29,17 @@ public class DoctorQueryService : IDoctorQueryService
             query = query.Where(x => EF.Functions.ILike(x.User.FirstName + " " + x.User.LastName, pattern));
         }
 
+        // Doktori nuk ka qytet të vetin — e trashëgon nga degët ku ordinon.
+        // ILike pa wildcard = përputhje e plotë pa dallim shkronjash, njësoj
+        // si filtri i qytetit te kërkimi i klinikave.
+        if (!string.IsNullOrWhiteSpace(request.City))
+        {
+            query = query.Where(x => x.Doctor.DoctorClinicBranches.Any(dcb =>
+                dcb.IsActive
+                && dcb.ClinicBranch.IsActive
+                && EF.Functions.ILike(dcb.ClinicBranch.City, request.City)));
+        }
+
         if (request.ClinicId is { } clinicId)
         {
             query = query.Where(x => x.Doctor.DoctorClinicBranches.Any(dcb =>
@@ -73,7 +84,8 @@ public class DoctorQueryService : IDoctorQueryService
                 FirstName = x.User.FirstName,
                 LastName = x.User.LastName,
                 YearsOfExperience = x.Doctor.YearsOfExperience,
-                Specialties = x.Doctor.DoctorSpecialties.Select(ds => ds.Specialty.Name).ToList()
+                Specialties = x.Doctor.DoctorSpecialties.Select(ds => ds.Specialty.Name).ToList(),
+                PhotoUrl = x.Doctor.PhotoUrl
             })
             .ToListAsync(cancellationToken);
 
@@ -98,6 +110,7 @@ public class DoctorQueryService : IDoctorQueryService
                     FirstName = user.FirstName,
                     LastName = user.LastName,
                     Biography = d.Biography,
+                    PhotoUrl = d.PhotoUrl,
                     YearsOfExperience = d.YearsOfExperience,
                     Specialties = d.DoctorSpecialties.Select(ds => ds.Specialty.Name).ToList(),
                     Branches = d.DoctorClinicBranches

@@ -2,9 +2,10 @@ using FluentValidation;
 
 namespace Booking.Application.Features.Schedules;
 
-public sealed class CreateWorkingScheduleRequestValidator : AbstractValidator<CreateWorkingScheduleRequest>
+/// <summary>Rregullat e përbashkëta — krijimi dhe ndryshimi validohen njëlloj.</summary>
+public abstract class WorkingScheduleRequestValidator<T> : AbstractValidator<T> where T : IWorkingScheduleRequest
 {
-    public CreateWorkingScheduleRequestValidator()
+    protected WorkingScheduleRequestValidator()
     {
         RuleFor(x => x.ClinicBranchId).NotEmpty();
         RuleFor(x => x.DayOfWeek).IsInEnum();
@@ -18,6 +19,10 @@ public sealed class CreateWorkingScheduleRequestValidator : AbstractValidator<Cr
             .WithMessage("ValidUntil duhet të jetë pas ose e barabartë me ValidFrom.");
     }
 }
+
+public sealed class CreateWorkingScheduleRequestValidator : WorkingScheduleRequestValidator<CreateWorkingScheduleRequest>;
+
+public sealed class UpdateWorkingScheduleRequestValidator : WorkingScheduleRequestValidator<UpdateWorkingScheduleRequest>;
 
 public sealed class CreateUnavailabilityRequestValidator : AbstractValidator<CreateUnavailabilityRequest>
 {

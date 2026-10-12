@@ -84,8 +84,31 @@ public sealed class ConflictException : Exception
 {
     public string ErrorCode { get; }
 
-    public ConflictException(string errorCode, string message) : base(message)
+    /// <summary>
+    /// Të dhëna shtesë të strukturuara që klienti i sheh si fusha të ProblemDetails
+    /// (p.sh. "affectedAppointments" kur një ndryshim orari prek termine të rezervuara).
+    /// </summary>
+    public IReadOnlyDictionary<string, object?>? Details { get; }
+
+    public ConflictException(string errorCode, string message, IReadOnlyDictionary<string, object?>? details = null)
+        : base(message)
     {
         ErrorCode = errorCode;
+        Details = details;
+    }
+}
+
+/// <summary>
+/// Ngarkimi i imazheve s'është i mundur sepse Cloudinary s'është konfiguruar në këtë mjedis
+/// → HTTP 503 me kod "uploads-not-configured". Është gabim konfigurimi, jo gabim i përdoruesit:
+/// klienti tregon një mesazh të qartë në vend të një 500 pa shpjegim.
+/// </summary>
+public sealed class UploadsNotConfiguredException : Exception
+{
+    public const string ErrorCode = "uploads-not-configured";
+
+    public UploadsNotConfiguredException()
+        : base("Ngarkimi i imazheve nuk është i disponueshëm për momentin.")
+    {
     }
 }

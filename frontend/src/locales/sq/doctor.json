@@ -5,30 +5,30 @@
     "navUnavailability": "Mungesat",
     "searchPatientPlaceholder": "Kërko pacient...",
     "breadcrumbPanel": "Paneli",
-    "breadcrumbSchedule": "Orari i punës"
+    "breadcrumbSchedule": "Orari i punës",
+    "breadcrumbProfile": "Profili im"
   },
   "userMenu": {
     "mySchedule": "Orari im",
-    "unavailability": "Mungesat"
+    "unavailability": "Mungesat",
+    "myProfile": "Profili im"
   },
   "calendar": {
     "title": "Kalendari im",
     "viewList": "Lista",
     "viewDay": "Ditore",
     "dateRange": {
+      "upcoming": "90 ditët e ardhshme",
       "today": "Sot",
       "week": "Kjo javë",
       "month": "Ky muaj",
       "3months": "3 muajt e fundit"
     },
     "statusTabAll": "Të gjitha",
-    "statusTabPending": "Në pritje",
     "statusTabConfirmed": "Konfirmuar",
     "statusTabCompleted": "Përfunduar",
     "statTodayLabel": "Sot",
     "statTodayCompletedSub": "{{count}} të përfunduara",
-    "statPendingLabel": "Në pritje",
-    "statPendingSub": "Kërkojnë konfirmim",
     "statConfirmedTodayLabel": "Konfirmuar sot",
     "statConfirmedTodaySub": "Gati për vizitë",
     "statMonthLabel": "Këtë muaj",
@@ -38,8 +38,6 @@
     "noAppointmentsHint": "Nuk u gjetën termine për këtë periudhë.",
     "todayPrefix": "SOT",
     "minutesShort": "min",
-    "confirmCta": "Konfirmo",
-    "markCancelledTitle": "Shënoji si anuluar",
     "completeCta": "Përfundo",
     "markNoShowTitle": "Nuk u paraqit",
     "badges": {
@@ -50,9 +48,8 @@
       "noShow": "NUK U PARAQIT",
       "unknown": "I PANJOHUR"
     },
-    "confirmedToast": "Termini u konfirmua.",
     "completedToast": "Termini u shënua si i përfunduar.",
-    "noShowToast": "Termini u shënua si i paraqitur.",
+    "noShowToast": "Termini u shënua si «nuk erdhi».",
     "dayView": {
       "todayLabel": "Sot, {{weekday}} {{day}} {{month}}",
       "dateLabel": "{{weekday}} {{day}} {{month}}",
@@ -81,7 +78,7 @@
     "patientNotesLabel": "Shënime të Pacientit",
     "statusDescriptionFallback": "Statusi i këtij termini nuk njihet.",
     "statusDescriptions": {
-      "pending": "Termini pret konfirmimin tuaj.",
+      "pending": "Termini është në pritje të konfirmimit.",
       "confirmed": "Termini është konfirmuar. Pacienti është njoftuar.",
       "checkedIn": "Pacienti ka mbërrritur.",
       "inProgress": "Konsulta është në progres.",
@@ -103,7 +100,6 @@
       "unknown": "I PANJOHUR"
     },
     "readOnlyNote": "Ky termin është vetëm për lexim — nuk ka veprime të disponueshme.",
-    "confirmPrompt": "A jeni të sigurt që dëshironi të konfirmoni këtë termin?",
     "completePrompt": "A jeni të sigurt që dëshironi ta shënoni si të përfunduar?",
     "noShowPrompt": "A jeni të sigurt? Pacienti do të shënohet si i pa-ardhur.",
     "saving": "Duke ruajtur…",
@@ -115,18 +111,16 @@
     "internalNotesHint": "Të dukshme vetëm për stafin mjekësor.",
     "internalNotesPlaceholder": "Shkruani shënime interne këtu...",
     "saveNoteCta": "Ruaj Shënimin",
-    "noteSavedToast": "Shënimi u ruajt."
+    "noteSavedToast": "Shënimi u ruajt.",
+    "actionsAvailableAtStart": "“Përfundo” dhe “Nuk erdhi” bëhen të disponueshme kur të fillojë termini ({{time}})."
   },
   "workingSchedule": {
     "title": "Orari i punës",
     "subtitle": "Menaxhoni oraret javore të punës dhe kohën e sloteve për çdo degë.",
-    "addScheduleCta": "Shto orar të ri",
-    "modeLabel": "Mënyra e shtimit",
-    "modeSingle": "Një ditë",
-    "modeRange": "Disa ditë",
+    "addScheduleCta": "Krijo orar të ri",
     "infoBanner": "Këto orare janë shabllone javore që përsëriten automatikisht. Mund të caktoni vlefshmëri specifike për periudha të caktuara kohore.",
     "loadingLabel": "Duke ngarkuar oraret",
-    "emptyTitle": "Nuk keni asnjë orar të shtuar ende.",
+    "emptyTitle": "Nuk keni asnjë orar të krijuar ende.",
     "sessionCount_one": "{{count}} Sesion",
     "sessionCount_other": "{{count}} Sesione",
     "timeLabel": "KOHA",
@@ -138,10 +132,9 @@
     "statusActive": "AKTIV",
     "statusInactive": "JOAKTIV",
     "deleteAria": "Fshi orarin",
-    "addModalTitle": "Shto orar të ri",
+    "addModalTitle": "Krijo orar të ri",
     "branchLabel": "Dega",
-    "noBranchesAvailable": "Nuk ka degë të disponueshme. Shtoni një orar për një degë me anë të stafit administrativ së pari, ose kontaktoni administratorin e klinikës.",
-    "dayOfWeekLabel": "Dita e javës",
+    "noBranchesAvailable": "Nuk ka degë të disponueshme. Krijoni një orar për një degë me anë të stafit administrativ së pari, ose kontaktoni administratorin e klinikës.",
     "daysLabel": "Ditët",
     "rangeFromLabel": "Nga",
     "rangeToLabel": "Deri",
@@ -153,8 +146,7 @@
     "validUntilLabel": "Vlefshëm deri",
     "optional": "(opsional)",
     "saving": "Duke ruajtur…",
-    "addScheduleSubmit": "Shto orarin",
-    "addRangeSubmit": "Shto orarin për ditët e zgjedhura",
+    "addRangeSubmit": "Krijo orarin për ditët e zgjedhura",
     "deleteModalTitle": "Fshi orarin",
     "deleteConfirmText": "Jeni i sigurt që dëshironi të fshini orarin për <0>{{day}}</0> në <1>{{branch}}</1>?",
     "deleting": "Duke fshirë…",
@@ -166,22 +158,25 @@
       "durationRange": "Kohëzgjatja e sllotit duhet të jetë mes 5 dhe 240 minuta.",
       "validUntilAfterFrom": "Data e skadimit duhet të jetë pas datës së fillimit."
     },
-    "createdToast": "Orari u shtua.",
     "deactivatedToast": "Orari u çaktivizua.",
     "deletedToast": "Orari u fshi.",
-    "rangeCreatedToast_one": "Orari u shtua për {{count}} ditë.",
-    "rangeCreatedToast_other": "Orari u shtua për {{count}} ditë.",
-    "rangePartialSuccess": "Orari u shtua për <0>{{count}} nga {{total}}</0> ditët e zgjedhura. Detajet për ditët që dështuan:"
+    "rangeCreatedToast_one": "Orari u krijua për {{count}} ditë.",
+    "rangeCreatedToast_other": "Orari u krijua për {{count}} ditë.",
+    "rangePartialSuccess": "Orari u krijua për <0>{{count}} nga {{total}}</0> ditët e zgjedhura. Detajet për ditët që dështuan:",
+    "editModalTitle": "Ndrysho orarin",
+    "saveChangesCta": "Ruaj ndryshimet",
+    "updatedToast": "Orari u përditësua.",
+    "editAria": "Ndrysho orarin e {{day}} në {{branch}}"
   },
   "unavailability": {
     "title": "Mungesat & Pushimet",
     "subtitle": "Bllokoni periudha kur nuk jeni të disponueshëm për termine.",
-    "addAbsenceCta": "Shto Mungesë",
+    "addAbsenceCta": "Lajmëro Mungesë",
     "infoBanner": "Gjatë periudhave të bllokuara, pacientët nuk do të mund të rezervojnë termine me ju.",
     "loadingLabel": "Duke ngarkuar mungesat",
     "emptyTitle": "Nuk keni asnjë mungesë të planifikuar.",
-    "emptyHint": "Shtoni mungesat tuaja që pacientët të mos rezervojnë në ato periudha.",
-    "addFirstAbsence": "Shto Mungesën e Parë",
+    "emptyHint": "Lajmëroni mungesat tuaja që pacientët të mos rezervojnë në ato periudha.",
+    "addFirstAbsence": "Lajmëro Mungesën e Parë",
     "allDaySuffix": "Gjithë ditën",
     "durationMinutes": "{{count}} minuta",
     "durationHours": "{{count}} orë",
@@ -198,7 +193,7 @@
     "deleteConfirmText": "A jeni të sigurt që dëshironi ta fshini këtë mungesë?",
     "deleteCta": "Fshi",
     "deletedToast": "Mungesa u fshi.",
-    "addModalTitle": "Shto Mungesë",
+    "addModalTitle": "Lajmëro Mungesë",
     "branchLabel": "Dega",
     "startLabel": "Data e Fillimit",
     "startTimeLabel": "Ora e Fillimit",
@@ -208,13 +203,20 @@
     "optional": "(opsionale)",
     "reasonPlaceholder": "p.sh. Pushime, Konferencë, Sëmundje...",
     "saving": "Duke ruajtur…",
-    "addAbsenceSubmit": "Shto Mungesën",
+    "addAbsenceSubmit": "Lajmëro Mungesën",
     "validation": {
       "timesRequired": "Ora e fillimit dhe mbarimit janë të detyrueshme.",
       "endAfterStart": "Koha e mbarimit duhet të jetë pas fillimit.",
-      "notInPast": "Nuk mund të shtoni mungesë në të kaluarën."
+      "notInPast": "Nuk mund të lajmërosh mungesë në të kaluarën."
     },
-    "createdToast": "Mungesa u shtua me sukses.",
+    "createdToast": "Mungesa u lajmërua me sukses.",
     "conflictToast": "Keni termine të konfirmuara në këtë periudhë. Ju lutem ricaktoni ato fillimisht."
+  },
+  "profile": {
+    "title": "Profili im",
+    "photoTitle": "Fotoja e profilit",
+    "photoDescription": "Fotoja shfaqet në profilin tuaj publik dhe në rezultatet e kërkimit.",
+    "viewPublic": "Shiko profilin publik",
+    "loadFailed": "Profili nuk u ngarkua."
   }
 }

@@ -31,6 +31,9 @@
     "editModalTitle": "Edit Specialty",
     "addModalTitle": "Add Specialty",
     "nameLabel": "Name",
+    "nameEnLabel": "Name in English",
+    "nameSrLabel": "Name in Serbian",
+    "translationHint": "Without a translation, the Albanian name is shown in every language.",
     "descriptionLabel": "Description",
     "optional": "(optional)",
     "activeCheckbox": "Active",
@@ -46,12 +49,10 @@
     "bookAppointmentCta": "Book Appointment",
     "featureInDevelopmentToast": "Feature in development.",
     "statToday": "Today",
-    "statPending": "Pending",
     "statConfirmed": "Confirmed",
     "statCompleted": "Completed",
     "statCancelled": "Cancelled",
     "filterAll": "All",
-    "filterPending": "Pending",
     "filterConfirmed": "Confirmed",
     "filterCancelled": "Cancelled",
     "searchLabel": "Search",
@@ -147,7 +148,8 @@
       "activateMenuItem": "Reactivate",
       "deactivatedToast": "Dr. {{firstName}} {{lastName}} was deactivated.",
       "reactivatedToast": "Dr. {{firstName}} {{lastName}} was reactivated.",
-      "noServiceAssignedCta": "Assign services"
+      "noServiceAssignedCta": "Assign services",
+      "changePhotoMenuItem": "Doctor's photo"
     },
     "multiSelect": {
       "noOptions": "No options available."
@@ -201,9 +203,6 @@
     "scheduleModal": {
       "title": "Work Schedule — Dr. {{firstName}} {{lastName}}",
       "existingSectionTitle": "Existing Schedules",
-      "modeLabel": "Add mode",
-      "modeSingle": "Single day",
-      "modeRange": "Multiple days",
       "loadingLabel": "Loading schedules",
       "emptyTitle": "This doctor hasn't had any schedule added yet.",
       "sessionCount_one": "{{count}} Session",
@@ -220,7 +219,6 @@
       "branchFieldLabel": "Branch",
       "selectBranchPlaceholder": "Select branch",
       "noBranchNote": "This doctor doesn't have a branch assigned yet.",
-      "dayFieldLabel": "Day",
       "daysLabel": "Days",
       "rangeFromLabel": "From",
       "rangeToLabel": "To",
@@ -231,16 +229,19 @@
       "validFromLabel": "Valid From",
       "validUntilLabel": "Valid Until",
       "savingCta": "Saving…",
-      "addScheduleCta": "Add Schedule",
       "addRangeCta": "Add schedule for selected days",
       "branchRequired": "Select a branch.",
       "timeRequired": "Start and end time are required.",
       "slotDurationInvalid": "Slot duration must be greater than 0.",
       "daysRequired": "Select at least one day.",
-      "addedToast": "Schedule added.",
       "rangeAddedToast_one": "Schedule added for {{count}} day.",
       "rangeAddedToast_other": "Schedule added for {{count}} days.",
-      "rangePartialSuccess": "Schedule added for <0>{{count}} of {{total}}</0> selected days. Details for the days that failed:"
+      "rangePartialSuccess": "Schedule added for <0>{{count}} of {{total}}</0> selected days. Details for the days that failed:",
+      "editSectionTitle": "Edit schedule — {{day}}",
+      "saveChangesCta": "Save changes",
+      "cancelEditCta": "Cancel editing",
+      "updatedToast": "Schedule updated.",
+      "editAria": "Edit the {{day}} schedule at {{branch}}"
     },
     "pendingTitle": "The clinic is still awaiting approval",
     "pendingHint": "Doctor management opens up as soon as a SuperAdmin approves the clinic.",
@@ -268,6 +269,10 @@
       "deactivatingCta": "Deactivating…",
       "cancelAppointmentsPrompt": "To deactivate anyway, the upcoming appointments must be cancelled first — affected patients are notified automatically.",
       "cancelAndDeactivateCta": "Cancel Appointments and Deactivate"
+    },
+    "photoModal": {
+      "title": "Photo of Dr. {{name}}",
+      "description": "The photo appears on the doctor's public profile and in search results."
     }
   },
   "services": {
@@ -442,11 +447,10 @@
     "deactivateCta": "Deactivate Clinic",
     "deactivateNote": "Deactivation is only performed by Rezervo Mjekun central staff. Contact the central administrator.",
     "logo": {
-      "unsupportedFormat": "File format not supported. Use PNG, JPEG, SVG or WEBP.",
+      "unsupportedFormat": "File format not supported. Use PNG, JPEG or WEBP.",
       "tooLarge": "File is too large. Maximum size is 2MB.",
       "tooSmall": "Image must be at least {{size}}x{{size}}px.",
       "uploadedToast": "Logo uploaded successfully.",
-      "uploadFailedToast": "Upload failed. Please try again.",
       "removedToast": "Logo removed.",
       "removeFailedToast": "Error. Please try again.",
       "logoAlt": "Clinic logo",

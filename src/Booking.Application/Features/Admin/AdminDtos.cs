@@ -48,19 +48,6 @@ public sealed record AdminClinicDto
     public required IReadOnlyList<string> Cities { get; init; }
 }
 
-/// <summary>
-/// Të dhënat që frontend-i i duhen për të ngarkuar drejtpërdrejt te Cloudinary
-/// me një signed upload — API secret-i mbetet vetëm në backend.
-/// </summary>
-public sealed record CloudinarySignatureDto
-{
-    public required string Signature { get; init; }
-    public required long Timestamp { get; init; }
-    public required string ApiKey { get; init; }
-    public required string CloudName { get; init; }
-    public required string Folder { get; init; }
-}
-
 public sealed record ClinicAdministratorDto
 {
     public required Guid UserId { get; init; }
@@ -193,6 +180,7 @@ public sealed record AdminDoctorDetailDto
     public string? PhoneNumber { get; init; }
     public required string LicenseNumber { get; init; }
     public string? Biography { get; init; }
+    public string? PhotoUrl { get; init; }
     public required int YearsOfExperience { get; init; }
     public required bool IsVerified { get; init; }
     public required bool IsActive { get; init; }
@@ -212,12 +200,18 @@ public sealed record AssignClinicAdminRequest
 public sealed record CreateSpecialtyRequest
 {
     public required string Name { get; init; }
+    /// <summary>Opsional — pa të, ndërfaqja anglisht shfaq <see cref="Name"/>.</summary>
+    public string? NameEn { get; init; }
+    /// <summary>Opsional — pa të, ndërfaqja serbisht shfaq <see cref="Name"/>.</summary>
+    public string? NameSr { get; init; }
     public string? Description { get; init; }
 }
 
 public sealed record UpdateSpecialtyRequest
 {
     public required string Name { get; init; }
+    public string? NameEn { get; init; }
+    public string? NameSr { get; init; }
     public string? Description { get; init; }
     public required bool IsActive { get; init; }
 }
