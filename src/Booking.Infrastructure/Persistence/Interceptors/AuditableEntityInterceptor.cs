@@ -1,11 +1,15 @@
 using Booking.Application.Common.Interfaces;
 using Booking.Domain.Common;
+using Booking.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace Booking.Infrastructure.Persistence.Interceptors;
 
-/// <summary>Vendos automatikisht CreatedAt/UpdatedAt në çdo SaveChanges — asnjë entitet s'i vendos vetë.</summary>
+/// <summary>
+/// Vendos automatikisht CreatedAt/UpdatedAt në çdo SaveChanges — asnjë entitet s'i vendos vetë —
+/// dhe e rivendos Appointment.ReminderSentAt kur ndryshon ora e terminit.
+/// </summary>
 public class AuditableEntityInterceptor : SaveChangesInterceptor
 {
     private readonly IDateTimeProvider _dateTimeProvider;
@@ -47,6 +51,17 @@ public class AuditableEntityInterceptor : SaveChangesInterceptor
             else if (entry.State == EntityState.Modified)
             {
                 entry.Entity.UpdatedAt = utcNow;
+            }
+        }
+
+        // Kujtesa i përket ORËS së terminit, jo rreshtit. Sot riplanifikimi krijon termin të
+        // ri (pra fusha nis null vetvetiu), por nëse një rrugë e ardhshme e zhvendos terminin
+        // në vend, kujtesa e dërguar për orën e vjetër s'duhet ta pengojë atë për orën e re.
+        foreach (var entry in context.ChangeTracker.Entries<Appointment>())
+        {
+            if (entry.State == EntityState.Modified && entry.Property(a => a.StartDateTime).IsModified)
+            {
+                entry.Entity.ReminderSentAt = null;
             }
         }
     }

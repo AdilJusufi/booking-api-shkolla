@@ -48,16 +48,24 @@ public sealed class EmailAbuseLimitSettings
     ///                             jashtë llogarisë mjekësore nuk pret dot.
     ///   • EmailConfirmation  15 — vetëm gjatë regjistrimit, dhe konfirmimi i PARË dërgohet
     ///                             tashmë nga rruga e regjistrimit; ky është rrjeta e dytë.
-    ///   • ~60 mbeten të pazëna me qëllim — konfirmimet e regjistrimit, njoftimet e klinikave
-    ///     dhe ato të termineve e shpenzojnë TË NJËJTËN kuotë Resend pa kaluar nga ky guard
-    ///     (shih IEmailAbuseGuard). Po t'i jepnim guard-it të 100-at, ai trafik do ta kalonte
-    ///     kuotën reale dhe Resend do të fillonte të refuzonte — pikërisht ndërprerja që ky
-    ///     tavan ekziston për ta parandaluar.
+    ///   • AppointmentReminder 30 — kujtesat ~24h para terminit (AppointmentReminderService).
+    ///                             Kovë e veçantë që një ditë e ngarkuar me kujtesa të mos e
+    ///                             hajë buxhetin e rivendosjes/konfirmimit brenda këtij guard-i.
+    ///                             Kujtesat që s'kanë vend mbeten të pashënuara dhe dalin në
+    ///                             ekzekutimin e radhës, sapo dritarja të lirohet.
+    ///   • ~30 mbeten të pazëna — konfirmimet e regjistrimit, njoftimet e klinikave dhe ato të
+    ///     termineve (rezervim/anulim) e shpenzojnë TË NJËJTËN kuotë Resend pa kaluar nga ky
+    ///     guard (shih IEmailAbuseGuard). KUJDES: tavanet këtu janë kufij sipër, jo rezervime —
+    ///     ndarja mbron qëllimet nga njëri-tjetri BRENDA guard-it, por jo nga kuota reale e
+    ///     Resend. Në një ditë me 30 kujtesa dhe shumë rezervime, Resend mund ta kalojë 100-shin
+    ///     dhe të refuzojë edhe një rivendosje. Zgjidhja e vërtetë atëherë është plani i paguar
+    ///     i Resend, jo shtrëngimi i këtyre numrave.
     /// </summary>
     public Dictionary<EmailSendPurpose, int> PurposeWindowLimits { get; set; } = new()
     {
         [EmailSendPurpose.PasswordReset] = 25,
         [EmailSendPurpose.EmailConfirmation] = 15,
+        [EmailSendPurpose.AppointmentReminder] = 30,
     };
 
     /// <summary>

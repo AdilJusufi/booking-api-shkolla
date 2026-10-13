@@ -82,6 +82,10 @@ public static class DependencyInjection
         services.Configure<FrontendSettings>(configuration.GetSection(FrontendSettings.SectionName));
         services.Configure<CloudinarySettings>(configuration.GetSection(CloudinarySettings.SectionName));
         services.Configure<EmailAbuseLimitSettings>(configuration.GetSection(EmailAbuseLimitSettings.SectionName));
+        services.Configure<ReminderSettings>(configuration.GetSection(ReminderSettings.SectionName));
+
+        services.AddScoped<AppointmentReminderService>();
+        services.AddHostedService<AppointmentReminderBackgroundService>();
 
         return services;
     }

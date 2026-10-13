@@ -35,6 +35,14 @@ public class Appointment : AuditableEntity
     public Guid? CancelledByUserId { get; set; }
     public DateTime? CancelledAt { get; set; }
 
+    /// <summary>
+    /// Kur u "mor" kujtesa me email ~24 orë para terminit (shih AppointmentReminderService).
+    /// Vendoset ATOMIKISHT para dërgimit (UPDATE ... WHERE "ReminderSentAt" IS NULL) — kjo
+    /// është garancia kundër dërgimit të dyfishtë kur dy ekzekutime/instanca garojnë.
+    /// Riplanifikimi krijon termin të ri (me këtë fushë null), pra kujtesa shkon për orën e re.
+    /// </summary>
+    public DateTime? ReminderSentAt { get; set; }
+
     public Clinic Clinic { get; set; } = null!;
     public ClinicBranch ClinicBranch { get; set; } = null!;
     public Doctor Doctor { get; set; } = null!;

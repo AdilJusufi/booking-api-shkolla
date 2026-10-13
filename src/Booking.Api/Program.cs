@@ -27,7 +27,9 @@ try
     Booking.Api.Startup.EnvironmentGuard.Validate(builder.Environment.EnvironmentName, builder.Configuration);
 
     builder.Host.UseSerilog((context, loggerConfiguration) =>
-        loggerConfiguration.ReadFrom.Configuration(context.Configuration));
+        loggerConfiguration
+            .ReadFrom.Configuration(context.Configuration)
+            .Filter.ByExcluding(Booking.Api.Logging.CancelledConnectionLogFilter.IsCancelledConnectionError));
 
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration, builder.Environment.IsDevelopment());

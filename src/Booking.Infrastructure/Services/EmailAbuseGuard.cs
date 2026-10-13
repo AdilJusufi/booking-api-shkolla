@@ -85,13 +85,7 @@ public class EmailAbuseGuard : IEmailAbuseGuard
         //
         // Log-u mbetet Error, jo Warning: prekja e këtij tavani do të thotë ose abuzim në
         // vazhdim, ose se kufijtë janë nën trafikun real — të dyja kërkojnë sy njerëzor.
-        var windowStart = now.AddHours(-_settings.PurposeWindowHours);
-        var purposeLimit = _settings.PurposeWindowLimits.TryGetValue(purpose, out var configuredLimit)
-            ? configuredLimit
-            : _settings.DefaultPurposeWindowLimit;
-
-        var purposeWindowCount = await _dbContext.EmailSendAttempts
-            .CountAsync(a => a.Purpose == purpose && a.CreatedAt >= windowStart, cancellationToken);
+        var (purposeWindowCount, purposeLimit) = await CountPurposeWindowAsync(purpose, now, cancellationToken);
         if (purposeWindowCount >= purposeLimit)
         {
             _logger.LogError(
@@ -102,6 +96,42 @@ public class EmailAbuseGuard : IEmailAbuseGuard
             return EmailSendDecision.BlockedByPurposeWindowLimit;
         }
 
+        await RecordAsync(normalizedEmail, purpose, ipAddress, now, cancellationToken);
+        return EmailSendDecision.Allowed;
+    }
+
+    public async Task<EmailSendDecision> TryRecordSystemSendAsync(
+        string email, EmailSendPurpose purpose, CancellationToken cancellationToken = default)
+    {
+        var now = _dateTimeProvider.UtcNow;
+
+        var (purposeWindowCount, purposeLimit) = await CountPurposeWindowAsync(purpose, now, cancellationToken);
+        if (purposeWindowCount >= purposeLimit)
+        {
+            return EmailSendDecision.BlockedByPurposeWindowLimit;
+        }
+
+        await RecordAsync(Normalize(email), purpose, ipAddress: null, now, cancellationToken);
+        return EmailSendDecision.Allowed;
+    }
+
+    private async Task<(int Count, int Limit)> CountPurposeWindowAsync(
+        EmailSendPurpose purpose, DateTime now, CancellationToken cancellationToken)
+    {
+        var windowStart = now.AddHours(-_settings.PurposeWindowHours);
+        var purposeLimit = _settings.PurposeWindowLimits.TryGetValue(purpose, out var configuredLimit)
+            ? configuredLimit
+            : _settings.DefaultPurposeWindowLimit;
+
+        var purposeWindowCount = await _dbContext.EmailSendAttempts
+            .CountAsync(a => a.Purpose == purpose && a.CreatedAt >= windowStart, cancellationToken);
+
+        return (purposeWindowCount, purposeLimit);
+    }
+
+    private async Task RecordAsync(
+        string normalizedEmail, EmailSendPurpose purpose, string? ipAddress, DateTime now, CancellationToken cancellationToken)
+    {
         _dbContext.EmailSendAttempts.Add(new EmailSendAttempt
         {
             NormalizedEmail = normalizedEmail,
@@ -110,8 +140,6 @@ public class EmailAbuseGuard : IEmailAbuseGuard
             CreatedAt = now
         });
         await _dbContext.SaveChangesAsync(cancellationToken);
-
-        return EmailSendDecision.Allowed;
     }
 
     private static string Normalize(string email) => email.Trim().ToUpperInvariant();

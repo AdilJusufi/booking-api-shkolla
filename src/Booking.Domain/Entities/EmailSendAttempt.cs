@@ -5,8 +5,9 @@ namespace Booking.Domain.Entities;
 
 /// <summary>
 /// Një tentativë dërgimi email-i "vetë-shërbyes" (rivendosje password-i, ridërgim
-/// konfirmimi) — përdoret VETËM për kufizimin e abuzimit (cooldown për-adresë, tavan
-/// ditor për-adresë, tavan global ditor), jo si audit trail biznesi (shih AuditLog për
+/// konfirmimi) ose i nisur nga sistemi me kuotë të vetën (kujtesat e termineve) — përdoret
+/// VETËM për kufizimin (cooldown për-adresë, tavan ditor për-adresë, tavan për-qëllim),
+/// jo si audit trail biznesi (shih AuditLog për
 /// atë). I ndarë qëllimisht nga AuditLog: modeli i pyetjeve është ndryshe (numërim brenda
 /// dritareve kohore për një adresë, jo kërkim sipas entiteti/useri), dhe këto rreshta
 /// s'kanë vlerë si histori biznesi afatgjatë.

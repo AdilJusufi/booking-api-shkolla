@@ -29,6 +29,13 @@ public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
         builder.HasIndex(a => a.MedicalServiceId);
         builder.HasIndex(a => a.Status);
 
+        // Kërkesa e AppointmentReminderService (çdo 15 min): terminet e konfirmuara pa kujtesë,
+        // sipas orës së fillimit. Indeks i pjesshëm — mbulon vetëm rreshtat që ende presin
+        // kujtesë, pra mbetet i vogël pavarësisht historikut.
+        builder.HasIndex(a => a.StartDateTime)
+            .HasDatabaseName("IX_Appointments_PendingReminder")
+            .HasFilter("\"ReminderSentAt\" IS NULL AND \"Status\" = 'Confirmed'");
+
         // Historiku i termineve nuk fshihet kur fshihen entitetet e lidhura.
         builder.HasOne(a => a.Clinic).WithMany().HasForeignKey(a => a.ClinicId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(a => a.ClinicBranch).WithMany().HasForeignKey(a => a.ClinicBranchId).OnDelete(DeleteBehavior.Restrict);

@@ -158,6 +158,103 @@ public static class EmailTemplates
         return new EmailContent(subject, EmailLayout.Wrap(subject, html, EmailLayout.DefaultFooter()), text);
     }
 
+    private static readonly string[] AlbanianDays =
+        ["e diel", "e hënë", "e martë", "e mërkurë", "e enjte", "e premte", "e shtunë"];
+
+    private static readonly string[] AlbanianMonths =
+        ["janar", "shkurt", "mars", "prill", "maj", "qershor", "korrik", "gusht", "shtator", "tetor", "nëntor", "dhjetor"];
+
+    /// <summary>
+    /// Data me emra shqip, të shkruar këtu dhe jo nga CultureInfo("sq-AL"): kontejneri mund të
+    /// ekzekutohet me globalizim invariant/ICU të reduktuar, dhe atëherë "sq-AL" bie në heshtje
+    /// në anglisht ose hedh përjashtim — një email kujtese s'duhet të varet nga kjo.
+    /// </summary>
+    public static string FormatAlbanianDate(DateTime local) =>
+        $"{AlbanianDays[(int)local.DayOfWeek]}, {local.Day} {AlbanianMonths[local.Month - 1]} {local.Year}";
+
+    /// <summary>
+    /// Kujtesa ~24 orë para terminit. <paramref name="model"/>.StartLocal është TASHMË në orën
+    /// e Prishtinës (Europe/Belgrade) — konvertimi bëhet nga thirrësi me ITimeZoneService, mbi
+    /// momentin e TERMINIT, jo të dërgimit (ndryshe kalimi i orës verore në fund të tetorit do
+    /// ta zhvendoste me një orë).
+    /// </summary>
+    public static EmailContent AppointmentReminder(AppointmentReminderEmailModel model)
+    {
+        var date = FormatAlbanianDate(model.StartLocal);
+        var time = model.StartLocal.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture);
+        var subject = $"Kujtesë: termini juaj më {model.StartLocal.Day} {AlbanianMonths[model.StartLocal.Month - 1]}, ora {time}";
+
+        var greeting = $"Përshëndetje {model.RecipientFirstName},";
+        var intro = model.DependentFullName is null
+            ? "Ju kujtojmë terminin tuaj:"
+            : $"Ju kujtojmë terminin për {model.DependentFullName}:";
+        const string arriveEarly = "Ju lutemi të paraqiteni 10 minuta para orës së terminit.";
+
+        var address = $"{model.BranchName}, {model.BranchAddress}, {model.BranchCity}";
+        var rawRows = new List<(string Label, string Value)>
+        {
+            ("Data", date),
+            ("Ora", time),
+            ("Mjeku", model.DoctorName),
+            ("Specializimi", model.SpecialtyName),
+            ("Shërbimi", model.ServiceName),
+            ("Klinika", model.ClinicName),
+            ("Adresa", address),
+        };
+        if (!string.IsNullOrWhiteSpace(model.ClinicPhoneNumber))
+        {
+            rawRows.Add(("Telefoni i klinikës", model.ClinicPhoneNumber));
+        }
+
+        string cancelHtml, cancelText;
+        if (model.CancelUrl is not null)
+        {
+            const string cancelIntro = "Nëse nuk mund të vini, ju lutemi anulojeni terminin që orari t'i lirohet një pacienti tjetër. Do t'ju duhet të kyçeni në llogarinë tuaj.";
+            const string buttonLabel = "Anuloni terminin";
+            cancelHtml = EmailLayout.Paragraph(cancelIntro) + EmailLayout.Button(model.CancelUrl, buttonLabel) +
+                         EmailLayout.FallbackUrlBlock(model.CancelUrl);
+            cancelText = $"{cancelIntro}\n\n{EmailLayout.TextLink(buttonLabel, model.CancelUrl)}";
+        }
+        else
+        {
+            // Pas afatit të anulimit online (ose pa Frontend:BaseUrl): s'ka buton, por pacienti
+            // duhet ta dijë si ta lajmërojë klinikën.
+            var callClinic = string.IsNullOrWhiteSpace(model.ClinicPhoneNumber)
+                ? "Nëse nuk mund të vini, ju lutemi lajmëroni klinikën sa më shpejt."
+                : $"Nëse nuk mund të vini, ju lutemi lajmëroni klinikën sa më shpejt në {model.ClinicPhoneNumber}.";
+            cancelHtml = EmailLayout.Paragraph(callClinic);
+            cancelText = callClinic;
+        }
+
+        var tableRowsHtml = string.Join("\n", rawRows.Select(r =>
+            $"""<tr><td style="padding:4px 16px 4px 0;color:#6b7472;white-space:nowrap;vertical-align:top;">{WebUtility.HtmlEncode(r.Label)}</td><td style="padding:4px 0;font-weight:700;">{WebUtility.HtmlEncode(r.Value)}</td></tr>"""));
+
+        var html =
+            EmailLayout.Paragraph(greeting) +
+            EmailLayout.Paragraph(intro) +
+            $"""<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px 0;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#131718;">{tableRowsHtml}</table>""" +
+            EmailLayout.Paragraph(arriveEarly) +
+            cancelHtml;
+
+        var textRows = string.Join("\n", rawRows.Select(r => $"{r.Label}: {r.Value}"));
+        var text = EmailLayout.WrapText(
+            $"""
+             {greeting}
+
+             {intro}
+
+             {textRows}
+
+             {arriveEarly}
+
+             {cancelText}
+             """,
+            EmailLayout.DefaultFooter("Ky është një email automatik kujtese."));
+
+        return new EmailContent(subject,
+            EmailLayout.Wrap(subject, html, EmailLayout.DefaultFooter("Ky është një email automatik kujtese.")), text);
+    }
+
     /// <summary>
     /// Për SuperAdmin — i brendshëm, trajtim më i thjeshtë me qëllim: listë e dhënash
     /// dhe një link i thjeshtë, jo buton i madh CTA (shih kërkesën origjinale).
@@ -227,4 +324,30 @@ public static class EmailTemplates
 
         return new EmailContent(subject, EmailLayout.Wrap(subject, html, EmailLayout.DefaultFooter()), text);
     }
+}
+
+/// <summary>Të dhënat e kujtesës — të gjitha tashmë të gatshme për shfaqje (ora lokale, emra të plotë).</summary>
+public sealed record AppointmentReminderEmailModel
+{
+    public required string RecipientFirstName { get; init; }
+
+    /// <summary>Null kur termini është për vetë mbajtësin e llogarisë.</summary>
+    public string? DependentFullName { get; init; }
+
+    public required string DoctorName { get; init; }
+    public required string SpecialtyName { get; init; }
+    public required string ServiceName { get; init; }
+    public required string ClinicName { get; init; }
+    public required string BranchName { get; init; }
+    public required string BranchAddress { get; init; }
+    public required string BranchCity { get; init; }
+
+    /// <summary>Telefoni i degës, ose i klinikës kur dega s'ka; null kur s'ka asnjë.</summary>
+    public string? ClinicPhoneNumber { get; init; }
+
+    /// <summary>Ora e Prishtinës (Europe/Belgrade).</summary>
+    public required DateTime StartLocal { get; init; }
+
+    /// <summary>Linku te termini në aplikacion; null pas afatit të anulimit ose pa Frontend:BaseUrl.</summary>
+    public string? CancelUrl { get; init; }
 }

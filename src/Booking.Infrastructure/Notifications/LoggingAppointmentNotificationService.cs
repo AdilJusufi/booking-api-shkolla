@@ -41,11 +41,6 @@ public class LoggingAppointmentNotificationService : IAppointmentNotificationSer
             $"Termini juaj te {context.DoctorName} u zhvendos më {context.StartDateTimeLocal:dd.MM.yyyy HH:mm}.",
             cancellationToken);
 
-    public Task AppointmentReminderAsync(AppointmentNotificationContext context, CancellationToken cancellationToken = default) =>
-        SendAsync(context, "Kujtesë termini",
-            $"Ju kujtojmë terminin te {context.DoctorName} ({context.ClinicName}) më {context.StartDateTimeLocal:dd.MM.yyyy HH:mm}.",
-            cancellationToken);
-
     public Task AppointmentUnavailabilityConflictAsync(AppointmentNotificationContext context, CancellationToken cancellationToken = default) =>
         SendAsync(context, "Mundësi konflikti me terminin tuaj",
             $"Doktori juaj shënoi paarritshmëri që përplaset me terminin tuaj te {context.DoctorName} më " +
@@ -112,8 +107,9 @@ public class LoggingAppointmentNotificationService : IAppointmentNotificationSer
         _logger.LogInformation(
             "Njoftim termini {AppointmentId}: {Subject}", context.AppointmentId, subject);
 
-        // Email-i mungon te pacientët e krijuar me telefon nga recepsioni; SMS-ja
-        // mbetet kanali i tyre, prandaj mungesa e email-it nuk e ndal njoftimin.
+        // Email-i mungon te pacientët e krijuar me telefon nga recepsioni. Thirrja e SMS-së
+        // më poshtë ekziston për kur të integrohet një operator — sot LoggingSmsService vetëm
+        // logon, pra këta pacientë NUK marrin asgjë. Mos premto SMS në UI pa e ndryshuar këtë.
         //
         // Jashtë fushëveprimit të shabllonizimit HTML (shih EmailTemplates) — këto janë
         // fjali të vetme, pa nevojë për markup; mbështillen minimalisht vetëm që të mos

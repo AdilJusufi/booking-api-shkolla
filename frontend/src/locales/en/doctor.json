@@ -79,7 +79,7 @@
     "statusDescriptionFallback": "This appointment's status is unrecognized.",
     "statusDescriptions": {
       "pending": "The appointment is pending confirmation.",
-      "confirmed": "The appointment is confirmed. The patient has been notified.",
+      "confirmed": "The appointment is confirmed. The patient is notified by email if their account has an email address.",
       "checkedIn": "The patient has checked in.",
       "inProgress": "The consultation is in progress.",
       "completed": "This appointment has been completed.",

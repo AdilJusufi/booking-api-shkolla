@@ -25,4 +25,14 @@ public interface IEmailAbuseGuard
 {
     Task<EmailSendDecision> TryRecordSendAsync(
         string email, EmailSendPurpose purpose, string? ipAddress, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Për email-et që i nis VETË sistemi (p.sh. kujtesat e termineve): vetëm tavani për-qëllim
+    /// mbi dritaren rrëshqitëse, pa cooldown dhe pa tavan për-adresë — ato mbrojnë nga një
+    /// sulmues që zgjedh marrësin, rast që këtu s'ekziston, dhe do ta bllokonin gabimisht
+    /// një pacient me dy termine të njëjtën ditë. Regjistron tentativën nëse lejohet. Nuk
+    /// logon refuzimin — thirrësi e di më mirë kontekstin dhe nivelin e duhur.
+    /// </summary>
+    Task<EmailSendDecision> TryRecordSystemSendAsync(
+        string email, EmailSendPurpose purpose, CancellationToken cancellationToken = default);
 }

@@ -50,6 +50,9 @@ public class BookingApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         SetConfig("RateLimiting__BookingPermitLimit", "1000");
         SetConfig("RateLimiting__PatientSearchPermitLimit", "1000");
         SetConfig("RateLimiting__EmailSendPermitLimit", "1000");
+        // Cikli në sfond s'ka vend në testet e tjera; testet e kujtesave e thërrasin
+        // AppointmentReminderService drejtpërdrejt, me orë dhe email të kontrolluar.
+        SetConfig("Reminders__Enabled", "false");
     }
 
     private static void SetConfig(string key, string value) =>

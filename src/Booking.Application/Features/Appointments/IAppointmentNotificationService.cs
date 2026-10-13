@@ -6,7 +6,8 @@ public sealed record AppointmentNotificationContext
     public required Guid AppointmentId { get; init; }
     /// <summary>
     /// Null për pacientët e krijuar nga administrata që s'kanë dhënë email
-    /// (rezervim me telefon) — atyre u shkon vetëm SMS.
+    /// (rezervim me telefon). SMS-ja s'është ndërtuar (LoggingSmsService vetëm logon),
+    /// pra këta pacientë nuk marrin asnjë njoftim nga sistemi — i njofton klinika vetë.
     /// </summary>
     public string? PatientEmail { get; init; }
     public string? PatientPhoneNumber { get; init; }
@@ -50,7 +51,6 @@ public interface IAppointmentNotificationService
     Task AppointmentConfirmedAsync(AppointmentNotificationContext context, CancellationToken cancellationToken = default);
     Task AppointmentCancelledAsync(AppointmentNotificationContext context, CancellationToken cancellationToken = default);
     Task AppointmentRescheduledAsync(AppointmentNotificationContext context, CancellationToken cancellationToken = default);
-    Task AppointmentReminderAsync(AppointmentNotificationContext context, CancellationToken cancellationToken = default);
 
     /// <summary>Pacienti ka një termin që përplaset me një paarritshmëri të re të doktorit.</summary>
     Task AppointmentUnavailabilityConflictAsync(AppointmentNotificationContext context, CancellationToken cancellationToken = default);

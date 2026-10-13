@@ -13,6 +13,12 @@ public class ExceptionHandlingMiddleware
 {
     private const string ErrorTypeBaseUrl = "https://booking-api.dev/errors";
 
+    /// <summary>
+    /// Konventa e nginx-it për "klienti e mbylli lidhjen". S'i shkon askujt (klienti s'është
+    /// më aty) — ekziston vetëm që log-u i kërkesës (Serilog) të mos e shënojë si 500/Error.
+    /// </summary>
+    public const int ClientClosedRequestStatusCode = 499;
+
     private readonly RequestDelegate _next;
     private readonly ILogger<ExceptionHandlingMiddleware> _logger;
 
@@ -27,6 +33,23 @@ public class ExceptionHandlingMiddleware
         try
         {
             await _next(context);
+        }
+        // Klienti e mbylli lidhjen (u largua nga faqja, rifreskoi, timeout-i i vet) dhe
+        // CancellationToken-i i kërkesës (HttpContext.RequestAborted) e ndali punën në mes —
+        // p.sh. gjatë hapjes së lidhjes me Neon-in që po zgjohet. S'është gabim i serverit:
+        // s'ka kujt t'i kthehet përgjigjja, dhe një ERR/500 këtu vetëm sa fsheh gabimet e
+        // vërteta. OperationCanceledException pa RequestAborted të anuluar (p.sh. një timeout
+        // i brendshëm) NUK kapet këtu — ai mbetet 500, sepse ai po është problem yni.
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+        {
+            _logger.LogInformation(
+                "Kërkesa u anulua nga klienti: {Method} {Path} (User-Agent: {UserAgent})",
+                context.Request.Method, context.Request.Path, context.Request.Headers.UserAgent.ToString());
+
+            if (!context.Response.HasStarted)
+            {
+                context.Response.StatusCode = ClientClosedRequestStatusCode;
+            }
         }
         catch (Exception exception)
         {

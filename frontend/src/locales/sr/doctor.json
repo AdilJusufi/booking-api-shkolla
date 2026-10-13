@@ -79,7 +79,7 @@
     "statusDescriptionFallback": "Status ovog termina nije prepoznat.",
     "statusDescriptions": {
       "pending": "Termin je na čekanju potvrde.",
-      "confirmed": "Termin je potvrđen. Pacijent je obavešten.",
+      "confirmed": "Termin je potvrđen. Pacijent dobija obaveštenje putem email-a ako nalog ima email adresu.",
       "checkedIn": "Pacijent je stigao.",
       "inProgress": "Konsultacija je u toku.",
       "completed": "Ovaj termin je završen.",

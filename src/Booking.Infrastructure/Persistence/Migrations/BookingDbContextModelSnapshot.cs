@@ -70,6 +70,9 @@ namespace Booking.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("PatientProfileId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("ReminderSentAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime>("StartDateTime")
                         .HasColumnType("timestamp with time zone");
 
@@ -96,6 +99,10 @@ namespace Booking.Infrastructure.Persistence.Migrations
                     b.HasIndex("MedicalServiceId");
 
                     b.HasIndex("PatientProfileId");
+
+                    b.HasIndex("StartDateTime")
+                        .HasDatabaseName("IX_Appointments_PendingReminder")
+                        .HasFilter("\"ReminderSentAt\" IS NULL AND \"Status\" = 'Confirmed'");
 
                     b.HasIndex("Status");
 
@@ -865,6 +872,20 @@ namespace Booking.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("UserNameIndex");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("Booking.Infrastructure.Persistence.BackgroundJobState", b =>
+                {
+                    b.Property<string>("Name")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("LastCompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Name");
+
+                    b.ToTable("BackgroundJobStates");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>

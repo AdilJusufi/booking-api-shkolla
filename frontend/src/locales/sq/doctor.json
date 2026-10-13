@@ -79,7 +79,7 @@
     "statusDescriptionFallback": "Statusi i këtij termini nuk njihet.",
     "statusDescriptions": {
       "pending": "Termini është në pritje të konfirmimit.",
-      "confirmed": "Termini është konfirmuar. Pacienti është njoftuar.",
+      "confirmed": "Termini është konfirmuar. Pacienti njoftohet me email, nëse llogaria e tij ka adresë email.",
       "checkedIn": "Pacienti ka mbërrritur.",
       "inProgress": "Konsulta është në progres.",
       "completed": "Ky termin është përfunduar.",
