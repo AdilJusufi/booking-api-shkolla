@@ -20,21 +20,18 @@ import type { Appointment } from '../lib/types'
 import { useToast } from '../context/ToastContext'
 import { Badge, Dropdown, EmptyState } from '../components/ui'
 import { formatTime, monthName, toDateInput } from '../lib/format'
+import { clinicTodayDate, msUntilClinic, parseClinic } from '../lib/clinicTime'
 
 const PAGE_SIZE = 10
 
 type StatusFilter = 'all' | 'active' | 'completed' | 'cancelled'
 type DateRange = 'all' | 'today' | 'week' | 'month' | 'last3months' | 'year'
 
-function parseLocal(iso: string): Date {
-  const m = iso.match(/(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/)
-  if (!m) return new Date(iso)
-  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), m[4] ? Number(m[4]) : 0, m[5] ? Number(m[5]) : 0)
-}
+/** Clinic wall string → naive Date (no zone shift); see lib/clinicTime.ts. */
+const parseLocal = parseClinic
 
 function dateRangeToParams(range: DateRange): { dateFrom?: string; dateTo?: string } {
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const today = clinicTodayDate()
   switch (range) {
     case 'today':
       return { dateFrom: toDateInput(today), dateTo: toDateInput(today) }
@@ -94,14 +91,14 @@ const CANCELLED_STATUSES = [AppointmentStatus.CancelledByPatient, AppointmentSta
 
 function canCancel(a: Appointment): boolean {
   if (![AppointmentStatus.Pending, AppointmentStatus.Confirmed].includes(a.status)) return false
-  const hoursUntil = (parseLocal(a.startDateTime).getTime() - Date.now()) / (1000 * 60 * 60)
+  const hoursUntil = msUntilClinic(a.startDateTime) / (1000 * 60 * 60)
   return hoursUntil > 12
 }
 
 function isWithin12Hours(a: Appointment): boolean {
   if (a.status === AppointmentStatus.Completed) return false
   if (![AppointmentStatus.Pending, AppointmentStatus.Confirmed].includes(a.status)) return false
-  const hoursUntil = (parseLocal(a.startDateTime).getTime() - Date.now()) / (1000 * 60 * 60)
+  const hoursUntil = msUntilClinic(a.startDateTime) / (1000 * 60 * 60)
   return hoursUntil <= 12
 }
 

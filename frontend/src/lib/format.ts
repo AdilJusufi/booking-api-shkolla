@@ -1,5 +1,6 @@
 import i18n, { type SupportedLanguage } from '../i18n'
 import { AppointmentStatus } from './types'
+import { msUntilClinic, parseClinic } from './clinicTime'
 
 /**
  * Display order Monday-first while the backend's DayOfWeek (and JS
@@ -90,17 +91,8 @@ export function toDateInput(d: Date): string {
   return `${y}-${m}-${day}`
 }
 
-function parseLocal(iso: string): Date {
-  const m = iso.match(/(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/)
-  if (!m) return new Date(iso)
-  return new Date(
-    Number(m[1]),
-    Number(m[2]) - 1,
-    Number(m[3]),
-    m[4] ? Number(m[4]) : 0,
-    m[5] ? Number(m[5]) : 0,
-  )
-}
+/** Clinic wall string → naive Date for field access; see lib/clinicTime.ts. */
+const parseLocal = parseClinic
 
 export function formatMoney(price: number, currency: string): string {
   return new Intl.NumberFormat(activeLocale(), {
@@ -156,5 +148,5 @@ export function isUpcoming(a: { status: AppointmentStatus; startDateTime: string
     AppointmentStatus.NoShow,
   ]
   if (cancelled.includes(a.status)) return false
-  return parseLocal(a.startDateTime).getTime() > Date.now() - 60 * 60 * 1000
+  return msUntilClinic(a.startDateTime) > -60 * 60 * 1000
 }

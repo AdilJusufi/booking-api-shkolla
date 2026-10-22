@@ -18,12 +18,10 @@ import type { DoctorAppointment } from '../lib/types'
 import { useToast } from '../context/ToastContext'
 import { Badge, ErrorBox, Pending } from '../components/ui'
 import { monthName, weekdayName } from '../lib/format'
+import { isClinicPast, parseClinic } from '../lib/clinicTime'
 
-function parseLocal(iso: string): Date {
-  const m = iso.match(/(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/)
-  if (!m) return new Date(iso)
-  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), m[4] ? Number(m[4]) : 0, m[5] ? Number(m[5]) : 0)
-}
+/** Clinic wall string → naive Date (no zone shift); see lib/clinicTime.ts. */
+const parseLocal = parseClinic
 
 function formatDateSq(iso: string): string {
   const d = parseLocal(iso)
@@ -203,7 +201,7 @@ export default function DoctorAppointmentDetailPage() {
   const isConfirmed = appointment.status === AppointmentStatus.Confirmed
   // Complete / no-show only make sense once the appointment has started — the
   // backend rejects both before then (complete-before-start / no-show-before-start).
-  const hasStarted = parseLocal(appointment.startDateTime).getTime() <= Date.now()
+  const hasStarted = isClinicPast(appointment.startDateTime)
   const canComplete = isConfirmed && hasStarted
   const canNoShow = canComplete
   const isReadOnly = !isConfirmed

@@ -7,6 +7,7 @@ import { getErrorMessage } from '../lib/errors'
 import { AppointmentStatus, type AdminAppointmentListItem } from '../lib/types'
 import { formatDateTime } from '../lib/format'
 import { Badge, EmptyState, ErrorBox, SkeletonRows, initials } from '../components/ui'
+import { clinicToday } from '../lib/clinicTime'
 
 const PAGE_SIZE = 20
 
@@ -132,7 +133,7 @@ export default function AdminAppointmentsPage() {
   // snapshot, loaded once. Each is a pageSize=1 request read only for its
   // `totalItems`, since the backend has no dedicated counts endpoint.
   useEffect(() => {
-    const today = new Date().toISOString().slice(0, 10)
+    const today = clinicToday()
     Promise.all([
       api.getAdminAppointments({ from: today, to: today, page: 1, pageSize: 1 }),
       api.getAdminAppointments({ status: AppointmentStatus.Confirmed, page: 1, pageSize: 1 }),

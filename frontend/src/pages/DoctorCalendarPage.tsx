@@ -20,12 +20,10 @@ import { useToast } from '../context/ToastContext'
 import { useDoctorSearch } from '../context/DoctorSearchContext'
 import { Dropdown, EmptyState } from '../components/ui'
 import { formatTime, monthName, weekdayName } from '../lib/format'
+import { clinicNow, clinicTodayDate, msUntilClinic, parseClinic } from '../lib/clinicTime'
 
-function parseLocal(iso: string): Date {
-  const m = iso.match(/(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/)
-  if (!m) return new Date(iso)
-  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), m[4] ? Number(m[4]) : 0, m[5] ? Number(m[5]) : 0)
-}
+/** Clinic wall string → naive Date (no zone shift); see lib/clinicTime.ts. */
+const parseLocal = parseClinic
 
 function toDateInput(d: Date): string {
   const y = d.getFullYear()
@@ -48,7 +46,7 @@ function isSameDay(a: Date, b: Date): boolean {
 }
 
 function isToday(iso: string): boolean {
-  return isSameDay(parseLocal(iso), new Date())
+  return isSameDay(parseLocal(iso), clinicNow())
 }
 
 function initialsFromName(name: string): string {
@@ -59,8 +57,7 @@ function initialsFromName(name: string): string {
 }
 
 function calculateDateRange(filter: string): { dateFrom: string; dateTo: string } {
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const today = clinicTodayDate()
   switch (filter) {
     case 'today':
       return { dateFrom: toDateInput(today), dateTo: toDateInput(today) }
@@ -158,7 +155,7 @@ export default function DoctorCalendarPage() {
   const [appointments, setAppointments] = useState<DoctorAppointment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [currentDate, setCurrentDate] = useState(new Date())
+  const [currentDate, setCurrentDate] = useState(clinicNow())
   const [actingId, setActingId] = useState('')
 
   useEffect(() => {
@@ -196,7 +193,7 @@ export default function DoctorCalendarPage() {
   }, [appointments, debouncedSearch])
 
   const stats = useMemo(() => {
-    const today = new Date()
+    const today = clinicNow()
     const todayAppts = appointments.filter((a) => isToday(a.startDateTime))
     const todayCompleted = todayAppts.filter((a) => a.status === AppointmentStatus.Completed).length
     const confirmedToday = todayAppts.filter((a) => a.status === AppointmentStatus.Confirmed).length
@@ -255,7 +252,7 @@ export default function DoctorCalendarPage() {
       <div className="doctor-cal-header">
         <div>
           <h1>{t('calendar.title')}</h1>
-          <p className="doctor-cal-header__sub">{formatDateSq(new Date())}</p>
+          <p className="doctor-cal-header__sub">{formatDateSq(clinicNow())}</p>
         </div>
         <div className="doctor-view-toggle">
           <button type="button" className={`doctor-view-toggle__btn ${view === 'lista' ? 'is-active' : ''}`} onClick={() => setView('lista')}>
@@ -350,7 +347,7 @@ export default function DoctorCalendarPage() {
               {items.map((a) => {
                 const badge = statusBadgeClass(a.status, t)
                 const durationMinutes = Math.round((parseLocal(a.endDateTime).getTime() - parseLocal(a.startDateTime).getTime()) / 60000)
-                const startInFuture = parseLocal(a.startDateTime).getTime() > Date.now()
+                const startInFuture = msUntilClinic(a.startDateTime) > 0
                 return (
                   <div className="doctor-appt-row card-link" key={a.id}>
                     <div className="doctor-appt-row__time">
@@ -435,7 +432,7 @@ function DitoreView({
     return () => clearInterval(timer)
   }, [])
 
-  const today = isSameDay(currentDate, new Date())
+  const today = isSameDay(currentDate, clinicNow())
   const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i)
   const timelineHeight = (END_HOUR - START_HOUR) * HOUR_HEIGHT
 
@@ -450,7 +447,7 @@ function DitoreView({
     return (d.getHours() - START_HOUR + d.getMinutes() / 60) * HOUR_HEIGHT
   }
 
-  const now = new Date()
+  const now = clinicNow()
   const nowTop = (now.getHours() - START_HOUR + now.getMinutes() / 60) * HOUR_HEIGHT
 
   return (
@@ -466,7 +463,7 @@ function DitoreView({
               : t('calendar.dayView.dateLabel', { weekday: weekdayName(currentDate.getDay()), day: currentDate.getDate(), month: monthName(currentDate.getMonth()) })}
           </span>
           {!today && (
-            <button type="button" className="doctor-ditore-nav__today" onClick={() => setCurrentDate(new Date())}>
+            <button type="button" className="doctor-ditore-nav__today" onClick={() => setCurrentDate(clinicNow())}>
               {t('calendar.dayView.todayButton')}
             </button>
           )}

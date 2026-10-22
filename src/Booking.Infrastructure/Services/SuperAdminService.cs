@@ -20,6 +20,7 @@ public class SuperAdminService : ISuperAdminService
     private readonly IAuditService _auditService;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IClinicNotificationService _clinicNotifications;
+    private readonly ITimeZoneService _timeZoneService;
     private readonly ILogger<SuperAdminService> _logger;
 
     public SuperAdminService(
@@ -28,6 +29,7 @@ public class SuperAdminService : ISuperAdminService
         IAuditService auditService,
         IDateTimeProvider dateTimeProvider,
         IClinicNotificationService clinicNotifications,
+        ITimeZoneService timeZoneService,
         ILogger<SuperAdminService> logger)
     {
         _dbContext = dbContext;
@@ -35,6 +37,7 @@ public class SuperAdminService : ISuperAdminService
         _auditService = auditService;
         _dateTimeProvider = dateTimeProvider;
         _clinicNotifications = clinicNotifications;
+        _timeZoneService = timeZoneService;
         _logger = logger;
     }
 
@@ -239,13 +242,14 @@ public class SuperAdminService : ISuperAdminService
 
         if (query.From is { } from)
         {
-            var fromUtc = DateTime.SpecifyKind(from.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+            // Datat e filtrit janë ditë kalendarike të Prishtinës, jo ditë UTC.
+            var fromUtc = _timeZoneService.ToUtc(from.ToDateTime(TimeOnly.MinValue));
             logs = logs.Where(l => l.CreatedAt >= fromUtc);
         }
 
         if (query.To is { } to)
         {
-            var toUtc = DateTime.SpecifyKind(to.AddDays(1).ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+            var toUtc = _timeZoneService.ToUtc(to.AddDays(1).ToDateTime(TimeOnly.MinValue));
             logs = logs.Where(l => l.CreatedAt < toUtc);
         }
 
@@ -271,6 +275,9 @@ public class SuperAdminService : ISuperAdminService
                 CreatedAt = l.CreatedAt
             })
             .ToListAsync(cancellationToken);
+
+        // Çdo kohë që sheh njeriu është ora e klinikës — shih TimeZoneService.
+        items = items.Select(i => i with { CreatedAt = _timeZoneService.ToLocal(i.CreatedAt) }).ToList();
 
         return new PagedResult<AuditLogDto>
         {
@@ -358,7 +365,7 @@ public class SuperAdminService : ISuperAdminService
                     Roles = u.Roles,
                     IsActive = u.IsActive,
                     EmailConfirmed = u.EmailConfirmed,
-                    CreatedAt = u.CreatedAt
+                    CreatedAt = _timeZoneService.ToLocal(u.CreatedAt)
                 })
                 .ToList(),
             Page = query.Page,
@@ -371,7 +378,7 @@ public class SuperAdminService : ISuperAdminService
         await _dbContext.Clinics.FirstOrDefaultAsync(c => c.Id == clinicId, cancellationToken)
         ?? throw new NotFoundException("Clinic", clinicId);
 
-    private static AdminClinicDto ToAdminDto(
+    private AdminClinicDto ToAdminDto(
         Clinic clinic, IReadOnlyList<ClinicAdministratorDto> administrators, IReadOnlyList<string> cities) => new()
     {
         Id = clinic.Id,
@@ -383,7 +390,7 @@ public class SuperAdminService : ISuperAdminService
         LogoUrl = clinic.LogoUrl,
         IsApproved = clinic.IsApproved,
         IsActive = clinic.IsActive,
-        CreatedAt = clinic.CreatedAt,
+        CreatedAt = _timeZoneService.ToLocal(clinic.CreatedAt),
         Administrators = administrators,
         Cities = cities
     };

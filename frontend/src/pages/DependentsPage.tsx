@@ -8,6 +8,7 @@ import { useToast } from '../context/ToastContext'
 import { CustomSelect, EmptyState, ErrorBox, Modal, SkeletonRows, initials } from '../components/ui'
 import type { CustomSelectOption } from '../components/ui'
 import { monthName } from '../lib/format'
+import { clinicToday, clinicTodayDate, parseClinic } from '../lib/clinicTime'
 
 const EMPTY_FORM = {
   firstName: '',
@@ -24,8 +25,8 @@ function formatDob(iso: string): string {
 }
 
 function calculateAge(dateOfBirth: string): number {
-  const today = new Date()
-  const dob = new Date(dateOfBirth)
+  const today = clinicTodayDate()
+  const dob = parseClinic(dateOfBirth)
   let age = today.getFullYear() - dob.getFullYear()
   const m = today.getMonth() - dob.getMonth()
   if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--
@@ -268,7 +269,7 @@ function DependentFormModal({
     if (form.firstName.trim().length < 2) return setFormError(t('dependents.validation.firstNameRequired'))
     if (form.lastName.trim().length < 2) return setFormError(t('dependents.validation.lastNameRequired'))
     if (!form.dateOfBirth) return setFormError(t('dependents.validation.dobRequired'))
-    if (new Date(form.dateOfBirth) >= new Date()) return setFormError(t('dependents.validation.dobMustBePast'))
+    if (form.dateOfBirth >= clinicToday()) return setFormError(t('dependents.validation.dobMustBePast'))
 
     setFormError('')
     setSaving(true)
@@ -314,7 +315,7 @@ function DependentFormModal({
         <label>{t('dependents.dobLabel')}</label>
         <input
           type="date"
-          max={new Date().toISOString().slice(0, 10)}
+          max={clinicToday()}
           value={form.dateOfBirth}
           onChange={(e) => updateField('dateOfBirth', e.target.value)}
         />

@@ -6,8 +6,8 @@ import { api } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import type { AdminClinic, ClinicBranch, Doctor, MedicalService } from '../lib/types'
 import { ErrorBox, initials } from '../components/ui'
-import { toDateInput } from '../lib/format'
 import { useReveal } from '../lib/motion'
+import { clinicToday } from '../lib/clinicTime'
 
 interface ClinicCardData {
   clinic: AdminClinic
@@ -41,7 +41,7 @@ export default function MyClinicsPage() {
       .then((list) => {
         if (!active) return
         setClinics(list)
-        const today = toDateInput(new Date())
+        const today = clinicToday()
         list.forEach((c) => {
           Promise.all([
             api.getClinic(c.id).catch(() => null),

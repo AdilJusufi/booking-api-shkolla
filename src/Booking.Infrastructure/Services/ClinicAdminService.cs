@@ -950,7 +950,7 @@ public class ClinicAdminService : IClinicAdminService
         }
     }
 
-    private static AdminClinicDto ToAdminDto(
+    private AdminClinicDto ToAdminDto(
         Clinic clinic, IReadOnlyList<ClinicAdministratorDto> administrators, IReadOnlyList<string> cities) => new()
     {
         Id = clinic.Id,
@@ -962,7 +962,7 @@ public class ClinicAdminService : IClinicAdminService
         LogoUrl = clinic.LogoUrl,
         IsApproved = clinic.IsApproved,
         IsActive = clinic.IsActive,
-        CreatedAt = clinic.CreatedAt,
+        CreatedAt = _timeZoneService.ToLocal(clinic.CreatedAt),
         Administrators = administrators,
         Cities = cities
     };

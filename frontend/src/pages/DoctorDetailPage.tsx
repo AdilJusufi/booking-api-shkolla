@@ -12,15 +12,13 @@ import { useSpecialtyLabel } from '../context/SpecialtyNamesContext'
 import { formatMoney, formatTime, monthName, toDateInput, weekdayName } from '../lib/format'
 import { SITE_NAME, doctorSeo } from '../lib/seo'
 import { useSeo } from '../lib/useSeo'
+import { clinicNow, parseClinic } from '../lib/clinicTime'
 
 // Display order Monday-first while JS Date.getDay() stays Sunday(0)..Saturday(6).
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0]
 
-function parseLocal(iso: string): Date {
-  const m = iso.match(/(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/)
-  if (!m) return new Date(iso)
-  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), m[4] ? Number(m[4]) : 0, m[5] ? Number(m[5]) : 0)
-}
+/** Clinic wall string → naive Date (no zone shift); see lib/clinicTime.ts. */
+const parseLocal = parseClinic
 
 /** How far ahead the calendar lets a patient book. */
 const MAX_DAYS_AHEAD = 60
@@ -485,7 +483,7 @@ function MonthCalendar({
   onPick: (date: string) => void
 }) {
   const { t } = useTranslation('patient')
-  const today = new Date()
+  const today = clinicNow()
   today.setHours(0, 0, 0, 0)
   const maxDate = new Date(today)
   maxDate.setDate(maxDate.getDate() + MAX_DAYS_AHEAD)

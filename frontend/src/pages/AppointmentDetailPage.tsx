@@ -26,12 +26,10 @@ import { useToast } from '../context/ToastContext'
 import { Badge, ErrorBox, Pending, initials } from '../components/ui'
 import { useSpecialtyLabel } from '../context/SpecialtyNamesContext'
 import { monthName, toDateInput, weekdayName } from '../lib/format'
+import { clinicNow, msUntilClinic, parseClinic } from '../lib/clinicTime'
 
-function parseLocal(iso: string): Date {
-  const m = iso.match(/(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/)
-  if (!m) return new Date(iso)
-  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), m[4] ? Number(m[4]) : 0, m[5] ? Number(m[5]) : 0)
-}
+/** Clinic wall string → naive Date (no zone shift); see lib/clinicTime.ts. */
+const parseLocal = parseClinic
 
 function formatDateSq(iso: string): string {
   const d = parseLocal(iso)
@@ -110,7 +108,7 @@ function statusBadge(status: AppointmentStatus, t: (key: string) => string) {
 }
 
 function hoursUntil(iso: string): number {
-  return (parseLocal(iso).getTime() - Date.now()) / (1000 * 60 * 60)
+  return msUntilClinic(iso) / (1000 * 60 * 60)
 }
 
 function DetailSkeleton() {
@@ -150,7 +148,7 @@ export default function AppointmentDetailPage() {
   const [showReschedule, setShowReschedule] = useState(false)
   // First day of the visible 7-day strip; starts at today so bookable dates show first.
   const [weekStart, setWeekStart] = useState(() => {
-    const d = new Date()
+    const d = clinicNow()
     return new Date(d.getFullYear(), d.getMonth(), d.getDate())
   })
   const [selectedDate, setSelectedDate] = useState('')
@@ -403,15 +401,23 @@ export default function AppointmentDetailPage() {
           <div className="card apptdetail-timeline-card">
             <h3 className="apptdetail-timeline__heading">{t('appointmentDetail.statusHistoryTitle')}</h3>
             <div className="apptdetail-timeline">
-              <div className="apptdetail-timeline__event">
-                <span className="apptdetail-timeline__dot" style={{ background: TIMELINE_COLORS[appointment.status] ?? 'var(--muted)' }} />
-                <div>
-                  <div className="apptdetail-timeline__label" style={{ color: TIMELINE_COLORS[appointment.status] ?? 'var(--muted)' }}>
-                    {timelineLabel(appointment.status, t)}
+              {/* Only real events (WR-09): a booking is confirmed the moment it is
+                  made, so Pending/Confirmed add nothing beyond "Rezervuar". Later
+                  states show their own timestamp when the API has one (cancelledAt)
+                  and no time at all otherwise — never a made-up "now". */}
+              {!ACTIVE_STATUSES.includes(appointment.status) && (
+                <div className="apptdetail-timeline__event">
+                  <span className="apptdetail-timeline__dot" style={{ background: TIMELINE_COLORS[appointment.status] ?? 'var(--muted)' }} />
+                  <div>
+                    <div className="apptdetail-timeline__label" style={{ color: TIMELINE_COLORS[appointment.status] ?? 'var(--muted)' }}>
+                      {timelineLabel(appointment.status, t)}
+                    </div>
+                    {appointment.cancelledAt && (
+                      <div className="apptdetail-timeline__time">{formatDayMonthTime(appointment.cancelledAt)}</div>
+                    )}
                   </div>
-                  <div className="apptdetail-timeline__time">{formatDayMonthTime(new Date().toISOString())}</div>
                 </div>
-              </div>
+              )}
               <div className="apptdetail-timeline__event apptdetail-timeline__event--last">
                 <span className="apptdetail-timeline__dot" style={{ background: 'var(--ok)' }} />
                 <div>
@@ -587,7 +593,7 @@ function RescheduleUi({
 }) {
   const { t } = useTranslation('patient')
   const { t: tCommon } = useTranslation('common')
-  const today = new Date()
+  const today = clinicNow()
   today.setHours(0, 0, 0, 0)
   // Earliest selectable day is tomorrow — rescheduling onto the current day
   // isn't a meaningful choice for a patient picking a new date.

@@ -145,6 +145,20 @@ aplikacioni **NUK** bie mbrapa në ndonjë URL parazgjedhur — shfaq një faqe
 gabimi konfigurimi (`src/components/ConfigErrorPage.tsx`) në vend që të
 provojë të flasë me një backend të panjohur.
 
+## Koha dhe zonat kohore (rregull i detyrueshëm)
+
+Klinikat janë në Kosovë, prandaj **çdo orë që njeriu e shkruan ose e sheh është ora e klinikës, `Europe/Belgrade`** (CET/CEST), pavarësisht zonës së shfletuesit apo të serverit. Një pacient jashtë vendit që rezervon 10:00 në Prishtinë sheh dhe dërgon 10:00.
+
+| Çfarë | Si ruhet | Si kalon në API |
+|---|---|---|
+| Momentet (termine, mungesa, gjithçka me datë + orë) | UTC (`timestamptz`) | ora e klinikës pa zhvendosje: `"2026-10-30T09:00:00"` |
+| Orari javor i punës | dita e javës + `TimeOnly` lokale | `"09:00"` |
+| Datat e filtrave (raporte, lista, auditim) | — | ditë kalendarike e klinikës: `"2026-10-30"` |
+
+- **Backend:** konvertimi bëhet vetëm te `TimeZoneService` (`ToUtc` / `ToLocal`). Një vlerë që vjen me zhvendosje të qartë (`…Z`, `+02:00`) trajtohet si moment i saktë, jo si orë lokale.
+- **Frontend:** vetëm `src/lib/clinicTime.ts` (`toClinicWall`, `clinicToday`, `clinicNow`, `clinicWallToEpoch`, `parseClinic`). **Mos përdor `toISOString()`** për një kohë që e zgjodhi njeriu, dhe mos përdor `new Date()` si "tani" në kalendarë — merr `clinicNow()`.
+- Gabimi që e solli këtë rregull: WR-03 (mungesa 09:00–17:00 ruhej 08:00–16:00). Kontrolli/korrigjimi i të dhënave ekzistuese në prod: `docs/sql/2026-10-timezone-check.sql` (vetëm-lexim; korrigjimi është i komentuar dhe kërkon backup të Neon më parë).
+
 ## Çështje e njohur, jo e zgjidhur ende (Faza 2)
 
 `frontend/vercel.json` ka një Content-Security-Policy (aktualisht

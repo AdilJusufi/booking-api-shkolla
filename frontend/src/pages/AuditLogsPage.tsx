@@ -6,20 +6,19 @@ import { getErrorMessage } from '../lib/errors'
 import type { AuditLog } from '../lib/types'
 import { EmptyState, ErrorBox, SkeletonRows } from '../components/ui'
 import { monthName } from '../lib/format'
+import { clinicToday, parseClinic } from '../lib/clinicTime'
 
 const PAGE_SIZE = 50
 
-function toDateInput(d: Date): string {
-  return d.toISOString().slice(0, 10)
-}
-
+// Report/filter dates are clinic calendar days. toISOString() would turn a
+// local midnight into the previous UTC day (the "From" field showed 30 Sep).
 function firstOfMonth(): string {
-  const d = new Date()
-  return toDateInput(new Date(d.getFullYear(), d.getMonth(), 1))
+  return `${clinicToday().slice(0, 8)}01`
 }
 
+// The API returns audit times as clinic wall-clock (see TimeZoneService).
 function formatTimestamp(iso: string): string {
-  const d = new Date(iso)
+  const d = parseClinic(iso)
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${d.getDate()} ${monthName(d.getMonth(), 'short')} ${d.getFullYear()} · ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
@@ -46,8 +45,8 @@ export default function AuditLogsPage() {
   const [actionFilter, setActionFilter] = useState('')
   const [entityFilter, setEntityFilter] = useState('')
   const [from, setFrom] = useState(firstOfMonth())
-  const [to, setTo] = useState(toDateInput(new Date()))
-  const [appliedFilters, setAppliedFilters] = useState({ action: '', entity: '', from: firstOfMonth(), to: toDateInput(new Date()) })
+  const [to, setTo] = useState(clinicToday())
+  const [appliedFilters, setAppliedFilters] = useState({ action: '', entity: '', from: firstOfMonth(), to: clinicToday() })
 
   const load = useCallback(() => {
     setLoading(true)

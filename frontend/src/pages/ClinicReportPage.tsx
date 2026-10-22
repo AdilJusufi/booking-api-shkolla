@@ -8,14 +8,12 @@ import { useToast } from '../context/ToastContext'
 import { useClinicContext } from '../components/ClinicDetailLayout'
 import { ErrorBox, SkeletonRows, initials } from '../components/ui'
 import { formatMoney, formatNumber } from '../lib/format'
+import { clinicToday } from '../lib/clinicTime'
 
-function toDateInput(d: Date): string {
-  return d.toISOString().slice(0, 10)
-}
-
+// Report/filter dates are clinic calendar days. toISOString() would turn a
+// local midnight into the previous UTC day (the "From" field showed 30 Sep).
 function firstOfMonth(): string {
-  const d = new Date()
-  return toDateInput(new Date(d.getFullYear(), d.getMonth(), 1))
+  return `${clinicToday().slice(0, 8)}01`
 }
 
 export default function ClinicReportPage() {
@@ -24,7 +22,7 @@ export default function ClinicReportPage() {
   const { notify } = useToast()
 
   const [from, setFrom] = useState(firstOfMonth())
-  const [to, setTo] = useState(toDateInput(new Date()))
+  const [to, setTo] = useState(clinicToday())
   const [report, setReport] = useState<ClinicReport | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')

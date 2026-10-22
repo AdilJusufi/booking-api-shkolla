@@ -7,6 +7,7 @@ import type { CreateUnavailabilityRequest, UnavailabilityDto } from '../lib/type
 import { useToast } from '../context/ToastContext'
 import { CustomSelect, EmptyState, ErrorBox, Modal, SkeletonRows, TimeField } from '../components/ui'
 import { monthName, toDateInput, weekdayName } from '../lib/format'
+import { clinicTodayDate, clinicWallToEpoch, isClinicPast, parseClinic, toClinicWall } from '../lib/clinicTime'
 
 // GET /api/doctor/unavailability defaults to a 30-day forward window when no
 // from/to is passed — nowhere near enough to populate an "Aktive / të
@@ -14,8 +15,10 @@ import { monthName, toDateInput, weekdayName } from '../lib/format'
 const RANGE_PAST_DAYS = 90
 const RANGE_FUTURE_DAYS = 365
 
+// The API returns clinic wall-clock strings; parse them without a zone shift
+// so a 09:00 absence reads 09:00 in any browser (see lib/clinicTime.ts).
 function toLocalDate(iso: string): Date {
-  return new Date(iso)
+  return parseClinic(iso)
 }
 
 function sameDay(a: Date, b: Date): boolean {
@@ -42,7 +45,7 @@ function formatRange(u: UnavailabilityDto, t: (key: string, opts?: Record<string
 }
 
 function formatDuration(u: UnavailabilityDto, t: (key: string, opts?: Record<string, unknown>) => string): string {
-  const ms = toLocalDate(u.endDateTime).getTime() - toLocalDate(u.startDateTime).getTime()
+  const ms = clinicWallToEpoch(u.endDateTime) - clinicWallToEpoch(u.startDateTime)
   const minutes = Math.round(ms / 60000)
   if (minutes < 60) return t('unavailability.durationMinutes', { count: minutes })
   const hours = minutes / 60
@@ -73,7 +76,7 @@ export default function UnavailabilityPage() {
   const load = useCallback(() => {
     setLoading(true)
     setError('')
-    const today = new Date()
+    const today = clinicTodayDate()
     const from = toDateInput(new Date(today.getFullYear(), today.getMonth(), today.getDate() - RANGE_PAST_DAYS))
     const to = toDateInput(new Date(today.getFullYear(), today.getMonth(), today.getDate() + RANGE_FUTURE_DAYS))
 
@@ -93,11 +96,10 @@ export default function UnavailabilityPage() {
   const branchOptions = useMemo(() => Array.from(branchNames.entries()).map(([id, name]) => ({ id, name })), [branchNames])
 
   const { upcoming, past } = useMemo(() => {
-    const now = Date.now()
     const upcoming: UnavailabilityDto[] = []
     const past: UnavailabilityDto[] = []
     for (const u of items) {
-      ;(toLocalDate(u.endDateTime).getTime() >= now ? upcoming : past).push(u)
+      ;(isClinicPast(u.endDateTime) ? past : upcoming).push(u)
     }
     upcoming.sort((a, b) => toLocalDate(a.startDateTime).getTime() - toLocalDate(b.startDateTime).getTime())
     past.sort((a, b) => toLocalDate(b.startDateTime).getTime() - toLocalDate(a.startDateTime).getTime())
@@ -292,18 +294,19 @@ function UnavailabilityFormModal({
 
   async function handleSubmit() {
     if (!form.startDate || !form.endDate) return setFormError(t('unavailability.validation.timesRequired'))
-    const start = new Date(`${form.startDate}T${form.startTime}`)
-    const end = new Date(`${form.endDate}T${form.endTime}`)
-    if (end <= start) return setFormError(t('unavailability.validation.endAfterStart'))
-    if (start < new Date()) return setFormError(t('unavailability.validation.notInPast'))
+    // What the doctor typed is clinic time and is sent as such — never as UTC (WR-03).
+    const start = toClinicWall(form.startDate, form.startTime)
+    const end = toClinicWall(form.endDate, form.endTime)
+    if (clinicWallToEpoch(end) <= clinicWallToEpoch(start)) return setFormError(t('unavailability.validation.endAfterStart'))
+    if (isClinicPast(start)) return setFormError(t('unavailability.validation.notInPast'))
 
     setFormError('')
     setSaving(true)
     try {
       const payload: CreateUnavailabilityRequest = {
         clinicBranchId: form.clinicBranchId || undefined,
-        startDateTime: start.toISOString(),
-        endDateTime: end.toISOString(),
+        startDateTime: start,
+        endDateTime: end,
         reason: form.reason.trim() || undefined,
       }
       await api.createUnavailability(payload)
