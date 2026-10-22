@@ -20,6 +20,9 @@ public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
         builder.Property(a => a.PatientNote).HasMaxLength(1000);
         builder.Property(a => a.InternalNote).HasMaxLength(1000);
         builder.Property(a => a.CancellationReason).HasMaxLength(500);
+        builder.Property(a => a.Price).HasPrecision(10, 2);
+        builder.Property(a => a.Currency).HasMaxLength(3);
+        builder.Property(a => a.BookedByClinic).HasDefaultValue(false);
 
         // Indeksi kryesor i kërkimit të mbivendosjeve dhe kalendarit të doktorit.
         builder.HasIndex(a => new { a.DoctorId, a.StartDateTime, a.EndDateTime });

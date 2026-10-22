@@ -10,8 +10,10 @@ public sealed record PatientProfileDto
     public required string LastName { get; init; }
     public required string Email { get; init; }
     public string? PhoneNumber { get; init; }
-    public required DateOnly DateOfBirth { get; init; }
-    public required Gender Gender { get; init; }
+
+    /// <summary>Null për llogaritë e hapura nga recepsioni pa datëlindje/gjini.</summary>
+    public DateOnly? DateOfBirth { get; init; }
+    public Gender? Gender { get; init; }
     public string? PersonalNumber { get; init; }
     public string? Address { get; init; }
     public string? City { get; init; }

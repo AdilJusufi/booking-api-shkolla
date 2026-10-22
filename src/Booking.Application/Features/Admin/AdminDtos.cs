@@ -369,6 +369,9 @@ public sealed record AdminAppointmentListItemDto
 
     /// <summary>Token-i i konkurrencës (xmin) — kthehet te PUT-i pasues.</summary>
     public required uint Version { get; init; }
+
+    /// <summary>True kur termini u rezervua nga klinika (p.sh. me telefon).</summary>
+    public bool BookedByClinic { get; init; }
 }
 
 // ---------- Raporti ----------

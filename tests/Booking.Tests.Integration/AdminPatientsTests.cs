@@ -108,33 +108,61 @@ public class AdminPatientsTests
     }
 
     [Fact]
-    public async Task Search_ByName_ExcludesPatientsWithNoRelationshipToMyClinic()
+    public async Task Search_ByName_IsRefused_OnlyExactPhoneOrEmailIsAllowed()
     {
         var client = await ClinicAdminClientAsync();
         var surname = $"Panjohur{Guid.NewGuid():N}"[..20];
         await CreatePatientAsync(client, NewPatient("Driton", surname, UniquePhone()));
 
-        // Pacienti sapo u krijua dhe s'ka asnjë termin — kërkimi me emër është i
-        // kufizuar te pacientët e klinikës, prandaj nuk duhet të dalë fare.
-        var result = await SearchAsync(client, surname);
+        // L-3: s'ka kërkim me emër — as për pacientët e klinikës. Shfletimi i bazës është i mbyllur.
+        var response = await client.GetAsync($"/api/admin/patients/search?query={Uri.EscapeDataString(surname)}");
 
-        result.Items.Should().BeEmpty();
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await response.Content.ReadAsStringAsync()).Should().Contain("patient-search-exact-only");
     }
 
     [Fact]
-    public async Task Search_ByName_FindsPatientOnceTheyHaveAnAppointmentAtMyClinic()
+    public async Task Search_ByPartialPhone_IsRefused()
+    {
+        var client = await ClinicAdminClientAsync();
+
+        var response = await client.GetAsync("/api/admin/patients/search?query=044%20765");
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Fact]
+    public async Task Search_ByPhone_Normalizes383AndLeadingZero()
+    {
+        var client = await ClinicAdminClientAsync();
+        var created = await CreatePatientAsync(client, NewPatient("Lirim", "Normalizimi", "+383 45 818 271"));
+
+        foreach (var form in new[] { "045 818 271", "+383 45 818 271", "00383-45-818-271", "38345818271" })
+        {
+            var result = await SearchAsync(client, form);
+            result.Items.Should().ContainSingle(form).Which.PatientProfileId.Should().Be(created.PatientProfileId);
+        }
+    }
+
+    [Fact]
+    public async Task Search_ShowsFullSurname_OnlyOnceThePatientHasAnAppointmentAtMyClinic()
     {
         var client = await ClinicAdminClientAsync();
         var surname = $"Njohur{Guid.NewGuid():N}"[..18];
-        var created = await CreatePatientAsync(client, NewPatient("Elira", surname, UniquePhone()));
+        var phone = UniquePhone();
+        var created = await CreatePatientAsync(client, NewPatient("Elira", surname, phone));
+
+        var before = (await SearchAsync(client, phone)).Items.Should().ContainSingle().Subject;
+        before.LastName.Should().Be("N.");
+        before.IsNameMasked.Should().BeTrue();
 
         await BookAsync(client, created.PatientProfileId, new TimeOnly(8, 30));
 
-        var result = await SearchAsync(client, surname);
-
-        var match = result.Items.Should().ContainSingle().Subject;
+        var match = (await SearchAsync(client, phone)).Items.Should().ContainSingle().Subject;
         match.PatientProfileId.Should().Be(created.PatientProfileId);
         match.HasRelationshipWithClinic.Should().BeTrue();
+        match.IsNameMasked.Should().BeFalse();
+        match.LastName.Should().Be(surname);
         // Pacienti tani i përket klinikës → detajet vijnë të plota.
         match.DateOfBirth.Should().NotBeNull();
         match.PhoneNumber.Should().NotBeNull();
@@ -151,6 +179,12 @@ public class AdminPatientsTests
 
         var match = result.Items.Should().ContainSingle().Subject;
         match.HasRelationshipWithClinic.Should().BeFalse();
+        // L-3: vetëm emri + inicialja e mbiemrit; mbiemri i plotë s'del nga serveri.
+        match.FirstName.Should().Be("Fatmire");
+        match.LastName.Should().Be("R.");
+        match.IsNameMasked.Should().BeTrue();
+        (await (await client.GetAsync($"/api/admin/patients/search?query={Uri.EscapeDataString(email)}")).Content.ReadAsStringAsync())
+            .Should().NotContain("Reduktimi");
         // Identifikuesi i kërkuar kthehet — admini tashmë e dinte.
         match.Email.Should().Be(email);
         // Gjithçka tjetër mbahet: kontakti tjetër, datëlindja, dependentët.
@@ -241,29 +275,66 @@ public class AdminPatientsTests
     }
 
     [Fact]
-    public async Task CreatePatient_WithDuplicatePhone_Returns409()
+    public async Task CreatePatient_WithDuplicatePhone_ReusesTheExistingPatient()
     {
         var client = await ClinicAdminClientAsync();
         var phone = UniquePhone();
-        await CreatePatientAsync(client, NewPatient("Jeta", "Dublikat", phone));
+        var original = await CreatePatientAsync(client, NewPatient("Jeta", "Dublikat", phone));
+
+        // I njëjti numër i shkruar ndryshe — pa dublikat, me të njëjtin pacient.
+        var response = await client.PostAsJsonAsync("/api/admin/patients",
+            NewPatient("Jeta", "DublikatSërish", "0" + phone.Replace("+383 ", "")), TestHelpers.Json);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var reused = await response.Content.ReadFromJsonAsync<AdminPatientDto>(TestHelpers.Json);
+        reused!.PatientProfileId.Should().Be(original.PatientProfileId);
+        reused.IsExistingPatient.Should().BeTrue();
+        // S'ka termin në klinikë ende → mbiemri i maskuar, emri i ruajtur s'ndryshohet.
+        reused.LastName.Should().Be("D.");
+    }
+
+    [Fact]
+    public async Task CreatePatient_WithDuplicateEmail_ReusesTheExistingPatient()
+    {
+        var client = await ClinicAdminClientAsync();
+        var email = $"dublikat-{Guid.NewGuid():N}@test.dev";
+        var original = await CreatePatientAsync(client, NewPatient("Kushtrim", "Email", UniquePhone(), email));
 
         var response = await client.PostAsJsonAsync("/api/admin/patients",
-            NewPatient("Jeta", "DublikatSërish", phone), TestHelpers.Json);
+            NewPatient("Kushtrim", "EmailSërish", UniquePhone(), email), TestHelpers.Json);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await response.Content.ReadFromJsonAsync<AdminPatientDto>(TestHelpers.Json))!
+            .PatientProfileId.Should().Be(original.PatientProfileId);
+    }
+
+    [Fact]
+    public async Task CreatePatient_WithEmailOfAStaffAccount_IsRefused()
+    {
+        var client = await ClinicAdminClientAsync();
+
+        var response = await client.PostAsJsonAsync("/api/admin/patients",
+            NewPatient("Kush", "Doktor", UniquePhone(), DbSeeder.DoctorEmails[0]), TestHelpers.Json);
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
     [Fact]
-    public async Task CreatePatient_WithDuplicateEmail_Returns409()
+    public async Task CreatePatient_WithoutBirthDateOrGender_Succeeds()
     {
         var client = await ClinicAdminClientAsync();
-        var email = $"dublikat-{Guid.NewGuid():N}@test.dev";
-        await CreatePatientAsync(client, NewPatient("Kushtrim", "Email", UniquePhone(), email));
 
-        var response = await client.PostAsJsonAsync("/api/admin/patients",
-            NewPatient("Kushtrim", "EmailSërish", UniquePhone(), email), TestHelpers.Json);
+        var response = await client.PostAsJsonAsync("/api/admin/patients", new AdminCreatePatientRequest
+        {
+            FirstName = "Pa",
+            LastName = "Datelindje",
+            PhoneNumber = UniquePhone()
+        }, TestHelpers.Json);
 
-        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var created = await response.Content.ReadFromJsonAsync<AdminPatientDto>(TestHelpers.Json);
+        created!.DateOfBirth.Should().BeNull();
+        created.Gender.Should().BeNull();
     }
 
     [Fact]

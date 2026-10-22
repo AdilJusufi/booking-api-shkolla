@@ -126,8 +126,8 @@ public class AppointmentService : IAppointmentService
             .FirstOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException("ClinicBranch", request.ClinicBranchId);
 
-        var durationMinutes = await GetEffectiveDurationAsync(request.DoctorId, request.MedicalServiceId, cancellationToken);
-        var endUtc = startUtc.AddMinutes(durationMinutes);
+        var terms = await ServiceTermsLookup.LoadAsync(_dbContext, request.DoctorId, request.MedicalServiceId, cancellationToken);
+        var endUtc = startUtc.AddMinutes(terms.DurationMinutes);
 
         await EnsureNoPersonOverlapAsync(
             patientProfileId, request.DependentId, startUtc, endUtc, excludeAppointmentId: null, cancellationToken);
@@ -152,6 +152,9 @@ public class AppointmentService : IAppointmentService
             DependentId = request.DependentId,
             StartDateTime = startUtc,
             EndDateTime = endUtc,
+            // Çmimi ngrin në momentin e rezervimit — ndryshimet e mëvonshme vlejnë vetëm për rezervime të reja.
+            Price = terms.Price,
+            Currency = terms.Currency,
             // Orari i publikuar i doktorit ËSHTË angazhimi — rezervimi konfirmohet menjëherë,
             // pa hap rishikimi. Sloti mbyllet që në momentin e krijimit (shih BlockingStatuses).
             Status = AppointmentStatus.Confirmed,
@@ -227,7 +230,8 @@ public class AppointmentService : IAppointmentService
             throw new BookingRuleException("appointment-in-past", "Termini i ri nuk mund të jetë në të kaluarën.");
         }
 
-        var durationMinutes = await GetEffectiveDurationAsync(existing.DoctorId, existing.MedicalServiceId, cancellationToken);
+        var terms = await ServiceTermsLookup.LoadAsync(_dbContext, existing.DoctorId, existing.MedicalServiceId, cancellationToken);
+        var durationMinutes = terms.DurationMinutes;
         var newEndUtc = newStartUtc.AddMinutes(durationMinutes);
 
         await EnsureNoPersonOverlapAsync(
@@ -256,6 +260,10 @@ public class AppointmentService : IAppointmentService
             DependentId = existing.DependentId,
             StartDateTime = newStartUtc,
             EndDateTime = newEndUtc,
+            // Riplanifikimi s'është rezervim i ri: mbetet çmimi i dakorduar (ose ai aktual për terminet e vjetra).
+            Price = existing.Price ?? terms.Price,
+            Currency = existing.Currency ?? terms.Currency,
+            BookedByClinic = existing.BookedByClinic,
             Status = AppointmentStatus.Confirmed,
             PatientNote = existing.PatientNote
         };
@@ -289,27 +297,6 @@ public class AppointmentService : IAppointmentService
         return await _dbContext.Appointments
             .FirstOrDefaultAsync(a => a.Id == appointmentId && a.PatientProfile.UserId == userId, cancellationToken)
             ?? throw new NotFoundException("Appointment", appointmentId);
-    }
-
-    private async Task<int> GetEffectiveDurationAsync(Guid doctorId, Guid serviceId, CancellationToken cancellationToken)
-    {
-        var doctorService = await _dbContext.DoctorServices
-            .Where(ds => ds.DoctorId == doctorId && ds.MedicalServiceId == serviceId && ds.IsActive)
-            .Select(ds => new
-            {
-                ds.CustomDurationMinutes,
-                BaseDuration = ds.MedicalService.DurationMinutes,
-                ServiceActive = ds.MedicalService.IsActive
-            })
-            .FirstOrDefaultAsync(cancellationToken)
-            ?? throw new BookingRuleException("service-not-offered-by-doctor", "Doktori nuk e ofron këtë shërbim.");
-
-        if (!doctorService.ServiceActive)
-        {
-            throw new NotFoundException("MedicalService", serviceId);
-        }
-
-        return doctorService.CustomDurationMinutes ?? doctorService.BaseDuration;
     }
 
     /// <summary>Rregulli 10: i njëjti person (pacienti ose i njëjti dependent) s'mund të ketë dy termine njëkohësisht.</summary>
@@ -433,7 +420,8 @@ public class AppointmentService : IAppointmentService
         Guid ServiceId, string ServiceName,
         Guid? DependentId, string? DependentFirstName, string? DependentLastName,
         DateTime StartUtc, DateTime EndUtc, AppointmentStatus Status,
-        string? PatientNote, string? CancellationReason, DateTime? CancelledAt, DateTime CreatedAt);
+        string? PatientNote, string? CancellationReason, DateTime? CancelledAt, DateTime CreatedAt,
+        decimal Price, string Currency, bool BookedByClinic);
 
     private IQueryable<AppointmentRow> QueryRows(
         System.Linq.Expressions.Expression<Func<Appointment, bool>> predicate)
@@ -450,7 +438,14 @@ public class AppointmentService : IAppointmentService
                 a.Dependent != null ? a.Dependent.FirstName : null,
                 a.Dependent != null ? a.Dependent.LastName : null,
                 a.StartDateTime, a.EndDateTime, a.Status,
-                a.PatientNote, a.CancellationReason, a.CancelledAt, a.CreatedAt));
+                a.PatientNote, a.CancellationReason, a.CancelledAt, a.CreatedAt,
+                // Çmimi i dakorduar; për terminet e vjetra (pa snapshot) — vlera efektive aktuale.
+                a.Price ?? _dbContext.DoctorServices
+                    .Where(ds => ds.DoctorId == a.DoctorId && ds.MedicalServiceId == a.MedicalServiceId)
+                    .Select(ds => ds.CustomPrice)
+                    .FirstOrDefault() ?? a.MedicalService.Price,
+                a.Currency ?? a.MedicalService.Currency,
+                a.BookedByClinic));
     }
 
     private AppointmentDto ToDto(AppointmentRow row) => new()
@@ -473,6 +468,9 @@ public class AppointmentService : IAppointmentService
         PatientNote = row.PatientNote,
         CancellationReason = row.CancellationReason,
         CancelledAt = row.CancelledAt is { } cancelledAt ? _timeZoneService.ToLocal(cancelledAt) : null,
-        CreatedAt = _timeZoneService.ToLocal(row.CreatedAt)
+        CreatedAt = _timeZoneService.ToLocal(row.CreatedAt),
+        Price = row.Price,
+        Currency = row.Currency,
+        BookedByClinic = row.BookedByClinic
     };
 }

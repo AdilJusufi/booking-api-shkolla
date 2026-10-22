@@ -133,7 +133,8 @@ public class AdminAppointmentService : IAdminAppointmentService
                 r.Appointment.StartDateTime,
                 r.Appointment.EndDateTime,
                 r.Appointment.Status,
-                r.Appointment.Version
+                r.Appointment.Version,
+                r.Appointment.BookedByClinic
             })
             .ToListAsync(cancellationToken);
 
@@ -157,7 +158,8 @@ public class AdminAppointmentService : IAdminAppointmentService
                 StartDateTime = _timeZoneService.ToLocal(r.StartDateTime),
                 EndDateTime = _timeZoneService.ToLocal(r.EndDateTime),
                 Status = r.Status,
-                Version = r.Version
+                Version = r.Version,
+                BookedByClinic = r.BookedByClinic
             })
             .ToList();
 
@@ -213,8 +215,8 @@ public class AdminAppointmentService : IAdminAppointmentService
             throw new BookingRuleException("appointment-in-past", "Termini nuk mund të rezervohet në të kaluarën.");
         }
 
-        var durationMinutes = await GetEffectiveDurationAsync(request.DoctorId, request.MedicalServiceId, cancellationToken);
-        var endUtc = startUtc.AddMinutes(durationMinutes);
+        var terms = await ServiceTermsLookup.LoadAsync(_dbContext, request.DoctorId, request.MedicalServiceId, cancellationToken);
+        var endUtc = startUtc.AddMinutes(terms.DurationMinutes);
 
         var personOverlap = await _dbContext.Appointments.AnyAsync(a =>
             a.PatientProfileId == patient.PatientProfileId
@@ -245,7 +247,11 @@ public class AdminAppointmentService : IAdminAppointmentService
             DependentId = request.DependentId,
             StartDateTime = startUtc,
             EndDateTime = endUtc,
+            // Çmimi ngrin në momentin e rezervimit — ndryshimet e mëvonshme vlejnë vetëm për rezervime të reja.
+            Price = terms.Price,
+            Currency = terms.Currency,
             Status = AppointmentStatus.Confirmed, // e krijoi vetë klinika — konfirmohet direkt
+            BookedByClinic = true,
             PatientNote = request.PatientNote,
             InternalNote = request.InternalNote
         };
@@ -344,7 +350,8 @@ public class AdminAppointmentService : IAdminAppointmentService
             throw new BookingRuleException("appointment-in-past", "Termini i ri nuk mund të jetë në të kaluarën.");
         }
 
-        var durationMinutes = await GetEffectiveDurationAsync(existing.DoctorId, existing.MedicalServiceId, cancellationToken);
+        var terms = await ServiceTermsLookup.LoadAsync(_dbContext, existing.DoctorId, existing.MedicalServiceId, cancellationToken);
+        var durationMinutes = terms.DurationMinutes;
         var newEndUtc = newStartUtc.AddMinutes(durationMinutes);
 
         var slotAvailable = await _availabilityService.IsSlotAvailableAsync(
@@ -367,6 +374,10 @@ public class AdminAppointmentService : IAdminAppointmentService
             DependentId = existing.DependentId,
             StartDateTime = newStartUtc,
             EndDateTime = newEndUtc,
+            // Riplanifikimi s'është rezervim i ri: mbetet çmimi i dakorduar (ose ai aktual për terminet e vjetra).
+            Price = existing.Price ?? terms.Price,
+            Currency = existing.Currency ?? terms.Currency,
+            BookedByClinic = existing.BookedByClinic,
             Status = AppointmentStatus.Confirmed,
             PatientNote = existing.PatientNote,
             InternalNote = existing.InternalNote
@@ -392,17 +403,6 @@ public class AdminAppointmentService : IAdminAppointmentService
     private async Task<Appointment> GetAppointmentAsync(Guid appointmentId, CancellationToken cancellationToken) =>
         await _dbContext.Appointments.FirstOrDefaultAsync(a => a.Id == appointmentId, cancellationToken)
         ?? throw new NotFoundException("Appointment", appointmentId);
-
-    private async Task<int> GetEffectiveDurationAsync(Guid doctorId, Guid serviceId, CancellationToken cancellationToken)
-    {
-        var doctorService = await _dbContext.DoctorServices
-            .Where(ds => ds.DoctorId == doctorId && ds.MedicalServiceId == serviceId && ds.IsActive)
-            .Select(ds => new { ds.CustomDurationMinutes, BaseDuration = ds.MedicalService.DurationMinutes })
-            .FirstOrDefaultAsync(cancellationToken)
-            ?? throw new BookingRuleException("service-not-offered-by-doctor", "Doktori nuk e ofron këtë shërbim.");
-
-        return doctorService.CustomDurationMinutes ?? doctorService.BaseDuration;
-    }
 
     private async Task<Guid> GetPatientUserIdAsync(Guid patientProfileId, CancellationToken cancellationToken) =>
         await _dbContext.PatientProfiles
@@ -528,7 +528,8 @@ public class AdminAppointmentService : IAdminAppointmentService
                 a.Status,
                 a.PatientNote,
                 a.InternalNote,
-                a.CancellationReason
+                a.CancellationReason,
+                a.BookedByClinic
             })
             .FirstAsync(cancellationToken);
 
@@ -548,7 +549,8 @@ public class AdminAppointmentService : IAdminAppointmentService
             Status = row.Status,
             PatientNote = row.PatientNote,
             InternalNote = row.InternalNote,
-            CancellationReason = row.CancellationReason
+            CancellationReason = row.CancellationReason,
+            BookedByClinic = row.BookedByClinic
         };
     }
 }

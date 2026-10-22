@@ -43,6 +43,22 @@ public class Appointment : AuditableEntity
     /// </summary>
     public DateTime? ReminderSentAt { get; set; }
 
+    /// <summary>
+    /// True kur termini u rezervua nga stafi i klinikës (p.sh. me telefon), jo nga pacienti.
+    /// Kush saktësisht e rezervoi ruhet në AuditLog (APPOINTMENT_CREATED_BY_ADMIN).
+    /// </summary>
+    public bool BookedByClinic { get; set; }
+
+    /// <summary>
+    /// Çmimi i dakorduar në momentin e rezervimit (DoctorService.CustomPrice ?? MedicalService.Price).
+    /// Ndryshimi i çmimit të shërbimit më vonë vlen vetëm për rezervimet e reja. Null për
+    /// terminet e krijuara para kësaj kolone — për to çmimi lexohet nga vlerat aktuale
+    /// në momentin e leximit (rreshtat e vjetër s'rishkruhen).
+    /// </summary>
+    public decimal? Price { get; set; }
+
+    public string? Currency { get; set; }
+
     public Clinic Clinic { get; set; } = null!;
     public ClinicBranch ClinicBranch { get; set; } = null!;
     public Doctor Doctor { get; set; } = null!;

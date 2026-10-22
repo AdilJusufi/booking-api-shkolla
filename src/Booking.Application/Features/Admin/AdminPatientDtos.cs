@@ -48,6 +48,12 @@ public sealed record AdminPatientSearchResultDto
     /// Llogaria u krijua nga administrata dhe pacienti s'e ka marrë ende në dorëzim
     /// (s'ka vendosur password). E dobishme për recepsionin dhe për pastrimin e dublikatave.
     /// </summary>
+    /// <summary>
+    /// True kur pacienti s'ka pasur kurrë termin në klinikat e mia: LastName përmban
+    /// vetëm inicialen ("G."). Mbiemri i plotë s'dërgohet fare.
+    /// </summary>
+    public bool IsNameMasked { get; init; }
+
     public required bool IsUnclaimedAccount { get; init; }
 
     /// <summary>Bosh për pacientët pa lidhje me klinikën.</summary>
@@ -83,8 +89,9 @@ public sealed record AdminCreatePatientRequest
     /// </summary>
     public string? Email { get; init; }
 
-    public required DateOnly DateOfBirth { get; init; }
-    public required Gender Gender { get; init; }
+    /// <summary>Opsionale — recepsioni shpesh s'e ka në telefon.</summary>
+    public DateOnly? DateOfBirth { get; init; }
+    public Gender? Gender { get; init; }
 
     public string? Address { get; init; }
     public string? City { get; init; }
@@ -96,11 +103,19 @@ public sealed record AdminPatientDto
     public required Guid PatientProfileId { get; init; }
     public required Guid UserId { get; init; }
     public required string FirstName { get; init; }
+
+    /// <summary>Vetëm inicialja kur <see cref="IsNameMasked"/> — shih AdminPatientSearchResultDto.</summary>
     public required string LastName { get; init; }
     public string? Email { get; init; }
-    public required string PhoneNumber { get; init; }
-    public required DateOnly DateOfBirth { get; init; }
-    public required Gender Gender { get; init; }
+    public string? PhoneNumber { get; init; }
+    public DateOnly? DateOfBirth { get; init; }
+    public Gender? Gender { get; init; }
+
+    /// <summary>True kur telefoni/email-i i dhënë përkonte me një pacient ekzistues — s'u krijua dublikat.</summary>
+    public bool IsExistingPatient { get; init; }
+    public bool IsNameMasked { get; init; }
+    public bool HasRelationshipWithClinic { get; init; }
+    public IReadOnlyList<AdminPatientDependentDto> Dependents { get; init; } = [];
 
     /// <summary>Gjithmonë true në krijim — llogaria nuk ka password derisa ta marrë pacienti.</summary>
     public required bool IsUnclaimedAccount { get; init; }

@@ -24,8 +24,8 @@ public class AdminPatientsController : ControllerBase
     }
 
     /// <summary>
-    /// Kërkon pacientë sipas email-it, telefonit ose emrit. Shtrirja varet nga forma
-    /// e query-t — shih AdminPatientService. Kurrë nuk kthen PersonalNumber.
+    /// Kërkon pacientë VETËM me email ose telefon të saktë (pa kërkim me emër) —
+    /// shih AdminPatientService për rregullat e privatësisë. Kurrë nuk kthen PersonalNumber.
     /// Rate limit i veçantë: ekspozon të dhëna pacientësh, prandaj kufizohet edhe
     /// përtej minimumit prej 3 karakteresh.
     /// </summary>
@@ -40,15 +40,17 @@ public class AdminPatientsController : ControllerBase
 
     /// <summary>
     /// Krijon një pacient që s'ka llogari. Llogaria hapet pa password; pacienti e merr
-    /// në dorëzim me "kam harruar fjalëkalimin" nëse ka dhënë email.
+    /// në dorëzim me "kam harruar fjalëkalimin" nëse ka dhënë email. Nëse telefoni ose
+    /// email-i përkon me një pacient ekzistues, kthehet ai (200) — s'krijohet dublikat.
     /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(AdminPatientDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(AdminPatientDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<AdminPatientDto>> Create(
         AdminCreatePatientRequest request, CancellationToken cancellationToken)
     {
         var patient = await _adminPatientService.CreateAsync(request, cancellationToken);
-        return StatusCode(StatusCodes.Status201Created, patient);
+        return patient.IsExistingPatient ? Ok(patient) : StatusCode(StatusCodes.Status201Created, patient);
     }
 }

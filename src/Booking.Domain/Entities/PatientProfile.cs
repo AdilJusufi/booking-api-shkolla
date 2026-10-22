@@ -7,8 +7,9 @@ namespace Booking.Domain.Entities;
 public class PatientProfile : AuditableEntity
 {
     public Guid UserId { get; set; }
-    public DateOnly DateOfBirth { get; set; }
-    public Gender Gender { get; set; }
+    /// <summary>Null vetëm për pacientët e hapur nga recepsioni pa këto të dhëna.</summary>
+    public DateOnly? DateOfBirth { get; set; }
+    public Gender? Gender { get; set; }
 
     /// <summary>Numri personal — opsional, i ndjeshëm; kurrë nuk logohet dhe nuk kthehet në liste/search.</summary>
     public string? PersonalNumber { get; set; }

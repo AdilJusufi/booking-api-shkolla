@@ -246,8 +246,9 @@ public sealed class AdminCreatePatientRequestValidator : AbstractValidator<Admin
         RuleFor(x => x.Email).EmailAddress().MaximumLength(256).When(x => !string.IsNullOrWhiteSpace(x.Email));
         RuleFor(x => x.DateOfBirth)
             .Must(dob => dob < DateOnly.FromDateTime(DateTime.UtcNow))
+            .When(x => x.DateOfBirth.HasValue)
             .WithMessage("Data e lindjes duhet të jetë në të kaluarën.");
-        RuleFor(x => x.Gender).IsInEnum();
+        RuleFor(x => x.Gender).IsInEnum().When(x => x.Gender.HasValue);
         RuleFor(x => x.Address).MaximumLength(300);
         RuleFor(x => x.City).MaximumLength(100);
     }

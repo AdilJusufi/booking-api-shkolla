@@ -25,6 +25,13 @@ public sealed record AppointmentDto
     public string? CancellationReason { get; init; }
     public DateTime? CancelledAt { get; init; }
     public required DateTime CreatedAt { get; init; }
+
+    /// <summary>Çmimi i dakorduar në rezervim (ose ai efektiv aktual për terminet e vjetra).</summary>
+    public decimal Price { get; init; }
+    public string Currency { get; init; } = "EUR";
+
+    /// <summary>True kur termini u rezervua nga klinika (p.sh. me telefon).</summary>
+    public bool BookedByClinic { get; init; }
 }
 
 /// <summary>Pamja e doktorit/klinikës — me InternalNote dhe kontaktin e pacientit.</summary>
@@ -45,6 +52,9 @@ public sealed record DoctorAppointmentDto
     public string? PatientNote { get; init; }
     public string? InternalNote { get; init; }
     public string? CancellationReason { get; init; }
+
+    /// <summary>True kur termini u rezervua nga klinika (p.sh. me telefon).</summary>
+    public bool BookedByClinic { get; init; }
 }
 
 public sealed record CreateAppointmentRequest

@@ -4,6 +4,8 @@ using Booking.Application.Common.Models;
 using Booking.Application.Common.Security;
 using Booking.Application.Features.Admin;
 using Booking.Domain.Entities;
+using Booking.Domain.Enums;
+using Booking.Domain.Exceptions;
 using Booking.Infrastructure.Identity;
 using Booking.Infrastructure.Persistence;
 using FluentValidation;
@@ -15,30 +17,26 @@ using Npgsql;
 namespace Booking.Infrastructure.Services;
 
 /// <summary>
-/// Kërkimi dhe krijimi i pacientëve nga recepsioni.
+/// Kërkimi dhe krijimi i pacientëve nga recepsioni (rezervimi me telefon).
 ///
-/// SHTRIRJA E KËRKIMIT (vendim i qëllimshëm, jo teknik):
-/// një recepsioniste duhet të gjejë edhe një thirrës që s'ka qenë kurrë në klinikë —
-/// ndryshe rezervimi me telefon s'funksionon fare. Por kërkim i lirë global mbi
-/// emrat do të thotë shfletim i lirë i bazës së pacientëve. Prandaj:
-///
-///   • Email ose telefon i plotë → kërkim global. Kush e di identifikuesin e saktë
-///     nuk po shfleton, po konfirmon dikë që e ka në telefon. Për pacientët pa
-///     lidhje me klinikën kthehet vetëm identifikuesi që u kërkua — pa datëlindje,
-///     pa dependentë, pa kontaktin tjetër.
-///   • Pjesë emri → vetëm pacientët që kanë tashmë një termin në klinikat e mia.
-///     Kërkimi i pjesshëm është ai që mundëson enumerimin, prandaj mbetet i mbyllur.
-///
-/// SuperAdmin i sheh të gjithë me detaje të plota — është operatori i platformës.
+/// RREGULLAT E PRIVATËSISË (vendim i produktit, L-3):
+///   • Kërkimi është VETËM përputhje e saktë me email ose telefon. S'ka kërkim me
+///     emër, as të pjesshëm, as "fuzzy" — kush e di identifikuesin e saktë po
+///     konfirmon dikë që e ka në telefon, nuk po shfleton bazën e pacientëve.
+///   • Numrat normalizohen para krahasimit: hapësira, viza, "+383", "00383" dhe
+///     zeroja e parë kombëtare s'kanë rëndësi ("044 765 432" = "+383 44 765 432").
+///   • Për një pacient që s'ka pasur kurrë termin në klinikat e mia kthehet vetëm
+///     emri + inicialja e mbiemrit ("Arben G.") dhe vetëm identifikuesi që u kërkua.
+///     Mbiemri i plotë nuk del fare në përgjigje — maskimi bëhet këtu, në server.
+///   • SuperAdmin i sheh të gjithë me detaje të plota — është operatori i platformës.
 /// </summary>
 public class AdminPatientService : IAdminPatientService
 {
     /// <summary>
-    /// Sa shifra fundore duhen për ta quajtur një numër telefoni "të njëjtë".
-    /// Formatet ndryshojnë (+383 44 000 000 vs 044 000 000), prandaj krahasohet
-    /// bishti: 8 shifra janë mjaft specifike dhe kapërcejnë prefiksin e shtetit.
+    /// Sa shifra fundore përdoren si filtër i parë në bazë (indeksueshëm dhe i lirë);
+    /// krahasimi përfundimtar bëhet mbi numrin kombëtar të normalizuar, në memorie.
     /// </summary>
-    private const int PhoneMatchDigits = 8;
+    private const int PhoneSuffixDigits = 8;
 
     private readonly BookingDbContext _dbContext;
     private readonly UserManager<ApplicationUser> _userManager;
@@ -65,108 +63,26 @@ public class AdminPatientService : IAdminPatientService
     {
         var term = query.Query.Trim();
         var mode = DetectMode(term);
-
-        var currentUserId = _tenantAccess.CurrentUserId;
-        var isSuperAdmin = _tenantAccess.IsSuperAdmin;
-
-        // Të gjitha vlerat e krahasimit llogariten JASHTË shprehjes — brenda saj do të
-        // ishin thirrje metodash që EF-ja s'i përkthen dot.
-        var normalizedEmail = _userManager.NormalizeEmail(term);
-        var phoneSuffix = PhoneSuffix(term);
-        var namePattern = $"%{term}%";
-
-        // Pacientët = userat aktivë me profil pacienti. IsActive përputhet me
-        // rregullin e krijimit të terminit, që gjithashtu kërkon user aktiv —
-        // ndryshe do të gjeje dikë për të cilin s'mund të rezervosh.
-        var rows =
-            from p in _dbContext.PatientProfiles
-            join u in _dbContext.Users on p.UserId equals u.Id
-            where u.IsActive
-            select new { Profile = p, User = u };
-
-        rows = mode switch
+        if (mode is null)
         {
-            SearchMode.Email => rows.Where(r => r.User.NormalizedEmail == normalizedEmail),
-
-            // Chain-i i Replace-ve përkthehet nga Npgsql në replace() — krahasimi
-            // ndodh në bazë, jo në memorie.
-            SearchMode.Phone => rows.Where(r => r.User.PhoneNumber != null
-                && r.User.PhoneNumber
-                    .Replace(" ", "").Replace("-", "").Replace("(", "")
-                    .Replace(")", "").Replace(".", "").Replace("+", "")
-                    .EndsWith(phoneSuffix!)),
-
-            _ => rows.Where(r => EF.Functions.ILike(r.User.FirstName + " " + r.User.LastName, namePattern)),
-        };
-
-        // Kërkimi me emër mbetet brenda klinikave të mia — shih koment-in e klasës.
-        if (mode == SearchMode.Name && !isSuperAdmin)
-        {
-            rows = rows.Where(r => _dbContext.Appointments.Any(a =>
-                a.PatientProfileId == r.Profile.Id
-                && _dbContext.ClinicAdministrators.Any(ca =>
-                    ca.UserId == currentUserId && ca.ClinicId == a.ClinicId)));
+            throw new BookingRuleException(
+                "patient-search-exact-only",
+                "Kërkoni pacientin me numrin e plotë të telefonit ose me email-in e saktë.");
         }
 
-        var totalItems = await rows.CountAsync(cancellationToken);
+        var matches = await FindPatientsAsync(term, mode.Value, cancellationToken);
 
-        var page = await rows
-            .OrderBy(r => r.User.LastName).ThenBy(r => r.User.FirstName)
+        var items = matches
+            .OrderBy(r => r.LastName).ThenBy(r => r.FirstName)
             .Skip((query.Page - 1) * query.PageSize)
             .Take(query.PageSize)
-            .Select(r => new
-            {
-                PatientProfileId = r.Profile.Id,
-                r.User.FirstName,
-                r.User.LastName,
-                r.User.Email,
-                r.User.PhoneNumber,
-                r.Profile.DateOfBirth,
-                // Password i pavendosur = llogari e hapur nga administrata që pacienti
-                // s'e ka marrë ende në dorëzim. S'na duhet kolonë e re për këtë.
-                IsUnclaimed = r.User.PasswordHash == null,
-                HasRelationship = isSuperAdmin || _dbContext.Appointments.Any(a =>
-                    a.PatientProfileId == r.Profile.Id
-                    && _dbContext.ClinicAdministrators.Any(ca =>
-                        ca.UserId == currentUserId && ca.ClinicId == a.ClinicId)),
-                Dependents = r.Profile.Dependents
-                    .Where(d => d.IsActive)
-                    .Select(d => new AdminPatientDependentDto
-                    {
-                        Id = d.Id,
-                        FirstName = d.FirstName,
-                        LastName = d.LastName,
-                        DateOfBirth = d.DateOfBirth,
-                        Gender = d.Gender,
-                        Relationship = d.Relationship
-                    })
-                    .ToList()
-            })
-            .ToListAsync(cancellationToken);
-
-        var items = page
-            .Select(r => new AdminPatientSearchResultDto
-            {
-                PatientProfileId = r.PatientProfileId,
-                FirstName = r.FirstName,
-                LastName = r.LastName,
-                // Pa lidhje me klinikën kthehet vetëm identifikuesi që u kërkua:
-                // admini tashmë e dinte, ndërsa kontakti tjetër do të ishte PII e re.
-                Email = r.HasRelationship || mode == SearchMode.Email ? r.Email : null,
-                PhoneNumber = r.HasRelationship || mode == SearchMode.Phone ? r.PhoneNumber : null,
-                DateOfBirth = r.HasRelationship ? r.DateOfBirth : null,
-                HasRelationshipWithClinic = r.HasRelationship,
-                IsUnclaimedAccount = r.IsUnclaimed,
-                Dependents = r.HasRelationship
-                    ? r.Dependents
-                    : (IReadOnlyList<AdminPatientDependentDto>)Array.Empty<AdminPatientDependentDto>(),
-            })
+            .Select(r => ToSearchResult(r, mode.Value))
             .ToList();
 
         // Ekspozimi i të dhënave të pacientëve te stafi auditohet gjithmonë.
         // Termi ruhet me qëllim — "kush kërkoi kë" është e gjithë pika e auditit.
         _auditService.Record("PATIENT_SEARCHED_BY_ADMIN", nameof(PatientProfile), null, null,
-            new { Query = term, Mode = mode.ToString(), ResultCount = totalItems });
+            new { Query = term, Mode = mode.Value.ToString(), ResultCount = matches.Count });
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return new PagedResult<AdminPatientSearchResultDto>
@@ -174,7 +90,7 @@ public class AdminPatientService : IAdminPatientService
             Items = items,
             Page = query.Page,
             PageSize = query.PageSize,
-            TotalItems = totalItems
+            TotalItems = matches.Count
         };
     }
 
@@ -184,46 +100,40 @@ public class AdminPatientService : IAdminPatientService
         var email = string.IsNullOrWhiteSpace(request.Email) ? null : request.Email.Trim();
         var phone = request.PhoneNumber.Trim();
 
-        // --- Parandalimi i dublikatave ---
-        // Është shumë më lirë ta ndalosh dublikatin këtu sesa të bashkosh dy histori
-        // terminesh më vonë. Recepsioni bën kërkimin i pari; nëse prapë arrin këtu me
-        // një kontakt ekzistues, merr 409 dhe e rigjen pacientin me kërkim.
+        // --- Pacienti ekziston tashmë? Përdore atë, mos krijo dublikat. ---
+        // Telefoni është çelësi kryesor (shumica e thirrësve s'japin email); email-i pastaj.
+        // Të dhënat e llogarisë ekzistuese NUK ndryshohen nga recepsioni.
+        var existing = (await FindPatientsAsync(phone, SearchMode.Phone, cancellationToken)).FirstOrDefault();
+        if (existing is null && email is not null)
+        {
+            existing = (await FindPatientsAsync(email, SearchMode.Email, cancellationToken)).FirstOrDefault();
+        }
+
+        if (existing is not null)
+        {
+            _auditService.Record("PATIENT_REUSED_BY_ADMIN", nameof(PatientProfile), existing.PatientProfileId.ToString(), null,
+                new { MatchedOn = existing.Phone is not null && PhonesMatch(existing.Phone, phone) ? "phone" : "email" });
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            return ToPatientDto(existing, isExisting: true);
+        }
+
+        // Email-i i një llogarie që S'ËSHTË pacient (doktor, admin) — s'e përdorim dot.
         if (email is not null && await _userManager.FindByEmailAsync(email) is not null)
         {
             throw new ConflictException(
-                "email-exists", "Ekziston tashmë një llogari me këtë email. Kërkoje pacientin në vend që ta krijosh.");
-        }
-
-        var phoneSuffix = PhoneSuffix(phone);
-        if (phoneSuffix is not null)
-        {
-            var phoneTaken = await (
-                from p in _dbContext.PatientProfiles
-                join u in _dbContext.Users on p.UserId equals u.Id
-                where u.IsActive && u.PhoneNumber != null
-                      && u.PhoneNumber
-                          .Replace(" ", "").Replace("-", "").Replace("(", "")
-                          .Replace(")", "").Replace(".", "").Replace("+", "")
-                          .EndsWith(phoneSuffix)
-                select p.Id).AnyAsync(cancellationToken);
-
-            if (phoneTaken)
-            {
-                throw new ConflictException(
-                    "phone-exists", "Ekziston tashmë një pacient me këtë numër telefoni. Kërkoje në vend që ta krijosh.");
-            }
+                "email-exists", "Ky email i përket një llogarie tjetër që nuk është pacient. Përdorni një email tjetër ose lëreni bosh.");
         }
 
         // --- Llogaria ---
         // Krijohet PA password: pacienti s'zgjodhi kurrë një, dhe leximi i një password-i
         // të gjeneruar në telefon është njëkohësisht i pasigurt dhe i papërdorshëm.
-        // Me email, pacienti e merr llogarinë në dorëzim vetë përmes "kam harruar fjalëkalimin".
-        // UserName bie te telefoni kur s'ka email — Identity kërkon UserName unik, jo email.
+        // Me email, pacienti e merr llogarinë në dorëzim vetë përmes "kam harruar fjalëkalimin";
+        // pa email llogaria s'ka fare hyrje. S'dërgohet email "mirëseardhje" — konfirmimi i
+        // terminit mjafton (kursen kuotën e Resend-it).
         var user = new ApplicationUser
         {
             // Pa email, UserName bie te telefoni — por i pastruar nga formatimi:
-            // Identity.User.AllowedUserNameCharacters nuk i lejon hapësirat, kështu që
-            // "+383 44 765 432" do të refuzohej si UserName i pavlefshëm.
+            // Identity.User.AllowedUserNameCharacters nuk i lejon hapësirat.
             UserName = email ?? UserNameFromPhone(phone),
             Email = email,
             PhoneNumber = phone,
@@ -241,15 +151,19 @@ public class AdminPatientService : IAdminPatientService
         }
         catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: "23505" })
         {
-            // Indeksi unik mbi NormalizedEmail — dy kërkesa paralele me të njëjtin email.
-            // Kontrolli më lart është "lexo pastaj shkruaj" dhe s'e kap dot garën;
-            // databaza e kap, dhe thirrësi merr të njëjtin 409 si në rrugën normale.
+            // Indeksi unik mbi NormalizedEmail/UserName — dy kërkesa paralele me të njëjtin kontakt.
             throw new ConflictException(
-                "email-exists", "Ekziston tashmë një llogari me këtë email. Kërkoje pacientin në vend që ta krijosh.");
+                "patient-exists", "Ky pacient sapo u krijua nga dikush tjetër. Kërkojeni me telefon ose email.");
         }
 
         if (!createResult.Succeeded)
         {
+            if (createResult.Errors.Any(e => e.Code is "DuplicateUserName" or "DuplicateEmail"))
+            {
+                throw new ConflictException(
+                    "patient-exists", "Ekziston tashmë një llogari me këtë kontakt. Kërkojeni me telefon ose email.");
+            }
+
             throw new ValidationException(
                 createResult.Errors.Select(e => new ValidationFailure(e.Code, e.Description)).ToList());
         }
@@ -282,30 +196,189 @@ public class AdminPatientService : IAdminPatientService
             PhoneNumber = phone,
             DateOfBirth = profile.DateOfBirth,
             Gender = profile.Gender,
-            IsUnclaimedAccount = true
+            IsUnclaimedAccount = true,
+            IsExistingPatient = false,
+            IsNameMasked = false,
+            HasRelationshipWithClinic = false
         };
     }
+
+    // ---------- Gjetja ----------
+
+    private sealed record PatientMatch(
+        Guid PatientProfileId,
+        Guid UserId,
+        string FirstName,
+        string LastName,
+        string? Email,
+        string? Phone,
+        DateOnly? DateOfBirth,
+        Gender? Gender,
+        bool IsUnclaimed,
+        bool HasRelationship,
+        IReadOnlyList<AdminPatientDependentDto> Dependents);
+
+    private async Task<List<PatientMatch>> FindPatientsAsync(
+        string term, SearchMode mode, CancellationToken cancellationToken)
+    {
+        var currentUserId = _tenantAccess.CurrentUserId;
+        var isSuperAdmin = _tenantAccess.IsSuperAdmin;
+
+        // Pacientët = userat aktivë me profil pacienti. IsActive përputhet me
+        // rregullin e krijimit të terminit, që gjithashtu kërkon user aktiv.
+        var rows =
+            from p in _dbContext.PatientProfiles
+            join u in _dbContext.Users on p.UserId equals u.Id
+            where u.IsActive
+            select new { Profile = p, User = u };
+
+        if (mode == SearchMode.Email)
+        {
+            var normalizedEmail = _userManager.NormalizeEmail(term);
+            rows = rows.Where(r => r.User.NormalizedEmail == normalizedEmail);
+        }
+        else
+        {
+            var national = NationalPhone(term);
+            if (national.Length < PhoneSuffixDigits)
+            {
+                return [];
+            }
+
+            // Filtri i parë në bazë mbi bishtin; krahasimi i saktë më poshtë, në memorie.
+            var suffix = national[^PhoneSuffixDigits..];
+            rows = rows.Where(r => r.User.PhoneNumber != null
+                && r.User.PhoneNumber
+                    .Replace(" ", "").Replace("-", "").Replace("(", "")
+                    .Replace(")", "").Replace(".", "").Replace("+", "").Replace("/", "")
+                    .EndsWith(suffix));
+        }
+
+        var candidates = await rows
+            .Select(r => new
+            {
+                PatientProfileId = r.Profile.Id,
+                UserId = r.User.Id,
+                r.User.FirstName,
+                r.User.LastName,
+                r.User.Email,
+                r.User.PhoneNumber,
+                r.Profile.DateOfBirth,
+                r.Profile.Gender,
+                // Password i pavendosur = llogari e hapur nga administrata që pacienti
+                // s'e ka marrë ende në dorëzim. S'na duhet kolonë e re për këtë.
+                IsUnclaimed = r.User.PasswordHash == null,
+                HasRelationship = isSuperAdmin || _dbContext.Appointments.Any(a =>
+                    a.PatientProfileId == r.Profile.Id
+                    && _dbContext.ClinicAdministrators.Any(ca =>
+                        ca.UserId == currentUserId && ca.ClinicId == a.ClinicId)),
+                Dependents = r.Profile.Dependents
+                    .Where(d => d.IsActive)
+                    .Select(d => new AdminPatientDependentDto
+                    {
+                        Id = d.Id,
+                        FirstName = d.FirstName,
+                        LastName = d.LastName,
+                        DateOfBirth = d.DateOfBirth,
+                        Gender = d.Gender,
+                        Relationship = d.Relationship
+                    })
+                    .ToList()
+            })
+            .ToListAsync(cancellationToken);
+
+        return candidates
+            .Where(c => mode == SearchMode.Email || (c.PhoneNumber is not null && PhonesMatch(c.PhoneNumber, term)))
+            .Select(c => new PatientMatch(
+                c.PatientProfileId, c.UserId, c.FirstName, c.LastName, c.Email, c.PhoneNumber,
+                c.DateOfBirth, c.Gender, c.IsUnclaimed, c.HasRelationship, c.Dependents))
+            .ToList();
+    }
+
+    private static AdminPatientSearchResultDto ToSearchResult(PatientMatch r, SearchMode mode) => new()
+    {
+        PatientProfileId = r.PatientProfileId,
+        FirstName = r.FirstName,
+        // Pa lidhje me klinikën: vetëm inicialja — mbiemri i plotë s'del nga serveri.
+        LastName = r.HasRelationship ? r.LastName : MaskLastName(r.LastName),
+        IsNameMasked = !r.HasRelationship,
+        // Pa lidhje kthehet vetëm identifikuesi që u kërkua: admini tashmë e dinte.
+        Email = r.HasRelationship || mode == SearchMode.Email ? r.Email : null,
+        PhoneNumber = r.HasRelationship || mode == SearchMode.Phone ? r.Phone : null,
+        DateOfBirth = r.HasRelationship ? r.DateOfBirth : null,
+        HasRelationshipWithClinic = r.HasRelationship,
+        IsUnclaimedAccount = r.IsUnclaimed,
+        Dependents = r.HasRelationship ? r.Dependents : Array.Empty<AdminPatientDependentDto>(),
+    };
+
+    private static AdminPatientDto ToPatientDto(PatientMatch r, bool isExisting) => new()
+    {
+        PatientProfileId = r.PatientProfileId,
+        UserId = r.UserId,
+        FirstName = r.FirstName,
+        LastName = r.HasRelationship ? r.LastName : MaskLastName(r.LastName),
+        Email = r.HasRelationship ? r.Email : null,
+        PhoneNumber = r.HasRelationship ? r.Phone : null,
+        DateOfBirth = r.HasRelationship ? r.DateOfBirth : null,
+        Gender = r.HasRelationship ? r.Gender : null,
+        IsUnclaimedAccount = r.IsUnclaimed,
+        IsExistingPatient = isExisting,
+        IsNameMasked = !r.HasRelationship,
+        HasRelationshipWithClinic = r.HasRelationship,
+        Dependents = r.HasRelationship ? r.Dependents : Array.Empty<AdminPatientDependentDto>()
+    };
 
     // ---------- Ndihmës ----------
 
     private enum SearchMode
     {
         Email,
-        Phone,
-        Name
+        Phone
     }
 
-    private static SearchMode DetectMode(string term)
+    /// <summary>Email ose telefon i plotë; çdo gjë tjetër (emra, fragmente) refuzohet.</summary>
+    private static SearchMode? DetectMode(string term)
     {
         if (term.Contains('@'))
         {
             return SearchMode.Email;
         }
 
-        // Mjaft shifra për të qenë numër i plotë telefoni, jo fragment emri.
-        var digits = term.Count(char.IsDigit);
-        var looksNumeric = term.All(c => char.IsDigit(c) || c is '+' or ' ' or '-' or '(' or ')' or '.');
-        return looksNumeric && digits >= PhoneMatchDigits ? SearchMode.Phone : SearchMode.Name;
+        var looksNumeric = term.All(c => char.IsDigit(c) || c is '+' or ' ' or '-' or '(' or ')' or '.' or '/');
+        return looksNumeric && NationalPhone(term).Length >= PhoneSuffixDigits ? SearchMode.Phone : null;
+    }
+
+    /// <summary>"Arben G." — inicialja e mbiemrit, pa asgjë tjetër.</summary>
+    internal static string MaskLastName(string lastName)
+    {
+        var trimmed = lastName.Trim();
+        return trimmed.Length == 0 ? string.Empty : $"{char.ToUpperInvariant(trimmed[0])}.";
+    }
+
+    /// <summary>
+    /// Numri kombëtar i Kosovës pa formatim: "+383 44 765 432", "00383 44 765 432",
+    /// "044-765-432" → "44765432". Numrat e huaj mbeten me prefiksin e tyre.
+    /// </summary>
+    internal static string NationalPhone(string phone)
+    {
+        var digits = new string(phone.Where(char.IsDigit).ToArray());
+        if (digits.StartsWith("00"))
+        {
+            digits = digits[2..];
+        }
+
+        if (digits.StartsWith("383") && digits.Length >= 11)
+        {
+            digits = digits[3..];
+        }
+
+        return digits.TrimStart('0');
+    }
+
+    internal static bool PhonesMatch(string a, string b)
+    {
+        var na = NationalPhone(a);
+        return na.Length >= PhoneSuffixDigits && na == NationalPhone(b);
     }
 
     /// <summary>
@@ -317,12 +390,5 @@ public class AdminPatientService : IAdminPatientService
     {
         var digits = new string(phone.Where(char.IsDigit).ToArray());
         return phone.TrimStart().StartsWith('+') ? "+" + digits : digits;
-    }
-
-    /// <summary>Shifrat fundore të numrit, ose null nëse s'ka mjaft për krahasim të sigurt.</summary>
-    private static string? PhoneSuffix(string phone)
-    {
-        var digits = new string(phone.Where(char.IsDigit).ToArray());
-        return digits.Length < PhoneMatchDigits ? null : digits[^PhoneMatchDigits..];
     }
 }

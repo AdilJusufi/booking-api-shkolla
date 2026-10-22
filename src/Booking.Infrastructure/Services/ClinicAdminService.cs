@@ -687,7 +687,9 @@ public class ClinicAdminService : IClinicAdminService
         // shërbim. Sintaksa është specifike për PostgreSQL — si exclusion constraint-i i
         // termineve, projekti është tashmë i lidhur me PostgreSQL.
         //
-        // Çmimi efektiv: DoctorService.CustomPrice e mbivendos MedicalService.Price. Left join
+        // Çmimi: ai i ngrirë në termin (Appointments."Price") kur ekziston; për terminet e
+        // vjetra pa snapshot, çmimi efektiv aktual — DoctorService.CustomPrice e mbivendos
+        // MedicalService.Price. Kështu ndryshimi i çmimit s'e rishkruan historikun. Left join
         // sepse rreshti DoctorService mund të mos ekzistojë më për një termin historik; çelësi
         // i tij (DoctorId, MedicalServiceId) është PK, prandaj s'ka dyfishim rreshtash.
         //
@@ -706,7 +708,7 @@ public class ClinicAdminService : IClinicAdminService
                     (COUNT(*) FILTER (WHERE a."Status" IN ('CancelledByPatient', 'CancelledByClinic')))::int
                                                                                     AS "Cancelled",
                     (COUNT(*) FILTER (WHERE a."Status" = 'NoShow'))::int            AS "NoShow",
-                    COALESCE(SUM(COALESCE(ds."CustomPrice", m."Price"))
+                    COALESCE(SUM(COALESCE(a."Price", ds."CustomPrice", m."Price"))
                              FILTER (WHERE a."Status" = 'Completed'), 0)            AS "Revenue"
                 FROM "Appointments" AS a
                 INNER JOIN "MedicalServices" AS m ON m."Id" = a."MedicalServiceId"

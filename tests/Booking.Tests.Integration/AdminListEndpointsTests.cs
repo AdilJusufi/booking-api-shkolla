@@ -489,12 +489,13 @@ public class AdminListEndpointsTests
     {
         const decimal customPrice = 99.50m;
 
-        var appointmentId = await BookAppointmentAtDardaniaAsync(new TimeOnly(16, 0));
-        var admin = await ClinicAdminClientAsync();
-
+        // Çmimi ngrin në rezervim: mbivendosja duhet të ekzistojë PARA rezervimit.
         await SetCustomPriceAsync(customPrice);
         try
         {
+            var appointmentId = await BookAppointmentAtDardaniaAsync(new TimeOnly(16, 0));
+            var admin = await ClinicAdminClientAsync();
+
             var before = await ReportAsync(admin, WideFrom, WideTo);
             await CompleteAsync(admin, appointmentId);
             var after = await ReportAsync(admin, WideFrom, WideTo);

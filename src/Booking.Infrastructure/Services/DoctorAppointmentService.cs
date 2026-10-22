@@ -227,7 +227,7 @@ public class DoctorAppointmentService : IDoctorAppointmentService
         string PatientFirstName, string PatientLastName, string? PatientPhoneNumber,
         Guid? DependentId, string? DependentFirstName, string? DependentLastName,
         DateTime StartUtc, DateTime EndUtc, AppointmentStatus Status,
-        string? PatientNote, string? InternalNote, string? CancellationReason);
+        string? PatientNote, string? InternalNote, string? CancellationReason, bool BookedByClinic);
 
     private IQueryable<DoctorAppointmentRow> QueryRows(
         System.Linq.Expressions.Expression<Func<Appointment, bool>> predicate)
@@ -243,7 +243,7 @@ public class DoctorAppointmentService : IDoctorAppointmentService
                 a.Dependent != null ? a.Dependent.FirstName : null,
                 a.Dependent != null ? a.Dependent.LastName : null,
                 a.StartDateTime, a.EndDateTime, a.Status,
-                a.PatientNote, a.InternalNote, a.CancellationReason));
+                a.PatientNote, a.InternalNote, a.CancellationReason, a.BookedByClinic));
     }
 
     private DoctorAppointmentDto ToDto(DoctorAppointmentRow row) => new()
@@ -262,6 +262,7 @@ public class DoctorAppointmentService : IDoctorAppointmentService
         Status = row.Status,
         PatientNote = row.PatientNote,
         InternalNote = row.InternalNote,
-        CancellationReason = row.CancellationReason
+        CancellationReason = row.CancellationReason,
+        BookedByClinic = row.BookedByClinic
     };
 }
