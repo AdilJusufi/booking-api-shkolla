@@ -20,7 +20,7 @@ const APPOINTMENTS_BY_STATUS = [
   { status: AppointmentStatus.CancelledByPatient, doctorName: 'CancelledPatient Doktori', expectedBadge: 'ANULUAR' },
   { status: AppointmentStatus.CancelledByClinic, doctorName: 'CancelledClinic Doktori', expectedBadge: 'ANULUAR (KLINIKA)' },
   { status: AppointmentStatus.NoShow, doctorName: 'NoShow Doktori', expectedBadge: 'NUK U PARAQIT' },
-  { status: AppointmentStatus.Rescheduled, doctorName: 'Rescheduled Doktori', expectedBadge: 'RICAKTUAR' },
+  { status: AppointmentStatus.Rescheduled, doctorName: 'Rescheduled Doktori', expectedBadge: 'RIPLANIFIKUAR' },
 ]
 
 // Row text is "Dr. {name}" as a single element's textContent — RTL matches
@@ -29,7 +29,14 @@ const byDoctor = (name: string) => (_content: string, el: Element | null) => el?
 
 function mockAppointments() {
   const appointments = APPOINTMENTS_BY_STATUS.map((a) =>
-    buildAppointment({ status: a.status, doctorName: a.doctorName, id: `appt-${a.status}` }),
+    // Future dates: "Aktive" only counts visits that haven't happened yet (WR-20).
+    buildAppointment({
+      status: a.status,
+      doctorName: a.doctorName,
+      id: `appt-${a.status}`,
+      startDateTime: '2099-08-17T08:00:00',
+      endDateTime: '2099-08-17T08:30:00',
+    }),
   )
   server.use(
     http.get(`${API_BASE_URL}/api/appointments/my`, () => HttpResponse.json(pagedResult(appointments))),
@@ -137,5 +144,33 @@ describe('MyAppointmentsPage — loading / error / empty states (3f)', () => {
 
     await waitFor(() => expect(screen.getByText(byDoctor('Recovered Doktori'))).toBeInTheDocument())
     expect(calls).toBe(2)
+  })
+})
+
+describe('MyAppointmentsPage — a past visit is not "active" (WR-20)', () => {
+  it('a Confirmed appointment whose time has passed is left out of "Aktive" and says "Ka kaluar"', async () => {
+    server.use(
+      http.get(`${API_BASE_URL}/api/appointments/my`, () =>
+        HttpResponse.json(
+          pagedResult([
+            buildAppointment({
+              status: AppointmentStatus.Confirmed,
+              doctorName: 'Past Doktori',
+              startDateTime: '2020-01-10T09:00:00',
+              endDateTime: '2020-01-10T09:30:00',
+            }),
+          ]),
+        ),
+      ),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<MyAppointmentsPage />, { user: 'Patient' })
+
+    await waitFor(() => expect(screen.getByText(byDoctor('Past Doktori'))).toBeInTheDocument())
+    expect(screen.getByText('Ka kaluar')).toBeInTheDocument()
+    expect(screen.queryByText('Anulimi jo i mundur (< 12 orë)')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Aktive' }))
+    expect(screen.queryByText(byDoctor('Past Doktori'))).not.toBeInTheDocument()
   })
 })

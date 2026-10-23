@@ -42,7 +42,7 @@ export default function SuperAdminLayout() {
         </div>
       </header>
 
-      <div className="admin-content">
+      <main className="admin-content">
         <nav className="clinic-tabs" style={{ marginBottom: 24 }}>
           {NAV_ITEMS.map((item) => (
             <NavLink
@@ -56,7 +56,7 @@ export default function SuperAdminLayout() {
         </nav>
 
         <Outlet />
-      </div>
+      </main>
     </div>
   )
 }

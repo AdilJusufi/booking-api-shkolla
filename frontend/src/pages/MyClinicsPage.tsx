@@ -43,14 +43,18 @@ export default function MyClinicsPage() {
         setClinics(list)
         const today = clinicToday()
         list.forEach((c) => {
+          // Admin endpoints: they work for a clinic still pending approval (the
+          // public ones 404 — the card showed "DEGA 0", WR-27) and the service
+          // worker never caches them.
           Promise.all([
-            api.getClinic(c.id).catch(() => null),
+            api.getAdminClinicBranches(c.id).catch(() => [] as ClinicBranch[]),
+            api.getAdminClinicServices(c.id).catch(() => [] as MedicalService[]),
             api.getClinicDoctors(c.id).catch(() => [] as Doctor[]),
             api.getClinicReport(c.id, today, today).catch(() => null),
-          ]).then(([details, doctors, report]) => {
+          ]).then(([allBranches, allServices, doctors, report]) => {
             if (!active) return
-            const branches: ClinicBranch[] = details?.branches ?? []
-            const services: MedicalService[] = details?.services ?? []
+            const branches = allBranches.filter((b) => b.isActive !== false)
+            const services = allServices.filter((x) => x.isActive !== false)
             setCardData((prev) => ({
               ...prev,
               [c.id]: {

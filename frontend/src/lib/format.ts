@@ -102,6 +102,21 @@ export function formatMoney(price: number, currency: string): string {
   }).format(price)
 }
 
+/**
+ * One price, or "50 € – 55 €" / "€50 – €55" when this clinic's doctors charge
+ * different prices for the same service. Both ends keep the locale's own
+ * currency placement.
+ */
+export function formatMoneyRange(min: number, max: number, currency: string): string {
+  if (min === max) return formatMoney(min, currency)
+  return `${formatMoney(min, currency)} – ${formatMoney(max, currency)}`
+}
+
+/** "30" or "30–45" (minutes). */
+export function formatMinutesRange(min: number, max: number): string {
+  return min === max ? String(min) : `${min}–${max}`
+}
+
 /** Locale-aware thousands separators for a plain count/stat number. */
 export function formatNumber(value: number): string {
   return new Intl.NumberFormat(activeLocale()).format(value)

@@ -47,7 +47,10 @@
       "completed": "PËRFUNDUAR",
       "cancelled": "ANULUAR",
       "noShow": "NUK U PARAQIT",
-      "unknown": "I PANJOHUR"
+      "unknown": "I PANJOHUR",
+      "checkedIn": "MBËRRITI",
+      "inProgress": "NË PROGRES",
+      "rescheduled": "RIPLANIFIKUAR"
     },
     "completedToast": "Termini u shënua si i përfunduar.",
     "noShowToast": "Termini u shënua si «nuk erdhi».",
@@ -88,7 +91,7 @@
       "cancelledByPatient": "Pacienti e anuloi këtë termin.",
       "cancelledByClinic": "Klinika e anuloi këtë termin.",
       "noShow": "Pacienti nuk mbërriti në termin.",
-      "rescheduled": "Ky termin është ricaktuar."
+      "rescheduled": "Ky termin është riplanifikuar."
     },
     "badges": {
       "pending": "NË PRITJE",
@@ -98,7 +101,7 @@
       "completed": "PËRFUNDUAR",
       "cancelled": "ANULUAR",
       "noShow": "NUK ERDHI",
-      "rescheduled": "RICAKTUAR",
+      "rescheduled": "RIPLANIFIKUAR",
       "unknown": "I PANJOHUR"
     },
     "readOnlyNote": "Ky termin është vetëm për lexim — nuk ka veprime të disponueshme.",

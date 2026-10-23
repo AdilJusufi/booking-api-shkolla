@@ -47,7 +47,10 @@
       "completed": "ZAVRŠENO",
       "cancelled": "OTKAZANO",
       "noShow": "NIJE SE POJAVIO/LA",
-      "unknown": "NEPOZNATO"
+      "unknown": "NEPOZNATO",
+      "checkedIn": "STIGAO",
+      "inProgress": "U TOKU",
+      "rescheduled": "POMEREN"
     },
     "completedToast": "Termin je označen kao završen.",
     "noShowToast": "Termin je označen kao nedolazak.",

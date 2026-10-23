@@ -164,7 +164,7 @@ export default function AdminAppointmentsPage() {
     { value: 'confirmed', label: t('appointments.filterConfirmed') },
     { value: 'completed', label: t('appointments.statCompleted') },
     { value: 'cancelled', label: t('appointments.filterCancelled') },
-    { value: 'noShow', label: t('appointments.badges.noShow') },
+    { value: 'noShow', label: t('appointments.filterNoShow') },
   ]
 
   const pageNumbers = useMemo(() => {

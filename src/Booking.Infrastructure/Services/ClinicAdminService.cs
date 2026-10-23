@@ -736,8 +736,9 @@ public class ClinicAdminService : IClinicAdminService
         {
             throw new ConflictException(
                 "doctor-has-future-appointments",
-                $"Doktori ka {futureBlocking.Count} termine të ardhshme aktive. " +
-                "Kërkoni shprehimisht anulimin e tyre për ta çaktivizuar.");
+                $"Doktori ka {futureBlocking.Count} termin(e) të ardhshme aktive. " +
+                "Kërkoni shprehimisht anulimin e tyre për ta çaktivizuar.",
+                new Dictionary<string, object?> { ["futureAppointmentCount"] = futureBlocking.Count });
         }
 
         doctor.IsActive = false;

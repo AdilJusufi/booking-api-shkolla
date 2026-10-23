@@ -195,7 +195,7 @@
       "cancelledByPatient": "ANULUAR",
       "cancelledByClinic": "ANULUAR (KLINIKA)",
       "noShow": "NUK U PARAQIT",
-      "rescheduled": "RICAKTUAR",
+      "rescheduled": "RIPLANIFIKUAR",
       "unknown": "I PANJOHUR"
     },
     "errorTitle": "Ndodhi një gabim",
@@ -209,7 +209,9 @@
     "cancelledToast": "Termini u anulua.",
     "cancelFailedToast": "Anulimi dështoi.",
     "cancelReasonDefault": "Anuluar nga pacienti",
-    "forName": "për {{name}}"
+    "forName": "për {{name}}",
+    "confirmCancelNo": "Jo, mbaje",
+    "pastNote": "Ka kaluar"
   },
   "appointmentDetail": {
     "backToAppointments": "Kthehu te terminet",
@@ -244,7 +246,7 @@
       "cancelledByPatient": "Ky termin është anuluar nga ju.",
       "cancelledByClinic": "Ky termin është anuluar nga klinika.",
       "noShow": "Ju nuk keni mbërritur në këtë termin.",
-      "rescheduled": "Ky termin është ricaktuar."
+      "rescheduled": "Ky termin është riplanifikuar."
     },
     "timelineLabels": {
       "pending": "Në pritje",

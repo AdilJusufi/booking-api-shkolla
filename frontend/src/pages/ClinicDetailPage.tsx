@@ -8,7 +8,7 @@ import type { ClinicDetails, Doctor, MedicalService } from '../lib/types'
 import DoctorCard from '../components/DoctorCard'
 import { EmptyState, ErrorBox, Modal, Pending, SkeletonDetail, specialtyIcon } from '../components/ui'
 import { useSpecialtyLabel } from '../context/SpecialtyNamesContext'
-import { formatMoney } from '../lib/format'
+import { formatMinutesRange, formatMoneyRange } from '../lib/format'
 import { SITE_NAME, clinicSeo } from '../lib/seo'
 import { useSeo } from '../lib/useSeo'
 
@@ -154,9 +154,9 @@ export default function ClinicDetailPage() {
                     <span className="service-row__icon"><Icon size={20} strokeWidth={1.5} /></span>
                     <span className="service-row__info">
                       <strong>{s.name}</strong>
-                      <span>{specialtyLabel(s.specialtyName)} · <Clock size={12} strokeWidth={1.5} /> {s.durationMinutes} {t('clinicDetail.minutesShort')}</span>
+                      <span>{specialtyLabel(s.specialtyName)} · <Clock size={12} strokeWidth={1.5} /> {formatMinutesRange(s.minDurationMinutes ?? s.durationMinutes, s.maxDurationMinutes ?? s.durationMinutes)} {t('clinicDetail.minutesShort')}</span>
                     </span>
-                    <span className="service-row__price">{formatMoney(s.price, s.currency)}</span>
+                    <span className="service-row__price">{formatMoneyRange(s.minPrice ?? s.price, s.maxPrice ?? s.price, s.currency)}</span>
                     <span className="service-row__cta">
                       {pendingServiceId === s.id ? <Pending /> : <>{t('cards.bookCta')} <ChevronRight size={16} strokeWidth={1.75} /></>}
                     </span>

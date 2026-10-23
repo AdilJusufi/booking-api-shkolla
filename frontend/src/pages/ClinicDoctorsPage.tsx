@@ -416,7 +416,7 @@ function ClinicDoctorCard({
   const extraServiceCount = doctor.services.length - visibleServices.length
 
   return (
-    <div className={`admin-card doctor-admin-card ${doctor.isActive ? '' : 'doctor-admin-card--inactive'}`}>
+    <div className={`admin-card doctor-admin-card ${doctor.isActive ? '' : 'doctor-admin-card--inactive'} ${menuOpen ? 'is-menu-open' : ''}`}>
       <div className="doctor-admin-card__top">
         <DoctorAvatar
           className="doctor-admin-card__avatar"
@@ -512,7 +512,7 @@ function ClinicDoctorCard({
       </div>
 
       <div className="doctor-admin-card__bottom">
-        <span className="branch-card__id">{t('doctors.card.idLabel', { id: doctor.id })}</span>
+        <span />
         <button type="button" className="admin-card__manage" onClick={() => onAction('schedule')}>
           {t('doctors.card.manageScheduleCta')} <ArrowRight size={14} strokeWidth={1.5} />
         </button>
@@ -1543,7 +1543,10 @@ function DeactivateDoctorModal({
       onDeactivated(updated)
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) {
-        setConflictMessage(e.message)
+        // Translated, correctly pluralised count (WR-32) — the backend's detail
+        // text is Albanian-only.
+        const count = (e.data as { futureAppointmentCount?: number } | null)?.futureAppointmentCount
+        setConflictMessage(count != null ? t('doctors.deactivateModal.futureAppointments', { count }) : e.message)
       } else {
         setFormError(getErrorMessage(e))
       }

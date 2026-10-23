@@ -24,4 +24,20 @@ describe('ForgotPasswordPage — network failure must not be presented as succes
     // Must not have silently claimed success on a network failure.
     expect(screen.queryByText('Kontrolloni emailin tuaj')).not.toBeInTheDocument()
   })
+
+  // WR-33: dev once logged a 503 while the page said "check your email". The
+  // API never returns 503 for this endpoint (it answers 204 in every case, by
+  // design, so it can't reveal which emails exist), and a real 503 from the
+  // hosting edge must surface as an error — never as success.
+  it('a 503 from the server shows an error and does NOT claim the email was sent', async () => {
+    server.use(http.post(FORGOT_URL, () => HttpResponse.json({ title: 'Service Unavailable' }, { status: 503 })))
+    const user = userEvent.setup()
+    renderWithProviders(<ForgotPasswordPage />)
+
+    await user.type(screen.getByPlaceholderText('emri@shembull.com'), 'test@booking.dev')
+    await user.click(screen.getByRole('button', { name: /Dërgoni udhëzimet/i }))
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /Dërgoni udhëzimet/i })).not.toBeDisabled())
+    expect(screen.queryByText('Kontrolloni emailin tuaj')).not.toBeInTheDocument()
+  })
 })

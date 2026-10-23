@@ -213,7 +213,7 @@ function DependentCard({
       </div>
 
       <div className="deps-card__status">
-        <span className={`admin-card__status ${dependent.isActive ? 'admin-card__status--approved' : 'admin-card__status--pending'}`}>
+        <span className={`admin-card__status admin-card__status--inline ${dependent.isActive ? 'admin-card__status--approved' : 'admin-card__status--pending'}`}>
           {dependent.isActive ? t('dependents.statusActive') : t('dependents.statusInactive')}
         </span>
       </div>

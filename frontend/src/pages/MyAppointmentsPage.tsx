@@ -37,7 +37,8 @@ function dateRangeToParams(range: DateRange): { dateFrom?: string; dateTo?: stri
       return { dateFrom: toDateInput(today), dateTo: toDateInput(today) }
     case 'week': {
       const start = new Date(today)
-      start.setDate(start.getDate() - start.getDay())
+      // Monday-first week, like the rest of the app (DAY_ORDER).
+      start.setDate(start.getDate() - ((start.getDay() + 6) % 7))
       const end = new Date(start)
       end.setDate(end.getDate() + 6)
       return { dateFrom: toDateInput(start), dateTo: toDateInput(end) }
@@ -87,6 +88,11 @@ function statusBadge(status: AppointmentStatus, t: (key: string) => string) {
 }
 
 const ACTIVE_STATUSES = [AppointmentStatus.Pending, AppointmentStatus.Confirmed, AppointmentStatus.CheckedIn, AppointmentStatus.InProgress]
+
+/** WR-20: a visit whose time has passed isn't "active", even if the clinic hasn't closed it yet. */
+function isActiveUpcoming(a: Appointment): boolean {
+  return ACTIVE_STATUSES.includes(a.status) && msUntilClinic(a.endDateTime) > 0
+}
 const CANCELLED_STATUSES = [AppointmentStatus.CancelledByPatient, AppointmentStatus.CancelledByClinic, AppointmentStatus.NoShow]
 
 function canCancel(a: Appointment): boolean {
@@ -173,7 +179,7 @@ export default function MyAppointmentsPage() {
 
   const stats = useMemo(() => {
     return {
-      active: appointments.filter((a) => ACTIVE_STATUSES.includes(a.status)).length,
+      active: appointments.filter(isActiveUpcoming).length,
       completed: appointments.filter((a) => a.status === AppointmentStatus.Completed).length,
       cancelled: appointments.filter((a) => CANCELLED_STATUSES.includes(a.status)).length,
     }
@@ -181,7 +187,7 @@ export default function MyAppointmentsPage() {
 
   const filtered = useMemo(() => {
     let list = appointments
-    if (statusFilter === 'active') list = list.filter((a) => ACTIVE_STATUSES.includes(a.status))
+    if (statusFilter === 'active') list = list.filter(isActiveUpcoming)
     else if (statusFilter === 'completed') list = list.filter((a) => a.status === AppointmentStatus.Completed)
     else if (statusFilter === 'cancelled') list = list.filter((a) => CANCELLED_STATUSES.includes(a.status))
 
@@ -304,7 +310,9 @@ export default function MyAppointmentsPage() {
             {pageItems.map((a) => {
               const d = parseLocal(a.startDateTime)
               const showCancel = canCancel(a)
-              const showNote = isWithin12Hours(a) && !canCancel(a)
+              // Past visits get "Ka kaluar", not the 12-hour cancellation note.
+              const isPast = ACTIVE_STATUSES.includes(a.status) && msUntilClinic(a.startDateTime) <= 0
+              const showNote = !isPast && isWithin12Hours(a) && !canCancel(a)
               return (
                 <div className="appt-row card-link" key={a.id} data-reveal>
                   <div className="appt-row__date">
@@ -335,7 +343,7 @@ export default function MyAppointmentsPage() {
                           style={{ background: 'none', border: 'none', color: 'var(--danger)', textDecoration: 'underline', cursor: 'pointer' }}
                           onClick={() => setConfirmingCancelId('')}
                         >
-                          {tCommon('appointment.actions.cancel')}
+                          {t('appointmentsList.confirmCancelNo')}
                         </button>
                         <button
                           className="btn btn--sm"
@@ -363,6 +371,7 @@ export default function MyAppointmentsPage() {
                       )}
                     </div>
                     {showNote && <span className="appt-row__note">{t('appointmentsList.cancelWindowNote')}</span>}
+                    {isPast && <span className="appt-row__note">{t('appointmentsList.pastNote')}</span>}
                   </div>
                 </div>
               )

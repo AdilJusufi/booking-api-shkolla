@@ -144,7 +144,17 @@ public class ClinicQueryService : IClinicQueryService
                         Description = s.Description,
                         DurationMinutes = s.DurationMinutes,
                         Price = s.Price,
-                        Currency = s.Currency
+                        Currency = s.Currency,
+                        // WR-07: what patients will actually pay/get — doctors may override
+                        // the base price/duration, so the clinic page shows the range.
+                        MinPrice = s.DoctorServices.Where(ds => ds.IsActive && ds.Doctor.IsActive)
+                            .Select(ds => (decimal?)(ds.CustomPrice ?? s.Price)).Min() ?? s.Price,
+                        MaxPrice = s.DoctorServices.Where(ds => ds.IsActive && ds.Doctor.IsActive)
+                            .Select(ds => (decimal?)(ds.CustomPrice ?? s.Price)).Max() ?? s.Price,
+                        MinDurationMinutes = s.DoctorServices.Where(ds => ds.IsActive && ds.Doctor.IsActive)
+                            .Select(ds => (int?)(ds.CustomDurationMinutes ?? s.DurationMinutes)).Min() ?? s.DurationMinutes,
+                        MaxDurationMinutes = s.DoctorServices.Where(ds => ds.IsActive && ds.Doctor.IsActive)
+                            .Select(ds => (int?)(ds.CustomDurationMinutes ?? s.DurationMinutes)).Max() ?? s.DurationMinutes
                     })
                     .ToList()
             })
@@ -217,7 +227,15 @@ public class ClinicQueryService : IClinicQueryService
                 Description = s.Description,
                 DurationMinutes = s.DurationMinutes,
                 Price = s.Price,
-                Currency = s.Currency
+                Currency = s.Currency,
+                MinPrice = s.DoctorServices.Where(ds => ds.IsActive && ds.Doctor.IsActive)
+                    .Select(ds => (decimal?)(ds.CustomPrice ?? s.Price)).Min() ?? s.Price,
+                MaxPrice = s.DoctorServices.Where(ds => ds.IsActive && ds.Doctor.IsActive)
+                    .Select(ds => (decimal?)(ds.CustomPrice ?? s.Price)).Max() ?? s.Price,
+                MinDurationMinutes = s.DoctorServices.Where(ds => ds.IsActive && ds.Doctor.IsActive)
+                    .Select(ds => (int?)(ds.CustomDurationMinutes ?? s.DurationMinutes)).Min() ?? s.DurationMinutes,
+                MaxDurationMinutes = s.DoctorServices.Where(ds => ds.IsActive && ds.Doctor.IsActive)
+                    .Select(ds => (int?)(ds.CustomDurationMinutes ?? s.DurationMinutes)).Max() ?? s.DurationMinutes
             })
             .ToListAsync(cancellationToken);
     }

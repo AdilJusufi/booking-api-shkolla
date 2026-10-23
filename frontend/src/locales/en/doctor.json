@@ -47,7 +47,10 @@
       "completed": "COMPLETED",
       "cancelled": "CANCELLED",
       "noShow": "NO-SHOW",
-      "unknown": "UNKNOWN"
+      "unknown": "UNKNOWN",
+      "checkedIn": "CHECKED IN",
+      "inProgress": "IN PROGRESS",
+      "rescheduled": "RESCHEDULED"
     },
     "completedToast": "Appointment marked as completed.",
     "noShowToast": "Appointment marked as no-show.",

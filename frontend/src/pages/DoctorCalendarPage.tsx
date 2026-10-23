@@ -66,15 +66,19 @@ function calculateDateRange(filter: string): { dateFrom: string; dateTo: string 
       const end = new Date(today.getFullYear(), today.getMonth() + 1, 0)
       return { dateFrom: toDateInput(start), dateTo: toDateInput(end) }
     }
+    // WR-15: "3 muajt e fundit" used to query the NEXT 90 days, so past visits
+    // (the ones a doctor marks Completed / No-show) were unreachable.
     case '3months': {
-      const end = new Date(today)
-      end.setDate(end.getDate() + 90)
-      return { dateFrom: toDateInput(today), dateTo: toDateInput(end) }
+      const start = new Date(today.getFullYear(), today.getMonth() - 3, today.getDate())
+      return { dateFrom: toDateInput(start), dateTo: toDateInput(today) }
     }
+    // "Kjo javë" = this calendar week, Monday–Sunday (it used to be "next 7 days").
     case 'week': {
-      const end = new Date(today)
+      const start = new Date(today)
+      start.setDate(start.getDate() - ((start.getDay() + 6) % 7))
+      const end = new Date(start)
       end.setDate(end.getDate() + 6)
-      return { dateFrom: toDateInput(today), dateTo: toDateInput(end) }
+      return { dateFrom: toDateInput(start), dateTo: toDateInput(end) }
     }
     case 'upcoming':
     default: {
@@ -91,6 +95,10 @@ function statusBadgeClass(status: AppointmentStatus, t: (key: string) => string)
       return { className: 'doctor-badge doctor-badge--warn', text: t('calendar.badges.pending') }
     case AppointmentStatus.Confirmed:
       return { className: 'doctor-badge doctor-badge--primary', text: t('calendar.badges.confirmed') }
+    case AppointmentStatus.CheckedIn:
+      return { className: 'doctor-badge doctor-badge--primary', text: t('calendar.badges.checkedIn') }
+    case AppointmentStatus.InProgress:
+      return { className: 'doctor-badge doctor-badge--primary', text: t('calendar.badges.inProgress') }
     case AppointmentStatus.Completed:
       return { className: 'doctor-badge doctor-badge--ok', text: t('calendar.badges.completed') }
     case AppointmentStatus.CancelledByPatient:
@@ -98,6 +106,9 @@ function statusBadgeClass(status: AppointmentStatus, t: (key: string) => string)
       return { className: 'doctor-badge doctor-badge--danger', text: t('calendar.badges.cancelled') }
     case AppointmentStatus.NoShow:
       return { className: 'doctor-badge doctor-badge--muted', text: t('calendar.badges.noShow') }
+    // WR-08: the old slot of a rescheduled appointment showed as "I PANJOHUR".
+    case AppointmentStatus.Rescheduled:
+      return { className: 'doctor-badge doctor-badge--muted', text: t('calendar.badges.rescheduled') }
     default:
       return { className: 'doctor-badge doctor-badge--muted', text: t('calendar.badges.unknown') }
   }

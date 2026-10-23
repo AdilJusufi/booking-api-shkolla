@@ -1,10 +1,9 @@
 import { useMemo, useState } from 'react'
-import { Building2, Calendar, CalendarCheck, CalendarX, Download, Stethoscope, Wallet } from 'lucide-react'
+import { Building2, Calendar, CalendarCheck, CalendarX, Stethoscope, Wallet } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import type { ClinicReport } from '../lib/types'
-import { useToast } from '../context/ToastContext'
 import { useClinicContext } from '../components/ClinicDetailLayout'
 import { ErrorBox, SkeletonRows, initials } from '../components/ui'
 import { formatMoney, formatNumber } from '../lib/format'
@@ -19,7 +18,6 @@ function firstOfMonth(): string {
 export default function ClinicReportPage() {
   const { t } = useTranslation('admin')
   const { clinic } = useClinicContext()
-  const { notify } = useToast()
 
   const [from, setFrom] = useState(firstOfMonth())
   const [to, setTo] = useState(clinicToday())
@@ -68,16 +66,6 @@ export default function ClinicReportPage() {
         <button type="button" className="btn btn--primary btn--sm" style={{ alignSelf: 'flex-end' }} onClick={generate}>
           {t('report.generateCta')}
         </button>
-        {hasGenerated && !loading && (
-          <button
-            type="button"
-            className="btn btn--ghost btn--sm"
-            style={{ alignSelf: 'flex-end', marginLeft: 'auto' }}
-            onClick={() => notify(t('report.featureInDevelopmentToast'), 'info')}
-          >
-            <Download size={14} strokeWidth={1.5} /> {t('report.downloadPdfCta')}
-          </button>
-        )}
       </div>
 
       {loading ? (

@@ -227,6 +227,11 @@ export interface MedicalService {
   currency: string
   /** Public lists only ever contain active services; the admin list also has deactivated ones. */
   isActive?: boolean
+  /** What patients actually pay/get across this clinic's doctors (overrides included) — WR-07. */
+  minPrice?: number
+  maxPrice?: number
+  minDurationMinutes?: number
+  maxDurationMinutes?: number
 }
 
 /** Pasqyron CreateMedicalServiceRequest — POST /api/admin/clinics/{id}/services. */

@@ -209,7 +209,9 @@
     "cancelledToast": "Appointment cancelled.",
     "cancelFailedToast": "Cancellation failed.",
     "cancelReasonDefault": "Cancelled by patient",
-    "forName": "for {{name}}"
+    "forName": "for {{name}}",
+    "confirmCancelNo": "No, keep it",
+    "pastNote": "Past"
   },
   "appointmentDetail": {
     "backToAppointments": "Back to appointments",

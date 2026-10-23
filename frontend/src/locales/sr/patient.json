@@ -213,7 +213,9 @@
     "cancelledToast": "Termin je otkazan.",
     "cancelFailedToast": "Otkazivanje nije uspelo.",
     "cancelReasonDefault": "Otkazao pacijent",
-    "forName": "za {{name}}"
+    "forName": "za {{name}}",
+    "confirmCancelNo": "Ne, zadrži",
+    "pastNote": "Prošao"
   },
   "appointmentDetail": {
     "backToAppointments": "Nazad na termine",

@@ -1,4 +1,4 @@
-import { Link, NavLink, Outlet, useMatch } from 'react-router-dom'
+import { Link, NavLink, Outlet, useMatch, useNavigate } from 'react-router-dom'
 import { CalendarDays, CalendarOff, Clock, Moon, Search, Sun } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
@@ -32,9 +32,14 @@ function DoctorLayoutInner() {
   const { theme, toggleTheme } = useTheme()
   const { searchTerm, setSearchTerm } = useDoctorSearch()
   const photoUrl = useDoctorProfile()?.profile?.photoUrl
+  const navigate = useNavigate()
   const isCalendar = useMatch('/mjeku-panel/kalendari')
   const isSchedule = useMatch('/mjeku-panel/orari')
   const isProfile = useMatch('/mjeku-panel/profili')
+  // WR-36: these used to fall through to "Paneli › Paneli".
+  const isAppointment = useMatch('/mjeku-panel/terminet/:id')
+  const isUnavailability = useMatch('/mjeku-panel/mungesat')
+  const isPassword = useMatch('/mjeku-panel/fjalekalimi')
 
   return (
     <div className="patient-shell">
@@ -43,14 +48,25 @@ function DoctorLayoutInner() {
           <Logo variant="horizontal" size={26} />
         </Link>
 
-        <div className="doctor-topbar__search">
+        {/* WR-23: only the calendar filters by this term — from any other
+            page, Enter takes the doctor there with the term applied. */}
+        <form
+          className="doctor-topbar__search"
+          role="search"
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (!isCalendar) navigate('/mjeku-panel/kalendari')
+          }}
+        >
           <Search size={15} strokeWidth={1.5} color="var(--muted)" />
           <input
+            type="search"
+            aria-label={t('layout.searchPatientPlaceholder')}
             placeholder={t('layout.searchPatientPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-        </div>
+        </form>
 
         <div className="patient-topbar__right">
           <button
@@ -72,11 +88,15 @@ function DoctorLayoutInner() {
         <span>
           {isSchedule
             ? t('layout.breadcrumbSchedule')
-            : isCalendar
+            : isCalendar || isAppointment
               ? t('layout.navCalendar')
               : isProfile
                 ? t('layout.breadcrumbProfile')
-                : t('layout.breadcrumbPanel')}
+                : isUnavailability
+                  ? t('layout.navUnavailability')
+                  : isPassword
+                    ? t('userMenu.changePassword')
+                    : t('layout.breadcrumbPanel')}
         </span>
       </div>
 

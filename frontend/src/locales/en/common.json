@@ -190,7 +190,13 @@
       "specialty-exists": "A specialty with this name already exists.",
       "admin-already-assigned": "This user is already an administrator of this clinic.",
       "uploads-not-configured": "Image upload isn't available right now. Try again later or contact support.",
-      "invalid-photo-url": "The photo wasn't saved: the image didn't come from our upload. Please upload it again."
+      "invalid-photo-url": "The photo wasn't saved: the image didn't come from our upload. Please upload it again.",
+      "cannot-deactivate-self": "You can't deactivate your own account.",
+      "last-superadmin": "This is the last active SuperAdmin and can't be deactivated.",
+      "patient-search-exact-only": "Search with the full phone number or the exact email.",
+      "patient-exists": "This patient already exists. Search by phone or email.",
+      "service-has-future-appointments": "The service has upcoming appointments. Reschedule or cancel them before deactivating.",
+      "branch-has-future-appointments": "The branch has upcoming appointments. Reschedule or cancel them before deactivating."
     }
   },
   "appointment": {

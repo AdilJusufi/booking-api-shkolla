@@ -9,11 +9,18 @@ interface NotificationsBellProps {
 }
 
 /**
- * The in-app notification system (entity, endpoints, read state) doesn't exist yet —
- * this is the honest placeholder until it does. It shows an explicit "coming soon"
- * state instead of a button that silently does nothing when clicked.
+ * There is no in-app notification system (no entity, endpoints or read state).
+ * Until there is, the bell renders nothing at all — a "coming soon" control in
+ * front of clinics advertises a feature that doesn't exist. Flip this flag when
+ * the backend lands; the component below is kept ready for it.
  */
-export default function NotificationsBell({ triggerClassName = 'admin-icon-btn', size = 18 }: NotificationsBellProps) {
+const NOTIFICATIONS_ENABLED = false
+
+export default function NotificationsBell(props: NotificationsBellProps) {
+  return NOTIFICATIONS_ENABLED ? <NotificationsBellInner {...props} /> : null
+}
+
+function NotificationsBellInner({ triggerClassName = 'admin-icon-btn', size = 18 }: NotificationsBellProps) {
   const { t } = useTranslation('common')
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)

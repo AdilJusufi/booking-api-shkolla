@@ -190,7 +190,13 @@
       "specialty-exists": "Specijalizacija sa ovim nazivom već postoji.",
       "admin-already-assigned": "Ovaj korisnik je već administrator ove klinike.",
       "uploads-not-configured": "Otpremanje slika trenutno nije dostupno. Pokušajte kasnije ili kontaktirajte podršku.",
-      "invalid-photo-url": "Fotografija nije sačuvana: slika ne potiče iz našeg otpremanja. Otpremite je ponovo."
+      "invalid-photo-url": "Fotografija nije sačuvana: slika ne potiče iz našeg otpremanja. Otpremite je ponovo.",
+      "cannot-deactivate-self": "Ne možete deaktivirati sopstveni nalog.",
+      "last-superadmin": "Ovo je poslednji aktivni SuperAdmin i ne može se deaktivirati.",
+      "patient-search-exact-only": "Pretražite po celom broju telefona ili tačnom emailu.",
+      "patient-exists": "Ovaj pacijent već postoji. Pretražite po telefonu ili emailu.",
+      "service-has-future-appointments": "Usluga ima predstojeće termine. Pomerite ih ili otkažite pre deaktivacije.",
+      "branch-has-future-appointments": "Ogranak ima predstojeće termine. Pomerite ih ili otkažite pre deaktivacije."
     }
   },
   "appointment": {

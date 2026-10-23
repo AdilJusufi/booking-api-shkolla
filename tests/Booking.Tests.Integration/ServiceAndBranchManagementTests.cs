@@ -136,6 +136,27 @@ public class ServiceAndBranchManagementTests
             ServiceRequest("x", 1m), TestHelpers.Json)).StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    [Fact]
+    public async Task ClinicPage_ShowsWhatPatientsActuallyPay_WhenADoctorOverridesThePrice()
+    {
+        // WR-07: faqja e klinikës tregonte €30/30 min ndërsa i vetmi mjek merr €55/45 min.
+        var admin = await AdminAsync();
+        var setup = await SetupAsync(admin);
+        (await admin.PutAsJsonAsync($"/api/admin/doctors/{setup.DoctorId}/services", new UpdateDoctorServicesRequest
+        {
+            Services = [new DoctorServiceAssignment { MedicalServiceId = setup.ServiceId, CustomPrice = 55m, CustomDurationMinutes = 45 }]
+        }, TestHelpers.Json)).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var service = (await admin.GetFromJsonAsync<List<MedicalServiceDto>>(
+            $"/api/clinics/{DbSeeder.Ids.ClinicDardania}/services", TestHelpers.Json))!.Single(s => s.Id == setup.ServiceId);
+
+        service.Price.Should().Be(30m);
+        service.MinPrice.Should().Be(55m);
+        service.MaxPrice.Should().Be(55m);
+        service.MinDurationMinutes.Should().Be(45);
+        service.MaxDurationMinutes.Should().Be(45);
+    }
+
     // ---------- ndihmës ----------
 
     private sealed record Setup(Guid DoctorId, Guid ServiceId, Guid BranchId, DateOnly Date);

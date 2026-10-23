@@ -80,7 +80,8 @@
       "noShow": "NUK U PARAQIT",
       "rescheduled": "RIPLANIFIKUAR",
       "unknown": "I PANJOHUR"
-    }
+    },
+    "filterNoShow": "Nuk u paraqit"
   },
   "users": {
     "title": "Menaxhimi i Përdoruesve",
@@ -112,7 +113,9 @@
     "deactivateCta": "Çaktivizo",
     "invalidUserId": "Shkruani një ID të vlefshme përdoruesi (GUID).",
     "activatedToast": "Përdoruesi u aktivizua.",
-    "deactivatedToast": "Përdoruesi u çaktivizua."
+    "deactivatedToast": "Përdoruesi u çaktivizua.",
+    "selfHint": "Kjo është llogaria juaj",
+    "lastSuperAdminHint": "SuperAdmin-i i fundit aktiv"
   },
   "doctors": {
     "pageTitle": "Mjekët e Klinikës",
@@ -144,7 +147,6 @@
       "noBranchAssigned": "Asnjë degë e caktuar",
       "servicesLabel": "SHËRBIMET:",
       "moreServicesCount": "+{{count}} më shumë",
-      "idLabel": "ID: {{id}}",
       "manageScheduleCta": "Menaxho Orarin",
       "statusInactive": "JOAKTIV",
       "manageServicesMenuItem": "Menaxho shërbimet",
@@ -271,7 +273,9 @@
       "deactivateCta": "Çaktivizo",
       "deactivatingCta": "Duke çaktivizuar…",
       "cancelAppointmentsPrompt": "Për ta çaktivizuar gjithsesi, terminet e ardhshme duhet të anulohen — pacientët e prekur njoftohen automatikisht.",
-      "cancelAndDeactivateCta": "Anulo Terminet dhe Çaktivizo"
+      "cancelAndDeactivateCta": "Anulo Terminet dhe Çaktivizo",
+      "futureAppointments_one": "Mjeku ka {{count}} termin të ardhshëm. Për ta çaktivizuar, termini duhet të anulohet.",
+      "futureAppointments_other": "Mjeku ka {{count}} termine të ardhshme. Për ta çaktivizuar, terminet duhet të anulohen."
     },
     "photoModal": {
       "title": "Fotoja e Dr. {{name}}",
@@ -460,7 +464,7 @@
     "savedToast": "Ndryshimet u ruajtën.",
     "brandingTitle": "Branding",
     "dangerZoneTitle": "Zona e rrezikut",
-    "dangerZoneText": "Çaktivizimi i klinikës do të fshijë të gjitha të dhënat e pacientëve dhe mjekëve përgjithmonë.",
+    "dangerZoneText": "Çaktivizimi e heq klinikën nga kërkimi dhe ndalon rezervimet e reja. Të dhënat ruhen dhe klinika mund të riaktivizohet.",
     "deactivateBtnTitle": "Çaktivizimi kryhet vetëm nga stafi qendror i Rezervo Mjekun",
     "deactivateCta": "Çaktivizo Klinikën",
     "deactivateNote": "Çaktivizimi kryhet vetëm nga stafi qendror i Rezervo Mjekun. Kontaktoni administratorin qendror.",
@@ -503,8 +507,6 @@
   },
   "report": {
     "generateCta": "Gjenero Raportin",
-    "downloadPdfCta": "Shkarko PDF",
-    "featureInDevelopmentToast": "Funksion në zhvillim.",
     "loadingLabel": "Duke gjeneruar raportin",
     "chooseRangeTitle": "Zgjidhni një periudhë dhe gjeneroni raportin.",
     "statTotal": "Terminet Gjithsej",
@@ -554,7 +556,7 @@
   },
   "clinicDetail": {
     "breadcrumbClinics": "Klinikat",
-    "breadcrumbClinicName": "Klinika \"{{name}}\"",
+    "breadcrumbClinicName": "{{name}}",
     "loadingLabel": "Duke ngarkuar klinikën",
     "notFound": "Klinika nuk u gjet.",
     "backToClinicsLink": "Kthehu te klinikat",
@@ -563,7 +565,7 @@
     "tabServices": "Shërbimet",
     "tabDoctors": "Mjekët",
     "tabReport": "Raporti",
-    "titlePrefix": "Klinika \"{{name}}\"",
+    "titlePrefix": "{{name}}",
     "statusPublished": "PUBLIKUAR",
     "statusPending": "NË PRITJE",
     "countrySuffix": "Kosovë",

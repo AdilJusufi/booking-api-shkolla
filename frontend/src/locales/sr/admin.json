@@ -80,7 +80,8 @@
       "noShow": "NIJE DOŠAO",
       "rescheduled": "PREZAKAZANO",
       "unknown": "NEPOZNATO"
-    }
+    },
+    "filterNoShow": "Nije došao"
   },
   "users": {
     "title": "Upravljanje Korisnicima",
@@ -112,7 +113,9 @@
     "deactivateCta": "Deaktiviraj",
     "invalidUserId": "Unesite validan ID korisnika (GUID).",
     "activatedToast": "Korisnik je aktiviran.",
-    "deactivatedToast": "Korisnik je deaktiviran."
+    "deactivatedToast": "Korisnik je deaktiviran.",
+    "selfHint": "Ovo je vaš nalog",
+    "lastSuperAdminHint": "Poslednji aktivni SuperAdmin"
   },
   "doctors": {
     "pageTitle": "Lekari klinike",
@@ -145,7 +148,6 @@
       "noBranchAssigned": "Nijedan ogranak nije dodeljen",
       "servicesLabel": "USLUGE:",
       "moreServicesCount": "+{{count}} više",
-      "idLabel": "ID: {{id}}",
       "manageScheduleCta": "Upravljaj rasporedom",
       "statusInactive": "NEAKTIVAN",
       "manageServicesMenuItem": "Upravljaj uslugama",
@@ -274,7 +276,10 @@
       "deactivateCta": "Deaktiviraj",
       "deactivatingCta": "Deaktiviranje…",
       "cancelAppointmentsPrompt": "Da biste ipak deaktivirali, predstojeći termini moraju prvo biti otkazani — pogođeni pacijenti se automatski obaveštavaju.",
-      "cancelAndDeactivateCta": "Otkaži termine i deaktiviraj"
+      "cancelAndDeactivateCta": "Otkaži termine i deaktiviraj",
+      "futureAppointments_one": "Lekar ima {{count}} predstojeći termin. Za deaktivaciju, termin mora biti otkazan.",
+      "futureAppointments_few": "Lekar ima {{count}} predstojeća termina. Za deaktivaciju, termini moraju biti otkazani.",
+      "futureAppointments_other": "Lekar ima {{count}} predstojećih termina. Za deaktivaciju, termini moraju biti otkazani."
     },
     "photoModal": {
       "title": "Fotografija dr {{name}}",
@@ -465,7 +470,7 @@
     "savedToast": "Izmene su sačuvane.",
     "brandingTitle": "Brending",
     "dangerZoneTitle": "Opasna zona",
-    "dangerZoneText": "Deaktiviranje klinike će trajno obrisati sve podatke pacijenata i lekara.",
+    "dangerZoneText": "Deaktivacija uklanja kliniku iz pretrage i zaustavlja nova zakazivanja. Podaci se čuvaju i klinika se može ponovo aktivirati.",
     "deactivateBtnTitle": "Deaktiviranje vrši samo centralno osoblje Rezervo Mjekun",
     "deactivateCta": "Deaktiviraj kliniku",
     "deactivateNote": "Deaktiviranje vrši samo centralno osoblje Rezervo Mjekun. Kontaktirajte centralnog administratora.",
@@ -508,8 +513,6 @@
   },
   "report": {
     "generateCta": "Generiši izveštaj",
-    "downloadPdfCta": "Preuzmi PDF",
-    "featureInDevelopmentToast": "Funkcija u razvoju.",
     "loadingLabel": "Generisanje izveštaja",
     "chooseRangeTitle": "Izaberite period i generišite izveštaj.",
     "statTotal": "Ukupno termina",
@@ -560,7 +563,7 @@
   },
   "clinicDetail": {
     "breadcrumbClinics": "Klinike",
-    "breadcrumbClinicName": "Klinika „{{name}}“",
+    "breadcrumbClinicName": "{{name}}",
     "loadingLabel": "Učitavanje klinike",
     "notFound": "Klinika nije pronađena.",
     "backToClinicsLink": "Nazad na klinike",
@@ -569,7 +572,7 @@
     "tabServices": "Usluge",
     "tabDoctors": "Lekari",
     "tabReport": "Izveštaj",
-    "titlePrefix": "Klinika „{{name}}“",
+    "titlePrefix": "{{name}}",
     "statusPublished": "OBJAVLJENO",
     "statusPending": "NA ČEKANJU",
     "countrySuffix": "Kosovo",

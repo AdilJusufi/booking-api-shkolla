@@ -205,7 +205,7 @@ function BranchCard({
       <div className="branch-card__top">
         <div className="branch-card__name-row">
           <h3 className="branch-card__name">{branch.name}</h3>
-          <span className={`admin-card__status ${active ? 'admin-card__status--approved' : 'admin-card__status--pending'}`}>
+          <span className={`admin-card__status admin-card__status--inline ${active ? 'admin-card__status--approved' : 'admin-card__status--pending'}`}>
             {active ? t('branches.card.statusActive') : t('branches.card.statusInactive')}
           </span>
         </div>

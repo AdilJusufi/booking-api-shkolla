@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import type { AdminUser } from '../lib/types'
 import { useToast } from '../context/ToastContext'
+import { useAuth } from '../context/AuthContext'
 import { Badge, CustomSelect, EmptyState, ErrorBox, SkeletonRows } from '../components/ui'
 import type { CustomSelectOption } from '../components/ui'
 
@@ -13,6 +14,7 @@ const GUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 export default function UsersPage() {
   const { t } = useTranslation('admin')
+  const { t: tCommon } = useTranslation('common')
   const { notify } = useToast()
 
   const [searchInput, setSearchInput] = useState('')
@@ -22,7 +24,10 @@ export default function UsersPage() {
   const [page, setPage] = useState(1)
   const [openSelect, setOpenSelect] = useState<'role' | 'status' | null>(null)
 
+  const { user: me } = useAuth()
   const [users, setUsers] = useState<AdminUser[]>([])
+  // Only counts the loaded page; the server enforces the real rule regardless.
+  const activeSuperAdmins = users.filter((u) => u.isActive && u.roles.includes('SuperAdmin')).length
   const [totalItems, setTotalItems] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(true)
@@ -202,7 +207,7 @@ export default function UsersPage() {
                     <td>
                       {u.roles.map((r) => (
                         <span key={r} className="chip chip--soft" style={{ marginRight: 4 }}>
-                          {r}
+                          {tCommon(`roles.${r}`, { defaultValue: r })}
                         </span>
                       ))}
                     </td>
@@ -214,6 +219,12 @@ export default function UsersPage() {
                       )}
                     </td>
                     <td>
+                      {/* WR-12: the server refuses these too; the UI just doesn't offer them. */}
+                      {u.isActive && u.id === me?.userId ? (
+                        <span className="sa-table__secondary">{t('users.selfHint')}</span>
+                      ) : u.isActive && u.roles.includes('SuperAdmin') && activeSuperAdmins <= 1 ? (
+                        <span className="sa-table__secondary">{t('users.lastSuperAdminHint')}</span>
+                      ) : (
                       <button
                         type="button"
                         className="btn btn--sm btn--ghost"
@@ -230,6 +241,7 @@ export default function UsersPage() {
                           </>
                         )}
                       </button>
+                      )}
                     </td>
                   </tr>
                 ))}

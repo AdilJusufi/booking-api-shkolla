@@ -62,8 +62,10 @@ export default function AuditLogsPage() {
       .then((r) => {
         // The backend query has no free-text "action" filter — narrow client-side
         // on the page we already fetched rather than pretending the API supports it.
+        // WR-29: "ClinicApproved", "clinic approved" and "CLINIC_APPROVED" all match.
+        const norm = (v: string) => v.toLowerCase().replace(/[^a-z0-9]/g, '')
         const items = appliedFilters.action
-          ? r.items.filter((l) => l.action.toLowerCase().includes(appliedFilters.action.toLowerCase()))
+          ? r.items.filter((l) => norm(l.action).includes(norm(appliedFilters.action)))
           : r.items
         setLogs(items)
         setTotalPages(r.totalPages)

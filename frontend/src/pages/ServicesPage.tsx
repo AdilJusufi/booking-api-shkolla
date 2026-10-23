@@ -272,7 +272,7 @@ function ServiceCard({
     <div className={`admin-card service-card ${active ? '' : 'is-inactive'}`}>
       <div className="service-card__top">
         <h3 className="service-card__name">{service.name}</h3>
-        <span className={`admin-card__status ${active ? 'admin-card__status--approved' : 'admin-card__status--pending'}`}>
+        <span className={`admin-card__status admin-card__status--inline ${active ? 'admin-card__status--approved' : 'admin-card__status--pending'}`}>
           {active ? t('services.card.statusActive') : t('services.card.statusInactive')}
         </span>
       </div>

@@ -6880,7 +6880,11 @@ button.schedule-card__branch {
 /* ============ Super Admin — data tables ============ */
 .sa-table-card {
   padding: 0;
-  overflow: hidden;
+  /* WR-13: scroll wide tables sideways on phones instead of clipping the
+     Status/Actions columns off-screen. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 .sa-table {
   width: 100%;
@@ -9397,4 +9401,11 @@ button.schedule-card__branch {
 }
 .lp-load-error p {
   margin: 0;
+}
+
+/* WR-06: an inactive card (opacity) or an animated one forms its own stacking
+   context, so the open "⋮" menu was painted under the next card and its last
+   items couldn't be clicked. Lift the card that owns the open menu. */
+.admin-card.is-menu-open {
+  z-index: var(--z-dropdown);
 }

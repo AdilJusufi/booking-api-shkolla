@@ -55,6 +55,15 @@ public sealed record MedicalServiceDto
 
     /// <summary>Lista publike përmban vetëm shërbime aktive; lista e adminit edhe të çaktivizuarat.</summary>
     public bool IsActive { get; init; } = true;
+
+    /// <summary>
+    /// Intervali real që sheh pacienti: mjekët mund ta mbivendosin çmimin/kohëzgjatjen bazë.
+    /// I barabartë me vlerën bazë kur asnjë mjek s'e ka ndryshuar (ose s'ka mjekë).
+    /// </summary>
+    public decimal? MinPrice { get; init; }
+    public decimal? MaxPrice { get; init; }
+    public int? MinDurationMinutes { get; init; }
+    public int? MaxDurationMinutes { get; init; }
 }
 
 /// <summary>Filtrat e kërkimit të klinikave — të gjithë opsionalë.</summary>

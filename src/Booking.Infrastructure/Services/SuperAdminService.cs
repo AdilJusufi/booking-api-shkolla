@@ -21,6 +21,7 @@ public class SuperAdminService : ISuperAdminService
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IClinicNotificationService _clinicNotifications;
     private readonly ITimeZoneService _timeZoneService;
+    private readonly ICurrentUserService _currentUser;
     private readonly ILogger<SuperAdminService> _logger;
 
     public SuperAdminService(
@@ -30,6 +31,7 @@ public class SuperAdminService : ISuperAdminService
         IDateTimeProvider dateTimeProvider,
         IClinicNotificationService clinicNotifications,
         ITimeZoneService timeZoneService,
+        ICurrentUserService currentUser,
         ILogger<SuperAdminService> logger)
     {
         _dbContext = dbContext;
@@ -38,6 +40,7 @@ public class SuperAdminService : ISuperAdminService
         _dateTimeProvider = dateTimeProvider;
         _clinicNotifications = clinicNotifications;
         _timeZoneService = timeZoneService;
+        _currentUser = currentUser;
         _logger = logger;
     }
 
@@ -204,6 +207,25 @@ public class SuperAdminService : ISuperAdminService
         if (user.IsActive == isActive)
         {
             return;
+        }
+
+        // WR-12: çaktivizimi revokon menjëherë çdo sesion — një SuperAdmin që çaktivizon
+        // veten, ose të fundit aktiv, e lë platformën pa operator.
+        if (!isActive)
+        {
+            if (_currentUser.UserId == userId)
+            {
+                throw new ConflictException("cannot-deactivate-self", "Nuk mund ta çaktivizoni llogarinë tuaj.");
+            }
+
+            if (await _userManager.IsInRoleAsync(user, Roles.SuperAdmin))
+            {
+                var activeSuperAdmins = (await _userManager.GetUsersInRoleAsync(Roles.SuperAdmin)).Count(u => u.IsActive);
+                if (activeSuperAdmins <= 1)
+                {
+                    throw new ConflictException("last-superadmin", "Ky është SuperAdmin-i i fundit aktiv dhe nuk mund të çaktivizohet.");
+                }
+            }
         }
 
         _auditService.Record("USER_ACTIVE_CHANGED", "User", userId.ToString(),

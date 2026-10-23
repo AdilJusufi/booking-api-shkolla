@@ -80,7 +80,8 @@
       "noShow": "NO SHOW",
       "rescheduled": "RESCHEDULED",
       "unknown": "UNKNOWN"
-    }
+    },
+    "filterNoShow": "No-show"
   },
   "users": {
     "title": "User Management",
@@ -112,7 +113,9 @@
     "deactivateCta": "Deactivate",
     "invalidUserId": "Enter a valid user ID (GUID).",
     "activatedToast": "User activated.",
-    "deactivatedToast": "User deactivated."
+    "deactivatedToast": "User deactivated.",
+    "selfHint": "This is your account",
+    "lastSuperAdminHint": "Last active SuperAdmin"
   },
   "doctors": {
     "pageTitle": "Clinic Doctors",
@@ -144,7 +147,6 @@
       "noBranchAssigned": "No branch assigned",
       "servicesLabel": "SERVICES:",
       "moreServicesCount": "+{{count}} more",
-      "idLabel": "ID: {{id}}",
       "manageScheduleCta": "Manage Schedule",
       "statusInactive": "INACTIVE",
       "manageServicesMenuItem": "Manage services",
@@ -271,7 +273,9 @@
       "deactivateCta": "Deactivate",
       "deactivatingCta": "Deactivating…",
       "cancelAppointmentsPrompt": "To deactivate anyway, the upcoming appointments must be cancelled first — affected patients are notified automatically.",
-      "cancelAndDeactivateCta": "Cancel Appointments and Deactivate"
+      "cancelAndDeactivateCta": "Cancel Appointments and Deactivate",
+      "futureAppointments_one": "The doctor has {{count}} upcoming appointment. To deactivate, it has to be cancelled.",
+      "futureAppointments_other": "The doctor has {{count}} upcoming appointments. To deactivate, they have to be cancelled."
     },
     "photoModal": {
       "title": "Photo of Dr. {{name}}",
@@ -460,7 +464,7 @@
     "savedToast": "Changes saved.",
     "brandingTitle": "Branding",
     "dangerZoneTitle": "Danger zone",
-    "dangerZoneText": "Deactivating the clinic will permanently delete all patient and doctor data.",
+    "dangerZoneText": "Deactivating hides the clinic from search and stops new bookings. Data is kept and the clinic can be reactivated.",
     "deactivateBtnTitle": "Deactivation is only performed by Rezervo Mjekun central staff",
     "deactivateCta": "Deactivate Clinic",
     "deactivateNote": "Deactivation is only performed by Rezervo Mjekun central staff. Contact the central administrator.",
@@ -503,8 +507,6 @@
   },
   "report": {
     "generateCta": "Generate Report",
-    "downloadPdfCta": "Download PDF",
-    "featureInDevelopmentToast": "Feature in development.",
     "loadingLabel": "Generating report",
     "chooseRangeTitle": "Choose a date range and generate the report.",
     "statTotal": "Total Appointments",
@@ -554,7 +556,7 @@
   },
   "clinicDetail": {
     "breadcrumbClinics": "Clinics",
-    "breadcrumbClinicName": "\"{{name}}\" Clinic",
+    "breadcrumbClinicName": "{{name}}",
     "loadingLabel": "Loading clinic",
     "notFound": "Clinic not found.",
     "backToClinicsLink": "Back to clinics",
@@ -563,7 +565,7 @@
     "tabServices": "Services",
     "tabDoctors": "Doctors",
     "tabReport": "Report",
-    "titlePrefix": "\"{{name}}\" Clinic",
+    "titlePrefix": "{{name}}",
     "statusPublished": "PUBLISHED",
     "statusPending": "PENDING",
     "countrySuffix": "Kosovo",
