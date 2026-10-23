@@ -253,6 +253,11 @@ export default function DoctorAppointmentDetailPage() {
                     <span className="apptdetail-muted">{t('appointmentDetail.bookedFor', { name: appointment.dependentName })}</span>
                   </div>
                 )}
+                {appointment.bookedByClinic && (
+                  <div className="apptdetail-doctor__meta">
+                    <span className="apptdetail-muted">{tCommon('appointment.bookedByClinic')}</span>
+                  </div>
+                )}
               </div>
             </div>
             <div className="apptdetail-grid" style={{ marginTop: 14 }}>

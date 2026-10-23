@@ -426,6 +426,10 @@ export interface Appointment {
   cancellationReason?: string
   cancelledAt?: string
   createdAt: string
+  /** Çmimi i dakorduar në rezervim. */
+  price?: number
+  currency?: string
+  bookedByClinic?: boolean
 }
 
 export interface DoctorAppointment {
@@ -444,6 +448,8 @@ export interface DoctorAppointment {
   patientNote?: string
   internalNote?: string
   cancellationReason?: string
+  /** True kur e rezervoi klinika (p.sh. me telefon). */
+  bookedByClinic?: boolean
 }
 
 /** Pasqyron AdminAppointmentListItemDto — GET /api/admin/appointments. Rreshti vjen i denormalizuar (pa N+1). */
@@ -466,6 +472,7 @@ export interface AdminAppointmentListItem {
   endDateTime: string
   status: AppointmentStatus
   version: number
+  bookedByClinic?: boolean
 }
 
 /** Pasqyron AdminAppointmentsQuery — parametrat e query-t për GET /api/admin/appointments. */
@@ -680,4 +687,68 @@ export interface CreateClinicRequest {
 /** Pasqyron AssignClinicAdminRequest — POST /api/admin/clinics/{id}/admins. */
 export interface AssignClinicAdminRequest {
   email: string
+}
+
+// ---------- Rezervimi nga recepsioni (rezervim me telefon) ----------
+
+export interface AdminPatientDependent {
+  id: string
+  firstName: string
+  lastName: string
+  dateOfBirth: string
+  gender: Gender
+  relationship: DependentRelationship
+}
+
+/**
+ * Pasqyron AdminPatientSearchResultDto. Kur `isNameMasked`, `lastName` është vetëm
+ * inicialja ("G.") — pacienti s'ka pasur termin te kjo klinikë dhe serveri s'e dërgon mbiemrin.
+ */
+export interface AdminPatientSearchResult {
+  patientProfileId: string
+  firstName: string
+  lastName: string
+  email?: string
+  phoneNumber?: string
+  dateOfBirth?: string
+  hasRelationshipWithClinic: boolean
+  isNameMasked: boolean
+  isUnclaimedAccount: boolean
+  dependents: AdminPatientDependent[]
+}
+
+export interface AdminCreatePatientRequest {
+  firstName: string
+  lastName: string
+  phoneNumber: string
+  email?: string
+  dateOfBirth?: string
+}
+
+/** Pasqyron AdminPatientDto — `isExistingPatient` kur telefoni/email-i përkonte me një pacient ekzistues. */
+export interface AdminPatient {
+  patientProfileId: string
+  userId: string
+  firstName: string
+  lastName: string
+  email?: string
+  phoneNumber?: string
+  dateOfBirth?: string
+  isUnclaimedAccount: boolean
+  isExistingPatient: boolean
+  isNameMasked: boolean
+  hasRelationshipWithClinic: boolean
+  dependents: AdminPatientDependent[]
+}
+
+export interface AdminCreateAppointmentRequest {
+  patientProfileId: string
+  doctorId: string
+  clinicBranchId: string
+  medicalServiceId: string
+  dependentId?: string
+  /** Ora e klinikës, pa zhvendosje — shih lib/clinicTime.ts. */
+  startDateTime: string
+  patientNote?: string
+  internalNote?: string
 }

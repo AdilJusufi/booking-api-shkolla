@@ -1,5 +1,5 @@
-import { Outlet } from 'react-router-dom'
-import { Moon, Sun } from 'lucide-react'
+import { Link, NavLink, Outlet } from 'react-router-dom'
+import { Building2, CalendarDays, Moon, Plus, Sun } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '../context/ThemeContext'
 import { AdminBreadcrumbProvider, useAdminBreadcrumb } from '../context/AdminBreadcrumbContext'
@@ -47,6 +47,21 @@ function AdminLayoutInner() {
       </header>
 
       <main className="admin-content">
+        {/* WR-02: the clinic's appointments must be reachable from the panel, on
+            desktop and mobile; "Rezervo termin" sits where front-desk staff look. */}
+        <nav className="admin-nav" aria-label={t('layout.panelBreadcrumb')}>
+          <div className="clinic-tabs admin-nav__tabs">
+            <NavLink to="/admin-panel/klinikat" className={({ isActive }) => `clinic-tab ${isActive ? 'is-active' : ''}`}>
+              <Building2 size={16} strokeWidth={1.5} /> {t('layout.navClinics')}
+            </NavLink>
+            <NavLink to="/admin-panel/terminet" className={({ isActive }) => `clinic-tab ${isActive ? 'is-active' : ''}`}>
+              <CalendarDays size={16} strokeWidth={1.5} /> {t('layout.navAppointments')}
+            </NavLink>
+          </div>
+          <Link to="/admin-panel/terminet/rezervo" className="btn btn--primary btn--sm admin-nav__cta">
+            <Plus size={15} strokeWidth={1.5} /> {t('layout.bookCta')}
+          </Link>
+        </nav>
         <Outlet />
       </main>
     </div>

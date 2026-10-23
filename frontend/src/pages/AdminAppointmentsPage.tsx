@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Calendar, CalendarCheck, CalendarX, ChevronLeft, ChevronRight, Plus, Search } from 'lucide-react'
+import { Calendar, CalendarCheck, CalendarX, ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { useToast } from '../context/ToastContext'
+import { useAdminBreadcrumb } from '../context/AdminBreadcrumbContext'
 import { api } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import { AppointmentStatus, type AdminAppointmentListItem } from '../lib/types'
@@ -71,7 +71,14 @@ async function fetchCancelled(params: {
 
 export default function AdminAppointmentsPage() {
   const { t } = useTranslation('admin')
-  const { notify } = useToast()
+  const { t: tCommon } = useTranslation('common')
+  const { setTrail } = useAdminBreadcrumb()
+
+  // WR-36: the breadcrumb used to fall back to "Klinikat e mia" on this page.
+  useEffect(() => {
+    setTrail([t('layout.appointmentsBreadcrumb')])
+    return () => setTrail([])
+  }, [setTrail, t])
 
   const [statusFilter, setStatusFilter] = useState<StatusTab>('all')
   const [searchInput, setSearchInput] = useState('')
@@ -175,13 +182,6 @@ export default function AdminAppointmentsPage() {
           <h1>{t('appointments.title')}</h1>
           <p className="admin-header__sub">{t('appointments.subtitle')}</p>
         </div>
-        <button
-          type="button"
-          className="btn btn--primary btn--sm"
-          onClick={() => notify(t('appointments.featureInDevelopmentToast'), 'info')}
-        >
-          <Plus size={15} strokeWidth={1.5} /> {t('appointments.bookAppointmentCta')}
-        </button>
       </div>
 
       <div className="stats-row">
@@ -260,6 +260,9 @@ export default function AdminAppointmentsPage() {
                         {a.patientName}
                         {a.isForDependent && a.dependentName && (
                           <div className="sa-table__secondary">{a.dependentName}</div>
+                        )}
+                        {a.bookedByClinic && (
+                          <div className="sa-table__secondary">{tCommon('appointment.bookedByClinic')}</div>
                         )}
                       </td>
                       <td>

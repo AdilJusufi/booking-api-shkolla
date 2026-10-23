@@ -212,7 +212,8 @@
     },
     "sessionCount_one": "{{count}} sesija",
     "sessionCount_few": "{{count}} sesije",
-    "sessionCount_other": "{{count}} sesija"
+    "sessionCount_other": "{{count}} sesija",
+    "bookedByClinic": "Zakazala klinika"
   },
   "modal": {
     "close": "Zatvori"

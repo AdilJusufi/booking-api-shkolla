@@ -32,6 +32,7 @@ import UnavailabilityPage from './pages/UnavailabilityPage'
 import DoctorProfilePage from './pages/DoctorProfilePage'
 import MyClinicsPage from './pages/MyClinicsPage'
 import AdminAppointmentsPage from './pages/AdminAppointmentsPage'
+import StaffBookingPage from './pages/StaffBookingPage'
 import ClinicDetailLayout from './components/ClinicDetailLayout'
 import ClinicSettingsPage from './pages/ClinicSettingsPage'
 import BranchesPage from './pages/BranchesPage'
@@ -112,6 +113,7 @@ export default function App() {
       >
         <Route path="/admin-panel/klinikat" element={<MyClinicsPage />} />
         <Route path="/admin-panel/terminet" element={<AdminAppointmentsPage />} />
+        <Route path="/admin-panel/terminet/rezervo" element={<StaffBookingPage />} />
         <Route path="/admin-panel/klinikat/:id" element={<ClinicDetailLayout />}>
           <Route index element={<ClinicSettingsPage />} />
           <Route path="deget" element={<BranchesPage />} />

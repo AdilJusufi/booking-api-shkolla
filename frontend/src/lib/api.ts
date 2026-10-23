@@ -51,6 +51,10 @@ import type {
   UpdateDoctorServicesRequest,
   UpdatePatientProfileRequest,
   UpdateSpecialtyRequest,
+  AdminPatientSearchResult,
+  AdminCreatePatientRequest,
+  AdminPatient,
+  AdminCreateAppointmentRequest,
 } from './types'
 
 import { withRefreshLock } from './crossTabLock'
@@ -653,4 +657,17 @@ export const api = {
       body: payload,
       auth: true,
     }),
+
+  // --- Recepsioni: kërkimi/krijimi i pacientit dhe rezervimi për të ---
+  searchAdminPatients: (query: string) =>
+    request<PagedResult<AdminPatientSearchResult>>('/api/admin/patients/search', {
+      auth: true,
+      query: { query, page: 1, pageSize: 10 },
+    }),
+
+  createAdminPatient: (payload: AdminCreatePatientRequest) =>
+    request<AdminPatient>('/api/admin/patients', { method: 'POST', body: payload, auth: true }),
+
+  createAppointmentForPatient: (payload: AdminCreateAppointmentRequest) =>
+    request<DoctorAppointment>('/api/admin/appointments', { method: 'POST', body: payload, auth: true }),
 }

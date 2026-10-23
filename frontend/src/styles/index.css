@@ -9182,3 +9182,157 @@ button.schedule-card__branch {
     padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
   }
 }
+
+/* ---------- Admin top navigation (WR-02) ---------- */
+.admin-nav {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+}
+.admin-nav__tabs {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+.admin-nav__cta {
+  margin-bottom: 8px;
+  white-space: nowrap;
+}
+@media (max-width: 600px) {
+  .admin-nav {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .admin-nav__cta {
+    justify-content: center;
+  }
+}
+
+/* ---------- Staff booking (phone / front desk) ---------- */
+.staff-booking {
+  max-width: 820px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.staff-booking__step {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.staff-booking__title {
+  font-size: 1.05rem;
+  margin: 0;
+}
+.staff-booking__muted {
+  color: var(--muted);
+  font-size: 0.85rem;
+  display: block;
+}
+.staff-booking__search {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+.staff-booking__search .field {
+  flex: 1;
+  margin: 0;
+}
+.staff-booking__chosen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius);
+  background: var(--primary-050);
+}
+.staff-booking__chosen strong {
+  display: block;
+}
+.staff-booking__empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+}
+.staff-booking__empty p {
+  margin: 0;
+}
+.staff-booking__create {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line-soft);
+}
+.staff-booking__create h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+.staff-booking__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.staff-booking__notice {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--warn-bg);
+  color: var(--ink);
+  font-size: 0.875rem;
+}
+.staff-booking__selects {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.staff-booking__when {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.staff-booking__summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+  margin: 0;
+}
+.staff-booking__summary dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.staff-booking__summary dd {
+  margin: 2px 0 0;
+  font-weight: 600;
+}
+@media (max-width: 700px) {
+  .staff-booking__selects,
+  .staff-booking__when,
+  .staff-booking__summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .staff-booking__search {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .staff-booking__step {
+    padding: 16px;
+  }
+}

@@ -368,7 +368,14 @@ export default function AppointmentDetailPage() {
               </div>
               <div className="apptdetail-item">
                 <span className="apptdetail-label">{t('appointmentDetail.priceLabel')}</span>
-                <span className="apptdetail-value">{service ? `${service.price.toFixed(2)} ${service.currency}` : '—'}</span>
+                <span className="apptdetail-value">
+                  {/* The price agreed at booking (snapshot); falls back to today's price only for old rows without one. */}
+                  {appointment.price != null
+                    ? `${appointment.price.toFixed(2)} ${appointment.currency ?? 'EUR'}`
+                    : service
+                      ? `${service.price.toFixed(2)} ${service.currency}`
+                      : '—'}
+                </span>
               </div>
             </div>
 
@@ -388,6 +395,11 @@ export default function AppointmentDetailPage() {
                 <span className="apptdetail-label">{t('appointmentDetail.typeLabel')}</span>
                 <span className="apptdetail-value">{appointment.dependentName ? t('appointmentDetail.typeFamilyMember') : t('appointmentDetail.typeIndividual')}</span>
               </div>
+              {appointment.bookedByClinic && (
+                <div className="apptdetail-item">
+                  <span className="apptdetail-value apptdetail-muted">{tCommon('appointment.bookedByClinic')}</span>
+                </div>
+              )}
             </div>
 
             {appointment.patientNote && (

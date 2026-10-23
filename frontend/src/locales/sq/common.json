@@ -211,7 +211,8 @@
       "reschedule": "Ricakto"
     },
     "sessionCount_one": "{{count}} sesion",
-    "sessionCount_other": "{{count}} sesione"
+    "sessionCount_other": "{{count}} sesione",
+    "bookedByClinic": "Rezervuar nga klinika"
   },
   "modal": {
     "close": "Mbyll"

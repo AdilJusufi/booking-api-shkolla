@@ -211,7 +211,8 @@
       "reschedule": "Reschedule"
     },
     "sessionCount_one": "{{count}} session",
-    "sessionCount_other": "{{count}} sessions"
+    "sessionCount_other": "{{count}} sessions",
+    "bookedByClinic": "Booked by the clinic"
   },
   "modal": {
     "close": "Close"
