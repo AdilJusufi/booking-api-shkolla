@@ -11,7 +11,6 @@ using Booking.Domain.Services;
 using Booking.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Npgsql;
 
 namespace Booking.Infrastructure.Services;
 
@@ -410,22 +409,8 @@ public class AdminAppointmentService : IAdminAppointmentService
             .Select(p => p.UserId)
             .FirstAsync(cancellationToken);
 
-    private async Task SaveChangesGuardedAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            await _dbContext.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            throw new ConflictException(
-                "concurrency-conflict", "Termini u ndryshua nga një veprim tjetër. Rifresko dhe provo përsëri.");
-        }
-        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: "23P01" })
-        {
-            throw new ConflictException("appointment-conflict", "Sloti i zgjedhur nuk është më i lirë.");
-        }
-    }
+    private Task SaveChangesGuardedAsync(CancellationToken cancellationToken) =>
+        _dbContext.SaveAppointmentChangesAsync(cancellationToken);
 
     private async Task NotifySafeAsync(
         Func<AppointmentNotificationContext, CancellationToken, Task> send,

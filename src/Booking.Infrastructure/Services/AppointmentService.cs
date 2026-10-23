@@ -11,7 +11,6 @@ using Booking.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Npgsql;
 
 namespace Booking.Infrastructure.Services;
 
@@ -320,24 +319,8 @@ public class AppointmentService : IAppointmentService
     }
 
     /// <summary>Përkthen gabimet e databazës në përgjigje 409 të kuptueshme.</summary>
-    private async Task SaveChangesGuardedAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            await _dbContext.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            // Shtresa 3: optimistic concurrency (xmin) — dikush e ndryshoi terminin ndërkohë.
-            throw new ConflictException(
-                "concurrency-conflict", "Termini u ndryshua nga një veprim tjetër. Rifresko dhe provo përsëri.");
-        }
-        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: "23P01" })
-        {
-            // Exclusion constraint (btree_gist) — dy kërkesa paralele për të njëjtin slot.
-            throw new ConflictException("appointment-conflict", "Sloti i zgjedhur nuk është më i lirë.");
-        }
-    }
+    private Task SaveChangesGuardedAsync(CancellationToken cancellationToken) =>
+        _dbContext.SaveAppointmentChangesAsync(cancellationToken);
 
     private async Task NotifySafeAsync(
         Func<AppointmentNotificationContext, CancellationToken, Task> send,

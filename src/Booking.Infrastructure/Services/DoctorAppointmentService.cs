@@ -170,18 +170,8 @@ public class DoctorAppointmentService : IDoctorAppointmentService
         return ToDto(row);
     }
 
-    private async Task SaveChangesGuardedAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            await _dbContext.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            throw new ConflictException(
-                "concurrency-conflict", "Termini u ndryshua nga një veprim tjetër. Rifresko dhe provo përsëri.");
-        }
-    }
+    private Task SaveChangesGuardedAsync(CancellationToken cancellationToken) =>
+        _dbContext.SaveAppointmentChangesAsync(cancellationToken);
 
     /// <summary>Doktori e ka kryer vetë veprimin — vetëm klinika njoftohet, jo doktori.</summary>
     private async Task NotifyClinicSafeAsync(
