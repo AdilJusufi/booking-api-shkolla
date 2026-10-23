@@ -319,6 +319,15 @@ export default function AppointmentDetailPage() {
               <span className="apptdetail-ref">{t('appointmentDetail.refLabel')}: #{appointment.id.slice(0, 7).toUpperCase()}</span>
             </div>
 
+            {/* WR-19: the old, rescheduled appointment points at the one that replaced it. */}
+            {appointment.status === AppointmentStatus.Rescheduled && appointment.rescheduledToAppointmentId && (
+              <Link to={`/terminet/${appointment.rescheduledToAppointmentId}`} className="schedule-info-banner apptdetail-moved">
+                <Info size={16} strokeWidth={1.5} />
+                <span>{t('appointmentDetail.movedTo')}</span>
+                <ArrowRight size={16} strokeWidth={1.5} />
+              </Link>
+            )}
+
             <p className="apptdetail-section-label">{t('appointmentDetail.timeAndPlace')}</p>
             <div className="apptdetail-grid">
               <div className="apptdetail-item">

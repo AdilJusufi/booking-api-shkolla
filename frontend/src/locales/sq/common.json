@@ -196,7 +196,8 @@
       "patient-search-exact-only": "Kërkoni me numrin e plotë të telefonit ose me email-in e saktë.",
       "patient-exists": "Ky pacient ekziston tashmë. Kërkojeni me telefon ose email.",
       "service-has-future-appointments": "Shërbimi ka termine të ardhshme. Riplanifikojini ose anulojini para çaktivizimit.",
-      "branch-has-future-appointments": "Dega ka termine të ardhshme. Riplanifikojini ose anulojini para çaktivizimit."
+      "branch-has-future-appointments": "Dega ka termine të ardhshme. Riplanifikojini ose anulojini para çaktivizimit.",
+      "appointment-already-started": "Termini ka filluar ose ka kaluar; nuk mund të anulohet a ricaktohet më."
     }
   },
   "appointment": {

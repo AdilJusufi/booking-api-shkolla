@@ -151,3 +151,35 @@ describe('AppointmentDetailPage — reschedule 409 handling (3g)', () => {
     await waitFor(() => expect(rescheduleCalls).toBe(2))
   })
 })
+
+describe('AppointmentDetailPage — rescheduled appointment links to its replacement (WR-19)', () => {
+  it('shows a link from the old appointment to the new one', async () => {
+    server.use(
+      http.get(`${API_BASE_URL}/api/appointments/my/${APPOINTMENT_ID}`, () =>
+        HttpResponse.json(
+          buildAppointment({
+            id: APPOINTMENT_ID,
+            doctorId: DOCTOR_ID,
+            clinicBranchId: BRANCH_ID,
+            medicalServiceId: SERVICE_ID,
+            startDateTime: FAR_FUTURE_START,
+            endDateTime: '2099-06-15T10:30:00',
+            status: AppointmentStatus.Rescheduled,
+            rescheduledToAppointmentId: 'appt-2',
+          }),
+        ),
+      ),
+      http.get(`${API_BASE_URL}/api/doctors/${DOCTOR_ID}`, () =>
+        HttpResponse.json(buildDoctorDetails({ id: DOCTOR_ID })),
+      ),
+    )
+    renderWithProviders(<AppointmentDetailPage />, {
+      route: `/terminet/${APPOINTMENT_ID}`,
+      path: '/terminet/:id',
+      user: 'Patient',
+    })
+
+    const link = await screen.findByRole('link', { name: /Shiko terminin e ri/ })
+    expect(link).toHaveAttribute('href', '/terminet/appt-2')
+  })
+})

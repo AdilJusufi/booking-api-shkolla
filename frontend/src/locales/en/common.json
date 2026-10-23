@@ -196,7 +196,8 @@
       "patient-search-exact-only": "Search with the full phone number or the exact email.",
       "patient-exists": "This patient already exists. Search by phone or email.",
       "service-has-future-appointments": "The service has upcoming appointments. Reschedule or cancel them before deactivating.",
-      "branch-has-future-appointments": "The branch has upcoming appointments. Reschedule or cancel them before deactivating."
+      "branch-has-future-appointments": "The branch has upcoming appointments. Reschedule or cancel them before deactivating.",
+      "appointment-already-started": "This appointment has started or is over; it can no longer be cancelled or moved."
     }
   },
   "appointment": {

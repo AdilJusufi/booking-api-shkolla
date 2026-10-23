@@ -281,7 +281,8 @@
     "rescheduleNewDateSummary": "Data e re: {{date}} ora {{time}}",
     "confirmReschedule": "Konfirmo ricaktimin",
     "reschedulingInProgress": "Duke ricaktuar…",
-    "cancelReasonDefault": "Anuluar nga pacienti"
+    "cancelReasonDefault": "Anuluar nga pacienti",
+    "movedTo": "Ky termin u zhvendos. Shiko terminin e ri"
   },
   "confirmBooking": {
     "backToDoctor": "Kthehu te mjeku",

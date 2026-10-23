@@ -81,7 +81,26 @@
       "rescheduled": "RIPLANIFIKUAR",
       "unknown": "I PANJOHUR"
     },
-    "filterNoShow": "Nuk u paraqit"
+    "filterNoShow": "Nuk u paraqit",
+    "columnActions": "Veprime",
+    "cancelModal": {
+      "title": "Anulo terminin",
+      "text": "Termini i <0>{{patient}}</0> te {{doctor}} më {{when}} do të anulohet. Pacienti njoftohet me email nëse ka adresë.",
+      "reasonLabel": "Arsyeja (opsionale)",
+      "reasonPlaceholder": "P.sh. mjeku mungon atë ditë",
+      "keep": "Mos e anulo",
+      "confirm": "Anulo terminin",
+      "done": "Termini u anulua."
+    },
+    "rescheduleModal": {
+      "title": "Ricakto terminin",
+      "current": "Tani: {{when}}",
+      "sameDoctorService": "I njëjti mjek dhe shërbim: {{doctor}} · {{service}}",
+      "noSlots": "Asnjë orar i lirë këtë ditë.",
+      "confirm": "Ricakto për {{when}}",
+      "pickSlot": "Zgjidhni një ditë dhe një orë.",
+      "done": "Termini u ricaktua. Pacienti njoftohet me email nëse ka adresë."
+    }
   },
   "users": {
     "title": "Menaxhimi i Përdoruesve",

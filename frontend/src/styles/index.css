@@ -3419,6 +3419,18 @@ textarea {
   align-items: center;
   margin-bottom: 20px;
 }
+.apptdetail-moved {
+  align-items: center;
+  text-decoration: none;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+.apptdetail-moved span {
+  flex: 1;
+}
+.apptdetail-moved:hover {
+  text-decoration: underline;
+}
 .apptdetail-ref {
   font-size: 11px;
   color: var(--muted);
@@ -9408,4 +9420,30 @@ button.schedule-card__branch {
    items couldn't be clicked. Lift the card that owns the open menu. */
 .admin-card.is-menu-open {
   z-index: var(--z-dropdown);
+}
+
+/* ============ Admin appointments — staff cancel / reschedule ============ */
+.appt-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+.appt-actions .btn {
+  white-space: nowrap;
+}
+.appt-modal__summary {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 4px;
+}
+.appt-reschedule {
+  display: grid;
+  gap: 16px;
+  margin-top: 14px;
+}
+@media (min-width: 760px) {
+  .appt-reschedule {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
 }

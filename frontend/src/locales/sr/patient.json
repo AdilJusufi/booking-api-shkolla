@@ -285,7 +285,8 @@
     "rescheduleNewDateSummary": "Novi datum: {{date}} u {{time}}",
     "confirmReschedule": "Potvrdi pomeranje",
     "reschedulingInProgress": "Pomeranje…",
-    "cancelReasonDefault": "Otkazao pacijent"
+    "cancelReasonDefault": "Otkazao pacijent",
+    "movedTo": "Ovaj termin je pomeren. Pogledajte novi termin"
   },
   "confirmBooking": {
     "backToDoctor": "Nazad na lekara",

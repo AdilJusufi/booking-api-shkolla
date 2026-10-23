@@ -698,4 +698,15 @@ export const api = {
 
   createAppointmentForPatient: (payload: AdminCreateAppointmentRequest) =>
     request<DoctorAppointment>('/api/admin/appointments', { method: 'POST', body: payload, auth: true }),
+
+  // Staff cancel/reschedule: no 12h cutoff (that's a patient rule), refused once the appointment has started.
+  adminCancelAppointment: (id: string, reason?: string) =>
+    request<DoctorAppointment>(`/api/admin/appointments/${id}/cancel`, { method: 'POST', body: { reason }, auth: true }),
+
+  adminRescheduleAppointment: (id: string, newStartDateTime: string) =>
+    request<DoctorAppointment>(`/api/admin/appointments/${id}/reschedule`, {
+      method: 'POST',
+      body: { newStartDateTime },
+      auth: true,
+    }),
 }

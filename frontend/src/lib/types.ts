@@ -439,6 +439,8 @@ export interface Appointment {
   price?: number
   currency?: string
   bookedByClinic?: boolean
+  /** For a rescheduled appointment: the one that replaced it (WR-19). Absent for older rows. */
+  rescheduledToAppointmentId?: string | null
 }
 
 export interface DoctorAppointment {

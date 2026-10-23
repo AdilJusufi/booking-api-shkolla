@@ -281,7 +281,8 @@
     "rescheduleNewDateSummary": "New date: {{date}} at {{time}}",
     "confirmReschedule": "Confirm reschedule",
     "reschedulingInProgress": "Rescheduling…",
-    "cancelReasonDefault": "Cancelled by patient"
+    "cancelReasonDefault": "Cancelled by patient",
+    "movedTo": "This appointment was moved. See the new appointment"
   },
   "confirmBooking": {
     "backToDoctor": "Back to doctor",

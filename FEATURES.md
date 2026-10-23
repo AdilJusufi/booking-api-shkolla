@@ -38,7 +38,7 @@ Written from the code on `booking-fix` (October 2026), not from notes. Each line
 | Book for a family member ("Për kë është termini?") | **Works.** Only for the patient's own active family members; shown on lists, calendars and emails. |
 | My appointments: list, filters, past visits not counted as active | **Works** |
 | Appointment detail with the price agreed at booking | **Works** |
-| Reschedule | **Works.** Creates a new appointment; the old one stays as "Riplanifikuar". **Partial:** the old record doesn't link to the new one. |
+| Reschedule | **Works.** Creates a new appointment; the old one stays as "Riplanifikuar" and links to the new one (appointments rescheduled before October 2026 have no link). |
 | Cancel (up to 12 hours before; refused inside the window) | **Works** |
 | Profile edit | **Works** |
 | Family members: add, edit, remove | **Works** |
@@ -68,7 +68,7 @@ Written from the code on `booking-fix` (October 2026), not from notes. Each line
 | My clinics dashboard cards (branches, doctors, services, today) | **Works**, including for a clinic still pending approval. |
 | Appointments list: stats, status tabs, date range, search | **Works** |
 | **Book for a patient (phone / front desk)** | **Works.** Exact phone/email lookup only; full surname shown only if the patient has been to this clinic; create the patient if not found (no duplicates, no welcome email); same slot rules as patients; marked "Rezervuar nga klinika" and audited. |
-| Cancel / reschedule an appointment from the admin UI | **Not built** in the UI (backend endpoints exist: `POST /api/admin/appointments/{id}/cancel|reschedule`). |
+| Cancel (confirmation + optional reason; patient gets the normal cancellation email) / reschedule (same doctor and service, slot picker) from the appointments list | **Works.** Own clinic only; no 12-hour cutoff for staff; refused once the appointment has started. |
 | Doctors: add (one-time credentials), edit, assign branches/services with per-doctor price & duration, schedules, photo, deactivate (with or without cancelling future appointments), reactivate | **Works** |
 | Services: add, edit (applies to new bookings only), deactivate/reactivate (blocked while future appointments use it) | **Works** |
 | Branches: add, edit, deactivate/reactivate (blocked while future appointments exist) | **Works** |

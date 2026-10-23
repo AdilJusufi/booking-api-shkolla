@@ -196,7 +196,8 @@
       "patient-search-exact-only": "Pretražite po celom broju telefona ili tačnom emailu.",
       "patient-exists": "Ovaj pacijent već postoji. Pretražite po telefonu ili emailu.",
       "service-has-future-appointments": "Usluga ima predstojeće termine. Pomerite ih ili otkažite pre deaktivacije.",
-      "branch-has-future-appointments": "Ogranak ima predstojeće termine. Pomerite ih ili otkažite pre deaktivacije."
+      "branch-has-future-appointments": "Ogranak ima predstojeće termine. Pomerite ih ili otkažite pre deaktivacije.",
+      "appointment-already-started": "Termin je počeo ili je prošao; više se ne može otkazati ni pomeriti."
     }
   },
   "appointment": {

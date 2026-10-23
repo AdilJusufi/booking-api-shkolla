@@ -81,7 +81,26 @@
       "rescheduled": "PREZAKAZANO",
       "unknown": "NEPOZNATO"
     },
-    "filterNoShow": "Nije došao"
+    "filterNoShow": "Nije došao",
+    "columnActions": "Akcije",
+    "cancelModal": {
+      "title": "Otkaži termin",
+      "text": "Termin pacijenta <0>{{patient}}</0> kod {{doctor}} {{when}} biće otkazan. Pacijent dobija obaveštenje e-poštom ako ima adresu.",
+      "reasonLabel": "Razlog (opciono)",
+      "reasonPlaceholder": "Npr. lekar je odsutan tog dana",
+      "keep": "Ne otkazuj",
+      "confirm": "Otkaži termin",
+      "done": "Termin je otkazan."
+    },
+    "rescheduleModal": {
+      "title": "Pomeri termin",
+      "current": "Trenutno: {{when}}",
+      "sameDoctorService": "Isti lekar i usluga: {{doctor}} · {{service}}",
+      "noSlots": "Nema slobodnih termina tog dana.",
+      "confirm": "Pomeri na {{when}}",
+      "pickSlot": "Izaberite dan i vreme.",
+      "done": "Termin je pomeren. Pacijent dobija obaveštenje e-poštom ako ima adresu."
+    }
   },
   "users": {
     "title": "Upravljanje Korisnicima",

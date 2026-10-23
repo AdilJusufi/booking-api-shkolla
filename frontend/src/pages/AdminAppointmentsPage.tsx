@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Calendar, CalendarCheck, CalendarX, ChevronLeft, ChevronRight, Search } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import { useAdminBreadcrumb } from '../context/AdminBreadcrumbContext'
-import { api } from '../lib/api'
-import { getErrorMessage } from '../lib/errors'
-import { AppointmentStatus, type AdminAppointmentListItem } from '../lib/types'
-import { formatDateTime } from '../lib/format'
-import { Badge, EmptyState, ErrorBox, SkeletonRows, initials } from '../components/ui'
-import { clinicToday } from '../lib/clinicTime'
+import { useToast } from '../context/ToastContext'
+import { api, ApiError } from '../lib/api'
+import { getErrorMessage, getSlotTakenMessage } from '../lib/errors'
+import { AppointmentStatus, type AdminAppointmentListItem, type AvailableSlot } from '../lib/types'
+import { formatDateLong, formatDateTime, formatTime } from '../lib/format'
+import { Badge, EmptyState, ErrorBox, Modal, Pending, SkeletonRows, initials } from '../components/ui'
+import MonthCalendar from '../components/MonthCalendar'
+import { clinicToday, isClinicPast } from '../lib/clinicTime'
 
 const PAGE_SIZE = 20
 
@@ -42,6 +44,18 @@ function statusBadge(status: AppointmentStatus, t: (key: string) => string) {
     default:
       return <Badge tone="muted">{t('appointments.badges.unknown')}</Badge>
   }
+}
+
+/**
+ * Staff may cancel or move an appointment that hasn't started yet and is still
+ * active. No 12-hour cutoff here: that is the patient's rule; the backend
+ * refuses anything that has already started (appointment-already-started).
+ */
+function isManageable(a: AdminAppointmentListItem): boolean {
+  return (
+    (a.status === AppointmentStatus.Pending || a.status === AppointmentStatus.Confirmed) &&
+    !isClinicPast(a.startDateTime)
+  )
 }
 
 /**
@@ -93,6 +107,10 @@ export default function AdminAppointmentsPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+
+  const [cancelTarget, setCancelTarget] = useState<AdminAppointmentListItem | null>(null)
+  const [rescheduleTarget, setRescheduleTarget] = useState<AdminAppointmentListItem | null>(null)
+  const reload = () => setReloadToken((n) => n + 1)
 
   const [stats, setStats] = useState<{ today: number; confirmed: number; completed: number; cancelled: number } | null>(null)
 
@@ -248,6 +266,7 @@ export default function AdminAppointmentsPage() {
                   <th>{t('appointments.columnDoctorService')}</th>
                   <th>{t('appointments.columnBranch')}</th>
                   <th>{t('appointments.columnStatus')}</th>
+                  <th>{t('appointments.columnActions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -278,6 +297,18 @@ export default function AdminAppointmentsPage() {
                       </td>
                       <td>{a.branchName}</td>
                       <td>{statusBadge(a.status, t)}</td>
+                      <td>
+                        {isManageable(a) && (
+                          <div className="appt-actions">
+                            <button type="button" className="btn btn--ghost btn--sm" onClick={() => setRescheduleTarget(a)}>
+                              {tCommon('appointment.actions.reschedule')}
+                            </button>
+                            <button type="button" className="btn btn--danger-outline btn--sm" onClick={() => setCancelTarget(a)}>
+                              {tCommon('appointment.actions.cancel')}
+                            </button>
+                          </div>
+                        )}
+                      </td>
                     </tr>
                   )
                 })}
@@ -303,7 +334,228 @@ export default function AdminAppointmentsPage() {
           <p className="results-head__count" style={{ marginTop: 8 }}>{t('audit.totalCount', { count: totalItems })}</p>
         </>
       )}
+
+      {cancelTarget && (
+        <CancelModal
+          appointment={cancelTarget}
+          onClose={() => setCancelTarget(null)}
+          onDone={() => {
+            setCancelTarget(null)
+            reload()
+          }}
+        />
+      )}
+      {rescheduleTarget && (
+        <RescheduleModal
+          appointment={rescheduleTarget}
+          onClose={() => setRescheduleTarget(null)}
+          onDone={() => {
+            setRescheduleTarget(null)
+            reload()
+          }}
+        />
+      )}
     </div>
+  )
+}
+
+function CancelModal({
+  appointment,
+  onClose,
+  onDone,
+}: {
+  appointment: AdminAppointmentListItem
+  onClose: () => void
+  onDone: () => void
+}) {
+  const { t } = useTranslation('admin')
+  const { notify } = useToast()
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  async function confirm() {
+    setBusy(true)
+    setError('')
+    try {
+      await api.adminCancelAppointment(appointment.id, reason.trim() || undefined)
+      notify(t('appointments.cancelModal.done'), 'ok')
+      onDone()
+    } catch (e) {
+      setError(getErrorMessage(e))
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Modal title={t('appointments.cancelModal.title')} onClose={onClose}>
+      <p className="schedule-delete__text">
+        <Trans
+          i18nKey="appointments.cancelModal.text"
+          ns="admin"
+          values={{
+            patient: appointment.dependentName ?? appointment.patientName,
+            doctor: appointment.doctorName,
+            when: formatDateTime(appointment.startDateTime),
+          }}
+          components={[<strong key="0" />]}
+        />
+      </p>
+      <div className="field">
+        <label htmlFor="admin-cancel-reason">{t('appointments.cancelModal.reasonLabel')}</label>
+        <textarea
+          id="admin-cancel-reason"
+          rows={2}
+          maxLength={500}
+          placeholder={t('appointments.cancelModal.reasonPlaceholder')}
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+        />
+      </div>
+      {error && (
+        <div className="apptdetail-warning" role="alert">
+          <CalendarX size={16} strokeWidth={1.5} color="var(--danger)" />
+          <span>{error}</span>
+        </div>
+      )}
+      <div className="schedule-delete__actions">
+        <button type="button" className="btn btn--ghost btn--sm" style={{ flex: 1 }} onClick={onClose}>
+          {t('appointments.cancelModal.keep')}
+        </button>
+        <button type="button" className="btn btn--danger-outline btn--sm" style={{ flex: 1 }} disabled={busy} onClick={confirm}>
+          {busy ? <Pending /> : t('appointments.cancelModal.confirm')}
+        </button>
+      </div>
+    </Modal>
+  )
+}
+
+function RescheduleModal({
+  appointment,
+  onClose,
+  onDone,
+}: {
+  appointment: AdminAppointmentListItem
+  onClose: () => void
+  onDone: () => void
+}) {
+  const { t } = useTranslation('admin')
+  const { t: tCommon } = useTranslation('common')
+  const { notify } = useToast()
+  const [date, setDate] = useState('')
+  const [slots, setSlots] = useState<AvailableSlot[]>([])
+  const [slotsLoading, setSlotsLoading] = useState(false)
+  const [slot, setSlot] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  // Same doctor, branch and service: only the time moves.
+  function pickDate(d: string) {
+    setDate(d)
+    setSlot('')
+    setSlotsLoading(true)
+    api
+      .getAvailableSlots(appointment.doctorId, appointment.clinicBranchId, appointment.medicalServiceId, d)
+      .then((s) => setSlots((s ?? []).filter((x) => x.isAvailable)))
+      .catch(() => setSlots([]))
+      .finally(() => setSlotsLoading(false))
+  }
+
+  async function confirm() {
+    if (!slot) return
+    setBusy(true)
+    setError('')
+    try {
+      await api.adminRescheduleAppointment(appointment.id, slot)
+      notify(t('appointments.rescheduleModal.done'), 'ok')
+      onDone()
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 409) {
+        setError(getSlotTakenMessage())
+        if (date) pickDate(date)
+      } else {
+        setError(getErrorMessage(e))
+      }
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Modal title={t('appointments.rescheduleModal.title')} onClose={onClose} size="lg">
+      <p className="appt-modal__summary">
+        <strong>{appointment.dependentName ?? appointment.patientName}</strong> ·{' '}
+        {t('appointments.rescheduleModal.current', { when: formatDateTime(appointment.startDateTime) })}
+      </p>
+      <p className="appt-modal__summary">
+        {t('appointments.rescheduleModal.sameDoctorService', {
+          doctor: appointment.doctorName,
+          service: appointment.serviceName,
+        })}
+      </p>
+      <div className="appt-reschedule">
+        <MonthCalendar
+          doctorId={appointment.doctorId}
+          branchId={appointment.clinicBranchId}
+          serviceId={appointment.medicalServiceId}
+          selectedDate={date}
+          onPick={pickDate}
+        />
+        <div>
+          {!date ? (
+            <p className="appt-modal__summary">{t('appointments.rescheduleModal.pickSlot')}</p>
+          ) : (
+            <>
+              <p className="booking-step__label">{formatDateLong(date)}</p>
+              {slotsLoading ? (
+                <div className="booking-slotgrid">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="booking-slot-skeleton skeleton-shimmer" />
+                  ))}
+                </div>
+              ) : slots.length === 0 ? (
+                <div className="booking-slots-empty">
+                  <CalendarX size={28} strokeWidth={1.5} color="var(--line)" style={{ margin: '0 auto 8px' }} />
+                  <p>{t('appointments.rescheduleModal.noSlots')}</p>
+                </div>
+              ) : (
+                <div className="booking-slotgrid">
+                  {slots.map((s) => (
+                    <button
+                      key={s.startDateTime}
+                      type="button"
+                      className={`booking-slot ${slot === s.startDateTime ? 'is-selected' : ''}`}
+                      onClick={() => setSlot(s.startDateTime)}
+                    >
+                      {formatTime(s.startDateTime)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+      {error && (
+        <div className="apptdetail-warning" role="alert" style={{ marginTop: 14 }}>
+          <CalendarX size={16} strokeWidth={1.5} color="var(--danger)" />
+          <span>{error}</span>
+        </div>
+      )}
+      <div className="schedule-delete__actions" style={{ marginTop: 16 }}>
+        <button type="button" className="btn btn--ghost btn--sm" style={{ flex: 1 }} onClick={onClose}>
+          {tCommon('buttons.back')}
+        </button>
+        <button type="button" className="btn btn--primary btn--sm" style={{ flex: 1 }} disabled={busy || !slot} onClick={confirm}>
+          {busy ? (
+            <Pending />
+          ) : slot ? (
+            t('appointments.rescheduleModal.confirm', { when: `${formatDateLong(slot)}, ${formatTime(slot)}` })
+          ) : (
+            t('appointments.rescheduleModal.title')
+          )}
+        </button>
+      </div>
+    </Modal>
   )
 }
 

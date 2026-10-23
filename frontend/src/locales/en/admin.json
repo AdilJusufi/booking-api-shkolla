@@ -81,7 +81,26 @@
       "rescheduled": "RESCHEDULED",
       "unknown": "UNKNOWN"
     },
-    "filterNoShow": "No-show"
+    "filterNoShow": "No-show",
+    "columnActions": "Actions",
+    "cancelModal": {
+      "title": "Cancel appointment",
+      "text": "The appointment of <0>{{patient}}</0> with {{doctor}} on {{when}} will be cancelled. The patient is notified by email if they have an address.",
+      "reasonLabel": "Reason (optional)",
+      "reasonPlaceholder": "E.g. the doctor is away that day",
+      "keep": "Keep it",
+      "confirm": "Cancel appointment",
+      "done": "The appointment was cancelled."
+    },
+    "rescheduleModal": {
+      "title": "Reschedule appointment",
+      "current": "Currently: {{when}}",
+      "sameDoctorService": "Same doctor and service: {{doctor}} · {{service}}",
+      "noSlots": "No free times on this day.",
+      "confirm": "Move to {{when}}",
+      "pickSlot": "Pick a day and a time.",
+      "done": "The appointment was moved. The patient is notified by email if they have an address."
+    }
   },
   "users": {
     "title": "User Management",
