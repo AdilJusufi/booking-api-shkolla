@@ -277,7 +277,8 @@
     "cancelWindowNote": "Cancellation not available (< 12 hours)",
     "cancelledToast": "Appointment cancelled.",
     "cancelFailedToast": "Cancellation failed.",
-    "cancelReasonDefault": "Cancelled by patient"
+    "cancelReasonDefault": "Cancelled by patient",
+    "forName": "for {{name}}"
   },
   "appointmentDetail": {
     "backToAppointments": "Back to appointments",
@@ -363,7 +364,10 @@
     "confirmCta": "Confirm booking",
     "submitting": "Booking…",
     "changeSelection": "Change selection",
-    "bookedToast": "Appointment booked successfully."
+    "bookedToast": "Appointment booked successfully.",
+    "forWhomLabel": "Who is the appointment for?",
+    "forMe": "Me",
+    "forWhomSummary": "Appointment for"
   },
   "profile": {
     "loadFailedTitle": "The profile didn't load",

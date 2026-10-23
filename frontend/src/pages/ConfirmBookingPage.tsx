@@ -4,7 +4,7 @@ import { Calendar, CalendarX, Check, ChevronLeft, Clock, MapPin } from 'lucide-r
 import { useTranslation } from 'react-i18next'
 import { api, ApiError } from '../lib/api'
 import { getErrorMessage, getSlotTakenMessage } from '../lib/errors'
-import type { CreateAppointmentRequest } from '../lib/types'
+import type { CreateAppointmentRequest, Dependent } from '../lib/types'
 import { useToast } from '../context/ToastContext'
 import { Pending } from '../components/ui'
 import { formatDateLong, formatMoney } from '../lib/format'
@@ -47,10 +47,26 @@ export default function ConfirmBookingPage() {
   const [note, setNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  // "Për kë është termini?" — only shown when the patient has active family
+  // members; otherwise the appointment is simply for the patient (WR-10).
+  const [dependents, setDependents] = useState<Dependent[]>([])
+  const [dependentId, setDependentId] = useState('')
 
   useEffect(() => {
     if (!booking) navigate('/kerko', { replace: true })
   }, [booking, navigate])
+
+  useEffect(() => {
+    let active = true
+    api
+      .getDependents()
+      .then((list) => active && setDependents(list.filter((d) => d.isActive)))
+      // Losing the list only hides the optional step; booking for oneself still works.
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [])
 
   if (!booking) return null
 
@@ -63,6 +79,7 @@ export default function ConfirmBookingPage() {
         doctorId: booking.doctorId,
         clinicBranchId: booking.branchId,
         medicalServiceId: booking.serviceId,
+        dependentId: dependentId || undefined,
         startDateTime: booking.startDateTime,
         patientNote: note.trim() || undefined,
       }
@@ -143,6 +160,40 @@ export default function ConfirmBookingPage() {
                 <span className="apptdetail-value">{formatMoney(booking.price, booking.currency)}</span>
               </div>
             </div>
+
+            {dependents.length > 0 && (
+              <>
+                <div className="apptdetail-divider" />
+                <p className="apptdetail-section-label" id="for-whom-label">{t('confirmBooking.forWhomLabel')}</p>
+                <div className="booking-cards" role="radiogroup" aria-labelledby="for-whom-label">
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={dependentId === ''}
+                    className={`booking-choice ${dependentId === '' ? 'is-selected' : ''}`}
+                    onClick={() => setDependentId('')}
+                  >
+                    <span className="booking-choice__main">
+                      <span className="booking-choice__name">{t('confirmBooking.forMe')}</span>
+                    </span>
+                  </button>
+                  {dependents.map((d) => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={dependentId === d.id}
+                      className={`booking-choice ${dependentId === d.id ? 'is-selected' : ''}`}
+                      onClick={() => setDependentId(d.id)}
+                    >
+                      <span className="booking-choice__main">
+                        <span className="booking-choice__name">{d.firstName} {d.lastName}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
 
             <div className="apptdetail-divider" />
 

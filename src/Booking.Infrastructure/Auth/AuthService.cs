@@ -457,7 +457,17 @@ public class AuthService : IAuthService
         var result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
         ThrowIfFailed(result);
 
-        await RevokeAllActiveTokensAsync(user.Id, _dateTimeProvider.UtcNow, cancellationToken);
+        // Pajisjet e tjera dalin menjëherë; sesioni që e bëri ndryshimin mbetet — vetëm nëse
+        // token-i që dërgoi i përket vërtet këtij useri dhe është ende aktiv.
+        var now = _dateTimeProvider.UtcNow;
+        var keepHash = string.IsNullOrWhiteSpace(request.CurrentRefreshToken)
+            ? null
+            : TokenHasher.Sha256(request.CurrentRefreshToken);
+
+        await _dbContext.RefreshTokens
+            .Where(t => t.UserId == user.Id && t.RevokedAt == null && t.ExpiresAt > now
+                        && (keepHash == null || t.TokenHash != keepHash))
+            .ExecuteUpdateAsync(setters => setters.SetProperty(t => t.RevokedAt, now), cancellationToken);
     }
 
     public async Task ConfirmEmailAsync(ConfirmEmailRequest request, CancellationToken cancellationToken = default)

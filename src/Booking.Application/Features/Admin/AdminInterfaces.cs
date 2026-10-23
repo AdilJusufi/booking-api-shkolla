@@ -28,6 +28,23 @@ public interface IClinicAdminService
 
     Task<MedicalServiceDto> AddServiceAsync(Guid clinicId, CreateMedicalServiceRequest request, CancellationToken cancellationToken = default);
 
+    /// <summary>Të gjitha degët e klinikës, edhe të çaktivizuarat (lista publike i fsheh).</summary>
+    Task<IReadOnlyList<ClinicBranchDto>> GetBranchesAsync(Guid clinicId, CancellationToken cancellationToken = default);
+
+    Task<ClinicBranchDto> UpdateBranchAsync(Guid clinicId, Guid branchId, CreateBranchRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>Çaktivizon degën — refuzohet (409) kur ka termine të ardhshme aktive aty.</summary>
+    Task<ClinicBranchDto> SetBranchActiveAsync(Guid clinicId, Guid branchId, bool isActive, CancellationToken cancellationToken = default);
+
+    /// <summary>Të gjitha shërbimet e klinikës, edhe të çaktivizuarat.</summary>
+    Task<IReadOnlyList<MedicalServiceDto>> GetServicesAsync(Guid clinicId, CancellationToken cancellationToken = default);
+
+    /// <summary>Ndryshimi vlen vetëm për rezervimet e reja — terminet ekzistuese e kanë çmimin të ngrirë.</summary>
+    Task<MedicalServiceDto> UpdateServiceAsync(Guid clinicId, Guid serviceId, CreateMedicalServiceRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>Çaktivizon shërbimin (kurrë s'fshihet) — refuzohet (409) kur ka termine të ardhshme aktive.</summary>
+    Task<MedicalServiceDto> SetServiceActiveAsync(Guid clinicId, Guid serviceId, bool isActive, CancellationToken cancellationToken = default);
+
     /// <summary>Krijon user me rol Doctor + profil doktori + lidhjet me specializime/degë/shërbime.</summary>
     Task<AdminDoctorDetailDto> CreateDoctorAsync(Guid clinicId, CreateDoctorRequest request, CancellationToken cancellationToken = default);
 

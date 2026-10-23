@@ -363,6 +363,12 @@ export default function DoctorCalendarPage() {
                         <Link to={`/mjeku-panel/terminet/${a.id}`} className="doctor-appt-row__name card-link__target">{a.patientName}</Link>
                       </div>
                       <div className="doctor-appt-row__meta">
+                        {a.dependentName && (
+                          <>
+                            <span>{t('calendar.forName', { name: a.dependentName })}</span>
+                            <span>·</span>
+                          </>
+                        )}
                         <span>{a.serviceName}</span>
                         <span>·</span>
                         <span className={badge.className}>{badge.text}</span>
@@ -506,7 +512,9 @@ function DitoreView({
                 style={{ top, height }}
                 onClick={() => onOpen(a.id)}
               >
-                <div className="doctor-timeline__block-name">{a.patientName}</div>
+                <div className="doctor-timeline__block-name">
+                  {a.dependentName ? `${a.dependentName} (${a.patientName})` : a.patientName}
+                </div>
                 <div className="doctor-timeline__block-service">{a.serviceName}</div>
               </div>
             )

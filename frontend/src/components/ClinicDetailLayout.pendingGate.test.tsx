@@ -58,7 +58,7 @@ describe('Clinic tabs — gated behind clinic approval', () => {
     const branchesSpy = vi.fn()
     server.use(
       http.get(url('/api/admin/clinics'), () => HttpResponse.json([clinic])),
-      http.get(url('/api/clinics/:id/branches'), () => {
+      http.get(url('/api/admin/clinics/:id/branches'), () => {
         branchesSpy()
         return HttpResponse.json([buildBranch()])
       }),
@@ -75,7 +75,7 @@ describe('Clinic tabs — gated behind clinic approval', () => {
     const clinic = buildAdminClinic({ isApproved: true })
     server.use(
       http.get(url('/api/admin/clinics'), () => HttpResponse.json([clinic])),
-      http.get(url('/api/clinics/:id/branches'), () => HttpResponse.json([buildBranch({ name: 'Dega Testuese' })])),
+      http.get(url('/api/admin/clinics/:id/branches'), () => HttpResponse.json([buildBranch({ name: 'Dega Testuese' })])),
     )
 
     renderTab(<BranchesPage />, clinic.id)
@@ -89,7 +89,7 @@ describe('Clinic tabs — gated behind clinic approval', () => {
     const servicesSpy = vi.fn()
     server.use(
       http.get(url('/api/admin/clinics'), () => HttpResponse.json([clinic])),
-      http.get(url('/api/clinics/:id/services'), () => {
+      http.get(url('/api/admin/clinics/:id/services'), () => {
         servicesSpy()
         return HttpResponse.json([])
       }),

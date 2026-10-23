@@ -11,7 +11,8 @@
   "userMenu": {
     "mySchedule": "Orari im",
     "unavailability": "Mungesat",
-    "myProfile": "Profili im"
+    "myProfile": "Profili im",
+    "changePassword": "Ndrysho fjalëkalimin"
   },
   "calendar": {
     "title": "Kalendari im",
@@ -55,7 +56,8 @@
       "dateLabel": "{{weekday}} {{day}} {{month}}",
       "todayButton": "Sot",
       "noAppointmentsForDay": "0 termine të ngulitura për këtë ditë."
-    }
+    },
+    "forName": "për {{name}}"
   },
   "appointmentDetail": {
     "notFoundTitle": "Termini nuk u gjet",

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Clock, Coins, Lock, Pencil, Plus, Stethoscope, Trash2 } from 'lucide-react'
+import { Ban, Clock, Coins, Lock, Pencil, Plus, RotateCcw, Stethoscope } from 'lucide-react'
 import { Trans, useTranslation } from 'react-i18next'
-import { api } from '../lib/api'
+import { api, ApiError } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import type { CreateMedicalServiceRequest, MedicalService, Specialty } from '../lib/types'
 import { useToast } from '../context/ToastContext'
@@ -36,20 +36,23 @@ export default function ServicesPage() {
   const [openFilter, setOpenFilter] = useState<'specialty' | 'status' | null>(null)
 
   const [modalOpen, setModalOpen] = useState(false)
-  const [deleteTarget, setDeleteTarget] = useState<MedicalService | null>(null)
+  const [editTarget, setEditTarget] = useState<MedicalService | null>(null)
+  const [deactivateTarget, setDeactivateTarget] = useState<MedicalService | null>(null)
+  const [deactivateBlocked, setDeactivateBlocked] = useState<number | null>(null)
+  const [busy, setBusy] = useState(false)
 
   const load = useCallback(() => {
-    // GET /api/clinics/{id}/services is the public route (there's no admin
-    // list endpoint) — it 404s for a clinic that isn't approved yet. Skip
-    // the fetch and let the pending branch below explain why the page is
-    // empty, rather than surfacing a confusing "not found" error.
+    // Managing services is locked until the clinic is approved — the pending
+    // branch below explains why the page is empty.
     if (!clinic.isApproved) {
       setLoading(false)
       return
     }
     setLoading(true)
     setError('')
-    Promise.all([api.getClinicServices(clinic.id), api.getSpecialties()])
+    // The admin list includes deactivated services and is never served from
+    // the service-worker cache, so an add/edit shows up immediately (WR-17).
+    Promise.all([api.getAdminClinicServices(clinic.id), api.getSpecialties()])
       .then(([serviceList, specialtyList]) => {
         setServices(serviceList)
         setSpecialties(specialtyList)
@@ -74,32 +77,61 @@ export default function ServicesPage() {
     { value: 'inactive', label: t('services.filterInactive') },
   ]
 
-  // The backend has no active/inactive state on services — every service
-  // returned is implicitly active, so the status filter can only ever narrow
-  // to "active" (everything) or "inactive" (nothing).
   const filtered = useMemo(
     () =>
       services.filter((s) => {
+        const active = s.isActive !== false
         if (specialtyFilter !== 'all' && s.specialtyId !== specialtyFilter) return false
-        if (statusFilter === 'inactive') return false
+        if (statusFilter === 'active' && !active) return false
+        if (statusFilter === 'inactive' && active) return false
         return true
       }),
     [services, specialtyFilter, statusFilter],
   )
 
   function openAddModal() {
+    setEditTarget(null)
     setModalOpen(true)
   }
 
-  // No PUT /services endpoint exists yet — the icon stays visible so the UI
-  // is ready for it, but for now it only surfaces that editing isn't wired up.
-  function openEditModal() {
-    notify(t('services.featureInDevelopmentToast'), 'info')
+  function openEditModal(service: MedicalService) {
+    setEditTarget(service)
+    setModalOpen(true)
   }
 
-  function confirmDelete() {
-    notify(t('services.featureInDevelopmentToast'), 'info')
-    setDeleteTarget(null)
+  function askDeactivate(service: MedicalService) {
+    setDeactivateBlocked(null)
+    setDeactivateTarget(service)
+  }
+
+  // Services are never deleted — deactivated, so past appointments keep them.
+  async function confirmDeactivate() {
+    if (!deactivateTarget) return
+    setBusy(true)
+    try {
+      await api.setClinicServiceActive(clinic.id, deactivateTarget.id, false)
+      notify(t('services.deactivatedToast'), 'ok')
+      setDeactivateTarget(null)
+      load()
+    } catch (e) {
+      const count = (e instanceof ApiError && e.status === 409
+        ? (e.data as { futureAppointmentCount?: number } | null)?.futureAppointmentCount
+        : undefined)
+      if (count != null) setDeactivateBlocked(count)
+      else notify(getErrorMessage(e), 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function reactivate(service: MedicalService) {
+    try {
+      await api.setClinicServiceActive(clinic.id, service.id, true)
+      notify(t('services.activatedToast'), 'ok')
+      load()
+    } catch (e) {
+      notify(getErrorMessage(e), 'error')
+    }
   }
 
   return (
@@ -165,8 +197,9 @@ export default function ServicesPage() {
             <ServiceCard
               key={s.id}
               service={s}
-              onEdit={openEditModal}
-              onDelete={() => setDeleteTarget(s)}
+              onEdit={() => openEditModal(s)}
+              onDeactivate={() => askDeactivate(s)}
+              onReactivate={() => reactivate(s)}
             />
           ))}
         </div>
@@ -176,6 +209,7 @@ export default function ServicesPage() {
         <ServiceFormModal
           clinicId={clinic.id}
           specialties={specialties}
+          service={editTarget}
           onClose={() => setModalOpen(false)}
           onSaved={() => {
             setModalOpen(false)
@@ -184,28 +218,34 @@ export default function ServicesPage() {
         />
       )}
 
-      {deleteTarget && (
-        <Modal title={t('services.deleteModal.title')} onClose={() => setDeleteTarget(null)}>
-          <p className="schedule-delete__text">
-            <Trans
-              i18nKey="services.deleteModal.confirmText"
-              ns="admin"
-              values={{ name: deleteTarget.name }}
-              components={[<strong key="0" />]}
-            />
-          </p>
+      {deactivateTarget && (
+        <Modal title={t('services.deactivateModal.title')} onClose={() => setDeactivateTarget(null)}>
+          {deactivateBlocked != null ? (
+            <ErrorBox message={t('services.deactivateModal.blocked', { count: deactivateBlocked })} />
+          ) : (
+            <p className="schedule-delete__text">
+              <Trans
+                i18nKey="services.deactivateModal.confirmText"
+                ns="admin"
+                values={{ name: deactivateTarget.name }}
+                components={[<strong key="0" />]}
+              />
+            </p>
+          )}
           <div className="schedule-delete__actions">
             <button
               type="button"
               className="btn btn--ghost btn--sm"
               style={{ flex: 1 }}
-              onClick={() => setDeleteTarget(null)}
+              onClick={() => setDeactivateTarget(null)}
             >
               {tCommon('buttons.cancel')}
             </button>
-            <button type="button" className="btn btn--primary btn--sm" style={{ flex: 1 }} onClick={confirmDelete}>
-              {t('services.deleteModal.deleteCta')}
-            </button>
+            {deactivateBlocked == null && (
+              <button type="button" className="btn btn--danger-outline btn--sm" style={{ flex: 1 }} disabled={busy} onClick={confirmDeactivate}>
+                {t('services.deactivateModal.cta')}
+              </button>
+            )}
           </div>
         </Modal>
       )}
@@ -218,18 +258,23 @@ export default function ServicesPage() {
 function ServiceCard({
   service,
   onEdit,
-  onDelete,
+  onDeactivate,
+  onReactivate,
 }: {
   service: MedicalService
   onEdit: () => void
-  onDelete: () => void
+  onDeactivate: () => void
+  onReactivate: () => void
 }) {
   const { t } = useTranslation('admin')
+  const active = service.isActive !== false
   return (
-    <div className="admin-card service-card">
+    <div className={`admin-card service-card ${active ? '' : 'is-inactive'}`}>
       <div className="service-card__top">
         <h3 className="service-card__name">{service.name}</h3>
-        <span className="admin-card__status admin-card__status--approved">{t('services.card.statusActive')}</span>
+        <span className={`admin-card__status ${active ? 'admin-card__status--approved' : 'admin-card__status--pending'}`}>
+          {active ? t('services.card.statusActive') : t('services.card.statusInactive')}
+        </span>
       </div>
 
       <span className="service-card__specialty">{service.specialtyName}</span>
@@ -242,14 +287,19 @@ function ServiceCard({
       {service.description && <p className="service-card__desc">{service.description}</p>}
 
       <div className="service-card__bottom">
-        <span className="branch-card__id">{t('services.card.idLabel', { id: service.id })}</span>
         <div className="service-card__actions">
-          <button type="button" className="admin-icon-btn" onClick={onEdit} aria-label={t('services.card.editAria')}>
+          <button type="button" className="admin-icon-btn" onClick={onEdit} aria-label={t('services.card.editAria')} title={t('services.card.editAria')}>
             <Pencil size={15} strokeWidth={1.5} />
           </button>
-          <button type="button" className="admin-icon-btn" onClick={onDelete} aria-label={t('services.card.deleteAria')}>
-            <Trash2 size={15} strokeWidth={1.5} />
-          </button>
+          {active ? (
+            <button type="button" className="admin-icon-btn" onClick={onDeactivate} aria-label={t('services.card.deactivateAria')} title={t('services.card.deactivateAria')}>
+              <Ban size={15} strokeWidth={1.5} />
+            </button>
+          ) : (
+            <button type="button" className="btn btn--ghost btn--sm" onClick={onReactivate}>
+              <RotateCcw size={14} strokeWidth={1.5} /> {t('services.card.activateCta')}
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -259,18 +309,32 @@ function ServiceCard({
 function ServiceFormModal({
   clinicId,
   specialties,
+  service,
   onClose,
   onSaved,
 }: {
   clinicId: string
   specialties: Specialty[]
+  /** Null = add a new service; otherwise edit this one. */
+  service: MedicalService | null
   onClose: () => void
   onSaved: () => void
 }) {
   const { t } = useTranslation('admin')
   const { t: tCommon } = useTranslation('common')
   const { notify } = useToast()
-  const [form, setForm] = useState<CreateMedicalServiceRequest>(EMPTY_FORM)
+  const [form, setForm] = useState<CreateMedicalServiceRequest>(() =>
+    service
+      ? {
+          specialtyId: service.specialtyId,
+          name: service.name,
+          description: service.description ?? '',
+          durationMinutes: service.durationMinutes,
+          price: service.price,
+          currency: service.currency,
+        }
+      : EMPTY_FORM,
+  )
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
   const [specialtySelectOpen, setSpecialtySelectOpen] = useState(false)
@@ -305,15 +369,21 @@ function ServiceFormModal({
     setFormError('')
     setSaving(true)
     try {
-      await api.createClinicService(clinicId, {
+      const payload: CreateMedicalServiceRequest = {
         specialtyId: form.specialtyId,
         name: form.name.trim(),
         description: form.description?.trim() || undefined,
         durationMinutes: form.durationMinutes,
         price: form.price,
         currency: form.currency.trim() || 'EUR',
-      })
-      notify(t('services.formModal.addedToast'), 'ok')
+      }
+      if (service) {
+        await api.updateClinicService(clinicId, service.id, payload)
+        notify(t('services.formModal.updatedToast'), 'ok')
+      } else {
+        await api.createClinicService(clinicId, payload)
+        notify(t('services.formModal.addedToast'), 'ok')
+      }
       onSaved()
     } catch (e) {
       setFormError(getErrorMessage(e))
@@ -323,8 +393,9 @@ function ServiceFormModal({
   }
 
   return (
-    <Modal title={t('services.formModal.addTitle')} onClose={onClose}>
+    <Modal title={service ? t('services.formModal.editTitle') : t('services.formModal.addTitle')} onClose={onClose}>
       {formError && <ErrorBox message={formError} />}
+      {service && <p className="admin-header__sub">{t('services.formModal.editNotice')}</p>}
 
       <div className="field">
         <label>{t('services.formModal.nameLabel')}</label>

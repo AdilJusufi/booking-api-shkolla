@@ -28,49 +28,49 @@ public class LoggingAppointmentNotificationService : IAppointmentNotificationSer
 
     public Task AppointmentConfirmedAsync(AppointmentNotificationContext context, CancellationToken cancellationToken = default) =>
         SendAsync(context, "Termini u konfirmua",
-            $"Termini juaj te {context.DoctorName} më {context.StartDateTimeLocal:dd.MM.yyyy HH:mm} u konfirmua.",
+            $"{Whose(context)} te {context.DoctorName} më {context.StartDateTimeLocal:dd.MM.yyyy HH:mm} u konfirmua.",
             cancellationToken);
 
     public Task AppointmentCancelledAsync(AppointmentNotificationContext context, CancellationToken cancellationToken = default) =>
         SendAsync(context, "Termini u anulua",
-            $"Termini juaj te {context.DoctorName} më {context.StartDateTimeLocal:dd.MM.yyyy HH:mm} u anulua.",
+            $"{Whose(context)} te {context.DoctorName} më {context.StartDateTimeLocal:dd.MM.yyyy HH:mm} u anulua.",
             cancellationToken);
 
     public Task AppointmentRescheduledAsync(AppointmentNotificationContext context, CancellationToken cancellationToken = default) =>
         SendAsync(context, "Termini u riplanifikua",
-            $"Termini juaj te {context.DoctorName} u zhvendos më {context.StartDateTimeLocal:dd.MM.yyyy HH:mm}.",
+            $"{Whose(context)} te {context.DoctorName} u zhvendos më {context.StartDateTimeLocal:dd.MM.yyyy HH:mm}.",
             cancellationToken);
 
     public Task AppointmentUnavailabilityConflictAsync(AppointmentNotificationContext context, CancellationToken cancellationToken = default) =>
         SendAsync(context, "Mundësi konflikti me terminin tuaj",
-            $"Doktori juaj shënoi paarritshmëri që përplaset me terminin tuaj te {context.DoctorName} më " +
+            $"Doktori shënoi paarritshmëri që përplaset me {WhoseLower(context)} te {context.DoctorName} më " +
             $"{context.StartDateTimeLocal:dd.MM.yyyy HH:mm}. Klinika {context.ClinicName} do t'ju kontaktojë për riplanifikim.",
             cancellationToken);
 
     public Task AppointmentCreatedForStaffAsync(AppointmentStaffNotificationContext context, CancellationToken cancellationToken = default) =>
         SendStaffAsync(context, "Rezervim i ri",
-            $"{context.PatientName} rezervoi një termin te {context.DoctorName} ({context.ClinicName}) më " +
+            $"{Who(context)} rezervoi një termin te {context.DoctorName} ({context.ClinicName}) më " +
             $"{context.StartDateTimeLocal:dd.MM.yyyy HH:mm}.",
             cancellationToken);
 
     public Task AppointmentCancelledForStaffAsync(AppointmentStaffNotificationContext context, CancellationToken cancellationToken = default) =>
         SendStaffAsync(context, "Termin i anuluar",
-            $"Termini i {context.PatientName} te {context.DoctorName} më {context.StartDateTimeLocal:dd.MM.yyyy HH:mm} u anulua.",
+            $"Termini i {Who(context)} te {context.DoctorName} më {context.StartDateTimeLocal:dd.MM.yyyy HH:mm} u anulua.",
             cancellationToken);
 
     public Task AppointmentRescheduledForStaffAsync(AppointmentStaffNotificationContext context, CancellationToken cancellationToken = default) =>
         SendStaffAsync(context, "Termin i riplanifikuar",
-            $"Termini i {context.PatientName} te {context.DoctorName} u zhvendos më {context.StartDateTimeLocal:dd.MM.yyyy HH:mm}.",
+            $"Termini i {Who(context)} te {context.DoctorName} u zhvendos më {context.StartDateTimeLocal:dd.MM.yyyy HH:mm}.",
             cancellationToken);
 
     public Task AppointmentNoShowForStaffAsync(AppointmentStaffNotificationContext context, CancellationToken cancellationToken = default) =>
         SendStaffAsync(context, "Pacienti nuk u paraqit",
-            $"{context.PatientName} nuk u paraqit te {context.DoctorName} për terminin e {context.StartDateTimeLocal:dd.MM.yyyy HH:mm}.",
+            $"{Who(context)} nuk u paraqit te {context.DoctorName} për terminin e {context.StartDateTimeLocal:dd.MM.yyyy HH:mm}.",
             cancellationToken);
 
     public Task AppointmentUnavailabilityConflictForStaffAsync(AppointmentStaffNotificationContext context, CancellationToken cancellationToken = default) =>
         SendStaffAsync(context, "Konflikt: paarritshmëri e re",
-            $"{context.DoctorName} shënoi paarritshmëri që përplaset me terminin e konfirmuar të {context.PatientName} më " +
+            $"{context.DoctorName} shënoi paarritshmëri që përplaset me terminin e konfirmuar të {Who(context)} më " +
             $"{context.StartDateTimeLocal:dd.MM.yyyy HH:mm}. Kontaktoni pacientin për riplanifikim.",
             cancellationToken);
 
@@ -100,6 +100,17 @@ public class LoggingAppointmentNotificationService : IAppointmentNotificationSer
             }
         }
     }
+
+    /// <summary>"Arben Gashi" ose "Arben Gashi (për Lira Gashi)" — për stafin.</summary>
+    private static string Who(AppointmentStaffNotificationContext context) =>
+        context.DependentName is null ? context.PatientName : $"{context.PatientName} (për {context.DependentName})";
+
+    /// <summary>"Termini juaj" ose "Termini për Lira Pacienti" — kush e ka terminin në të vërtetë.</summary>
+    private static string Whose(AppointmentNotificationContext context) =>
+        context.DependentName is null ? "Termini juaj" : $"Termini për {context.DependentName}";
+
+    private static string WhoseLower(AppointmentNotificationContext context) =>
+        context.DependentName is null ? "terminin tuaj" : $"terminin për {context.DependentName}";
 
     private async Task SendAsync(
         AppointmentNotificationContext context, string subject, string body, CancellationToken cancellationToken)

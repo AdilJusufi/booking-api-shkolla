@@ -36,6 +36,9 @@ public sealed record ClinicBranchDto
     public decimal? Latitude { get; init; }
     public decimal? Longitude { get; init; }
     public string? PhoneNumber { get; init; }
+
+    /// <summary>Lista publike përmban vetëm degë aktive; lista e adminit edhe të çaktivizuarat.</summary>
+    public bool IsActive { get; init; } = true;
 }
 
 public sealed record MedicalServiceDto
@@ -49,6 +52,9 @@ public sealed record MedicalServiceDto
     public required int DurationMinutes { get; init; }
     public required decimal Price { get; init; }
     public required string Currency { get; init; }
+
+    /// <summary>Lista publike përmban vetëm shërbime aktive; lista e adminit edhe të çaktivizuarat.</summary>
+    public bool IsActive { get; init; } = true;
 }
 
 /// <summary>Filtrat e kërkimit të klinikave — të gjithë opsionalë.</summary>

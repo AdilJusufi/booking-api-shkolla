@@ -122,15 +122,20 @@ export default function UserMenu({ onDark = false, avatarPhotoUrl }: UserMenuPro
                 <Link to="/mjeku-panel/profili" className="user-menu__item" role="menuitem" onClick={close}>{tNs('doctor', 'userMenu.myProfile')}</Link>
                 <Link to="/mjeku-panel/orari" className="user-menu__item" role="menuitem" onClick={close}>{tNs('doctor', 'userMenu.mySchedule')}</Link>
                 <Link to="/mjeku-panel/mungesat" className="user-menu__item" role="menuitem" onClick={close}>{tNs('doctor', 'userMenu.unavailability')}</Link>
+                <Link to="/mjeku-panel/fjalekalimi" className="user-menu__item" role="menuitem" onClick={close}>{tNs('doctor', 'userMenu.changePassword')}</Link>
               </>
             )}
             {role === 'ClinicAdmin' && (
-              <Link to="/admin-panel/klinikat" className="user-menu__item" role="menuitem" onClick={close}>{tNs('admin', 'userMenu.myClinics')}</Link>
+              <>
+                <Link to="/admin-panel/klinikat" className="user-menu__item" role="menuitem" onClick={close}>{tNs('admin', 'userMenu.myClinics')}</Link>
+                <Link to="/admin-panel/fjalekalimi" className="user-menu__item" role="menuitem" onClick={close}>{tNs('admin', 'userMenu.changePassword')}</Link>
+              </>
             )}
             {role === 'SuperAdmin' && (
               <>
                 <Link to="/super-admin/klinikat" className="user-menu__item" role="menuitem" onClick={close}>{tNs('admin', 'userMenu.clinics')}</Link>
                 <Link to="/super-admin/perdoruesit" className="user-menu__item" role="menuitem" onClick={close}>{tNs('admin', 'userMenu.users')}</Link>
+                <Link to="/super-admin/fjalekalimi" className="user-menu__item" role="menuitem" onClick={close}>{tNs('admin', 'userMenu.changePassword')}</Link>
               </>
             )}
           </div>

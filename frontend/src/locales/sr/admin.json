@@ -14,7 +14,8 @@
   "userMenu": {
     "myClinics": "Moje klinike",
     "clinics": "Klinike",
-    "users": "Korisnici"
+    "users": "Korisnici",
+    "changePassword": "Promeni lozinku"
   },
   "specialties": {
     "title": "Specijalnosti",
@@ -50,7 +51,6 @@
     "title": "Termini",
     "subtitle": "Svi termini vaše klinike na jednom mestu.",
     "bookAppointmentCta": "Zakaži Termin",
-    "featureInDevelopmentToast": "Funkcija u razvoju.",
     "statToday": "Danas",
     "statConfirmed": "Potvrđeno",
     "statCompleted": "Završeno",
@@ -293,18 +293,13 @@
     "filterAll": "Sve",
     "filterActive": "Aktivne",
     "filterInactive": "Neaktivne",
-    "featureInDevelopmentToast": "Funkcija u razvoju.",
     "card": {
       "statusActive": "AKTIVNA",
       "durationSuffix": "min / termin",
-      "idLabel": "ID: {{id}}",
       "editAria": "Izmeni uslugu",
-      "deleteAria": "Obriši uslugu"
-    },
-    "deleteModal": {
-      "title": "Obriši uslugu",
-      "confirmText": "Da li ste sigurni da želite da obrišete uslugu <0>{{name}}</0>?",
-      "deleteCta": "Obriši"
+      "statusInactive": "NEAKTIVNA",
+      "deactivateAria": "Deaktiviraj uslugu",
+      "activateCta": "Ponovo aktiviraj"
     },
     "formModal": {
       "addTitle": "Dodaj uslugu",
@@ -322,10 +317,23 @@
       "specialtyRequired": "Specijalizacija je obavezna.",
       "durationInvalid": "Trajanje mora biti veće od 0.",
       "priceRequired": "Cena je obavezna.",
-      "addedToast": "Usluga je dodata."
+      "addedToast": "Usluga je dodata.",
+      "editTitle": "Izmeni uslugu",
+      "editNotice": "Izmene cene i trajanja važe samo za nova zakazivanja. Postojeći termini zadržavaju uslove pod kojima su zakazani.",
+      "updatedToast": "Usluga je ažurirana."
     },
     "pendingTitle": "Klinika još uvek čeka odobrenje",
-    "pendingHint": "Upravljanje uslugama se otvara čim SuperAdmin odobri kliniku."
+    "pendingHint": "Upravljanje uslugama se otvara čim SuperAdmin odobri kliniku.",
+    "deactivateModal": {
+      "title": "Deaktiviraj uslugu",
+      "confirmText": "Usluga <0>{{name}}</0> više neće biti dostupna za nova zakazivanja. Prošli termini je zadržavaju. Možete je ponovo aktivirati bilo kada.",
+      "cta": "Deaktiviraj",
+      "blocked_one": "Ova usluga ima {{count}} predstojeći termin. Pomerite ga ili otkažite pre deaktivacije.",
+      "blocked_few": "Ova usluga ima {{count}} predstojeća termina. Pomerite ih ili otkažite pre deaktivacije.",
+      "blocked_other": "Ova usluga ima {{count}} predstojećih termina. Pomerite ih ili otkažite pre deaktivacije."
+    },
+    "deactivatedToast": "Usluga je deaktivirana.",
+    "activatedToast": "Usluga je ponovo aktivirana."
   },
   "branches": {
     "pageTitle": "Ogranci klinike",
@@ -334,17 +342,14 @@
     "addFirstCta": "Dodaj prvi ogranak",
     "loadingLabel": "Učitavanje ogranaka",
     "emptyTitle": "Ova klinika još uvek nema dodatih ogranaka.",
-    "featureInDevelopmentToast": "Funkcija u razvoju.",
     "card": {
       "statusActive": "AKTIVAN",
       "editAria": "Izmeni ogranak",
       "gpsPrefix": "GPS:",
-      "statDoctors": "Lekari",
-      "statServices": "Usluge",
-      "statStatus": "Status",
-      "statStatusValue": "Aktivan",
-      "idLabel": "ID: {{id}}",
-      "manageDoctorsCta": "Upravljaj lekarima"
+      "manageDoctorsCta": "Upravljaj lekarima",
+      "statusInactive": "NEAKTIVAN",
+      "deactivateCta": "Deaktiviraj",
+      "activateCta": "Ponovo aktiviraj"
     },
     "formModal": {
       "addTitle": "Dodaj novi ogranak",
@@ -361,10 +366,22 @@
       "nameRequired": "Naziv ogranka je obavezan.",
       "addressRequired": "Adresa je obavezna.",
       "cityRequired": "Grad je obavezan.",
-      "addedToast": "Ogranak je dodat."
+      "addedToast": "Ogranak je dodat.",
+      "editTitle": "Izmeni ogranak",
+      "updatedToast": "Ogranak je ažuriran."
     },
     "pendingTitle": "Klinika još uvek čeka odobrenje",
-    "pendingHint": "Upravljanje ograncima se otvara čim SuperAdmin odobri kliniku."
+    "pendingHint": "Upravljanje ograncima se otvara čim SuperAdmin odobri kliniku.",
+    "deactivateModal": {
+      "title": "Deaktiviraj ogranak",
+      "confirmText": "Ogranak <0>{{name}}</0> više neće biti prikazan niti primati nova zakazivanja. Možete ga ponovo aktivirati bilo kada.",
+      "cta": "Deaktiviraj",
+      "blocked_one": "Ovaj ogranak ima {{count}} predstojeći termin. Pomerite ga ili otkažite pre deaktivacije.",
+      "blocked_few": "Ovaj ogranak ima {{count}} predstojeća termina. Pomerite ih ili otkažite pre deaktivacije.",
+      "blocked_other": "Ovaj ogranak ima {{count}} predstojećih termina. Pomerite ih ili otkažite pre deaktivacije."
+    },
+    "deactivatedToast": "Ogranak je deaktiviran.",
+    "activatedToast": "Ogranak je ponovo aktiviran."
   },
   "saClinics": {
     "pageTitle": "Upravljanje klinikama",

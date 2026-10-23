@@ -11,7 +11,8 @@
   "userMenu": {
     "mySchedule": "My schedule",
     "unavailability": "Unavailability",
-    "myProfile": "My profile"
+    "myProfile": "My profile",
+    "changePassword": "Change password"
   },
   "calendar": {
     "title": "My Calendar",
@@ -55,7 +56,8 @@
       "dateLabel": "{{weekday}} {{day}} {{month}}",
       "todayButton": "Today",
       "noAppointmentsForDay": "0 appointments scheduled for this day."
-    }
+    },
+    "forName": "for {{name}}"
   },
   "appointmentDetail": {
     "notFoundTitle": "Appointment not found",

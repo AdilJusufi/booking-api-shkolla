@@ -359,7 +359,8 @@ public class AppointmentService : IAppointmentService
                 DoctorName = dto.DoctorName,
                 ClinicName = dto.ClinicName,
                 ServiceName = dto.ServiceName,
-                StartDateTimeLocal = dto.StartDateTime
+                StartDateTimeLocal = dto.StartDateTime,
+                DependentName = dto.DependentName
             };
 
             await send(context, cancellationToken);
@@ -403,7 +404,8 @@ public class AppointmentService : IAppointmentService
                 ClinicName = dto.ClinicName,
                 ClinicAdminEmails = clinicAdmins.Select(a => a.Email).ToList(),
                 ServiceName = dto.ServiceName,
-                StartDateTimeLocal = dto.StartDateTime
+                StartDateTimeLocal = dto.StartDateTime,
+                DependentName = dto.DependentName
             }, cancellationToken);
         }
         catch (Exception ex)

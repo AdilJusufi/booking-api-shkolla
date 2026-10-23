@@ -14,7 +14,8 @@
   "userMenu": {
     "myClinics": "Klinikat e mia",
     "clinics": "Klinikat",
-    "users": "Përdoruesit"
+    "users": "Përdoruesit",
+    "changePassword": "Ndrysho fjalëkalimin"
   },
   "specialties": {
     "title": "Specializimet",
@@ -50,7 +51,6 @@
     "title": "Terminet",
     "subtitle": "Të gjitha terminet e klinikës tuaj në një vend.",
     "bookAppointmentCta": "Rezervo Termin",
-    "featureInDevelopmentToast": "Funksion në zhvillim.",
     "statToday": "Sot",
     "statConfirmed": "Konfirmuar",
     "statCompleted": "Përfunduar",
@@ -290,18 +290,13 @@
     "filterAll": "Të gjitha",
     "filterActive": "Aktive",
     "filterInactive": "Joaktive",
-    "featureInDevelopmentToast": "Funksion në zhvillim.",
     "card": {
       "statusActive": "AKTIVE",
       "durationSuffix": "min / termin",
-      "idLabel": "ID: {{id}}",
       "editAria": "Ndrysho shërbimin",
-      "deleteAria": "Fshi shërbimin"
-    },
-    "deleteModal": {
-      "title": "Fshi shërbimin",
-      "confirmText": "Jeni i sigurt që dëshironi të fshini shërbimin <0>{{name}}</0>?",
-      "deleteCta": "Fshi"
+      "statusInactive": "JOAKTIV",
+      "deactivateAria": "Çaktivizo shërbimin",
+      "activateCta": "Riaktivizo"
     },
     "formModal": {
       "addTitle": "Shto Shërbim",
@@ -319,10 +314,22 @@
       "specialtyRequired": "Specializimi është i detyrueshëm.",
       "durationInvalid": "Kohëzgjatja duhet të jetë më e madhe se 0.",
       "priceRequired": "Çmimi është i detyrueshëm.",
-      "addedToast": "Shërbimi u shtua."
+      "addedToast": "Shërbimi u shtua.",
+      "editTitle": "Ndrysho shërbimin",
+      "editNotice": "Ndryshimet e çmimit dhe të kohëzgjatjes vlejnë vetëm për rezervimet e reja. Terminet ekzistuese i mbajnë kushtet me të cilat u rezervuan.",
+      "updatedToast": "Shërbimi u përditësua."
     },
     "pendingTitle": "Klinika është ende në pritje të aprovimit",
-    "pendingHint": "Menaxhimi i shërbimeve hapet sapo SuperAdmin ta aprovojë klinikën."
+    "pendingHint": "Menaxhimi i shërbimeve hapet sapo SuperAdmin ta aprovojë klinikën.",
+    "deactivateModal": {
+      "title": "Çaktivizo shërbimin",
+      "confirmText": "Shërbimi <0>{{name}}</0> nuk do të ofrohet më për rezervime të reja. Terminet e kaluara e ruajnë emrin. Mund ta riaktivizoni kurdo.",
+      "cta": "Çaktivizo",
+      "blocked_one": "Ky shërbim ka {{count}} termin të ardhshëm. Riplanifikojeni ose anulojeni para çaktivizimit.",
+      "blocked_other": "Ky shërbim ka {{count}} termine të ardhshme. Riplanifikojini ose anulojini para çaktivizimit."
+    },
+    "deactivatedToast": "Shërbimi u çaktivizua.",
+    "activatedToast": "Shërbimi u riaktivizua."
   },
   "branches": {
     "pageTitle": "Degët e Klinikës",
@@ -331,17 +338,14 @@
     "addFirstCta": "Shto Degën e Parë",
     "loadingLabel": "Duke ngarkuar degët",
     "emptyTitle": "Kjo klinikë nuk ka asnjë degë të shtuar ende.",
-    "featureInDevelopmentToast": "Funksion në zhvillim.",
     "card": {
       "statusActive": "AKTIVE",
       "editAria": "Ndrysho degën",
       "gpsPrefix": "GPS:",
-      "statDoctors": "Mjekë",
-      "statServices": "Shërbime",
-      "statStatus": "Statusi",
-      "statStatusValue": "Aktive",
-      "idLabel": "ID: {{id}}",
-      "manageDoctorsCta": "Menaxho Mjekët"
+      "manageDoctorsCta": "Menaxho Mjekët",
+      "statusInactive": "JOAKTIVE",
+      "deactivateCta": "Çaktivizo",
+      "activateCta": "Riaktivizo"
     },
     "formModal": {
       "addTitle": "Shto Degë të Re",
@@ -358,10 +362,21 @@
       "nameRequired": "Emri i degës është i detyrueshëm.",
       "addressRequired": "Adresa është e detyrueshme.",
       "cityRequired": "Qyteti është i detyrueshëm.",
-      "addedToast": "Dega u shtua."
+      "addedToast": "Dega u shtua.",
+      "editTitle": "Ndrysho degën",
+      "updatedToast": "Dega u përditësua."
     },
     "pendingTitle": "Klinika është ende në pritje të aprovimit",
-    "pendingHint": "Menaxhimi i degëve hapet sapo SuperAdmin ta aprovojë klinikën."
+    "pendingHint": "Menaxhimi i degëve hapet sapo SuperAdmin ta aprovojë klinikën.",
+    "deactivateModal": {
+      "title": "Çaktivizo degën",
+      "confirmText": "Dega <0>{{name}}</0> nuk do të shfaqet më dhe s'do të pranojë rezervime të reja. Mund ta riaktivizoni kurdo.",
+      "cta": "Çaktivizo",
+      "blocked_one": "Kjo degë ka {{count}} termin të ardhshëm. Riplanifikojeni ose anulojeni para çaktivizimit.",
+      "blocked_other": "Kjo degë ka {{count}} termine të ardhshme. Riplanifikojini ose anulojini para çaktivizimit."
+    },
+    "deactivatedToast": "Dega u çaktivizua.",
+    "activatedToast": "Dega u riaktivizua."
   },
   "saClinics": {
     "pageTitle": "Menaxhimi i Klinikave",

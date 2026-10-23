@@ -460,7 +460,8 @@ public class AdminAppointmentService : IAdminAppointmentService
                 DoctorName = doctorName,
                 ClinicName = clinicName,
                 ServiceName = dto.ServiceName,
-                StartDateTimeLocal = dto.StartDateTime
+                StartDateTimeLocal = dto.StartDateTime,
+                DependentName = dto.DependentName
             }, cancellationToken);
         }
         catch (Exception ex)
@@ -497,7 +498,8 @@ public class AdminAppointmentService : IAdminAppointmentService
                 ClinicName = info.ClinicName,
                 ClinicAdminEmails = [],
                 ServiceName = dto.ServiceName,
-                StartDateTimeLocal = dto.StartDateTime
+                StartDateTimeLocal = dto.StartDateTime,
+                DependentName = dto.DependentName
             }, cancellationToken);
         }
         catch (Exception ex)

@@ -9336,3 +9336,9 @@ button.schedule-card__branch {
     padding: 16px;
   }
 }
+
+/* Deactivated services/branches stay listed for the admin, visibly muted. */
+.service-card.is-inactive,
+.branch-card.is-inactive {
+  opacity: 0.72;
+}

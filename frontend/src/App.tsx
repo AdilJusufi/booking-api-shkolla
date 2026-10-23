@@ -103,6 +103,7 @@ export default function App() {
         <Route path="/mjeku-panel/orari" element={<WorkingSchedulePage />} />
         <Route path="/mjeku-panel/mungesat" element={<UnavailabilityPage />} />
         <Route path="/mjeku-panel/profili" element={<DoctorProfilePage />} />
+        <Route path="/mjeku-panel/fjalekalimi" element={<ChangePasswordPage />} />
       </Route>
       <Route
         element={
@@ -114,6 +115,7 @@ export default function App() {
         <Route path="/admin-panel/klinikat" element={<MyClinicsPage />} />
         <Route path="/admin-panel/terminet" element={<AdminAppointmentsPage />} />
         <Route path="/admin-panel/terminet/rezervo" element={<StaffBookingPage />} />
+        <Route path="/admin-panel/fjalekalimi" element={<ChangePasswordPage />} />
         <Route path="/admin-panel/klinikat/:id" element={<ClinicDetailLayout />}>
           <Route index element={<ClinicSettingsPage />} />
           <Route path="deget" element={<BranchesPage />} />
@@ -133,6 +135,7 @@ export default function App() {
         <Route path="/super-admin/specializimet" element={<SpecialtiesPage />} />
         <Route path="/super-admin/perdoruesit" element={<UsersPage />} />
         <Route path="/super-admin/regjistrat" element={<AuditLogsPage />} />
+        <Route path="/super-admin/fjalekalimi" element={<ChangePasswordPage />} />
       </Route>
       <Route element={<Layout />}>
         <Route path="/" element={<HomePage />} />

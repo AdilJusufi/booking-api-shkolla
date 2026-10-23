@@ -77,7 +77,11 @@ public sealed record ForgotPasswordRequest(string Email);
 
 public sealed record ResetPasswordRequest(string Email, string Token, string NewPassword);
 
-public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword);
+/// <param name="CurrentRefreshToken">
+/// Opsional: refresh token-i i pajisjes që po e ndryshon fjalëkalimin. Ky sesion mbetet
+/// aktiv; të gjitha sesionet e tjera (pajisjet e tjera) mbyllen. Pa të, mbyllen të gjitha.
+/// </param>
+public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword, string? CurrentRefreshToken = null);
 
 public sealed record ConfirmEmailRequest(string Email, string Token);
 

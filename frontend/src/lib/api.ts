@@ -285,8 +285,14 @@ export const api = {
     request<void>('/api/auth/forgot-password', { method: 'POST', body: { email } }),
   resetPassword: (token: string, email: string, newPassword: string) =>
     request<void>('/api/auth/reset-password', { method: 'POST', body: { token, email, newPassword } }),
+  // The current refresh token is sent so the backend keeps THIS session and signs out
+  // every other device.
   changePassword: (currentPassword: string, newPassword: string) =>
-    request<void>('/api/auth/change-password', { method: 'POST', body: { currentPassword, newPassword }, auth: true }),
+    request<void>('/api/auth/change-password', {
+      method: 'POST',
+      body: { currentPassword, newPassword, currentRefreshToken: getRefreshToken() ?? undefined },
+      auth: true,
+    }),
   revokeToken: (refreshToken: string) =>
     request<void>('/api/auth/revoke-token', { method: 'POST', body: { refreshToken }, auth: true }),
 
@@ -585,6 +591,28 @@ export const api = {
     request<MedicalService>(`/api/admin/clinics/${clinicId}/services`, {
       method: 'POST',
       body: payload,
+      auth: true,
+    }),
+
+  // Admin lists include deactivated items and are never cached by the service
+  // worker (unlike the public /api/clinics/{id}/… routes) — WR-17.
+  getAdminClinicServices: (clinicId: string) =>
+    request<MedicalService[]>(`/api/admin/clinics/${clinicId}/services`, { auth: true }),
+  updateClinicService: (clinicId: string, serviceId: string, payload: CreateMedicalServiceRequest) =>
+    request<MedicalService>(`/api/admin/clinics/${clinicId}/services/${serviceId}`, { method: 'PUT', body: payload, auth: true }),
+  setClinicServiceActive: (clinicId: string, serviceId: string, active: boolean) =>
+    request<MedicalService>(`/api/admin/clinics/${clinicId}/services/${serviceId}/${active ? 'activate' : 'deactivate'}`, {
+      method: 'POST',
+      auth: true,
+    }),
+
+  getAdminClinicBranches: (clinicId: string) =>
+    request<ClinicBranch[]>(`/api/admin/clinics/${clinicId}/branches`, { auth: true }),
+  updateClinicBranch: (clinicId: string, branchId: string, payload: CreateBranchRequest) =>
+    request<ClinicBranch>(`/api/admin/clinics/${clinicId}/branches/${branchId}`, { method: 'PUT', body: payload, auth: true }),
+  setClinicBranchActive: (clinicId: string, branchId: string, active: boolean) =>
+    request<ClinicBranch>(`/api/admin/clinics/${clinicId}/branches/${branchId}/${active ? 'activate' : 'deactivate'}`, {
+      method: 'POST',
       auth: true,
     }),
 

@@ -12,6 +12,9 @@ public sealed record AppointmentNotificationContext
     public string? PatientEmail { get; init; }
     public string? PatientPhoneNumber { get; init; }
     public required string PatientName { get; init; }
+
+    /// <summary>Emri i plotë i anëtarit të familjes kur termini është për të; null kur është për vetë pacientin.</summary>
+    public string? DependentName { get; init; }
     public required string DoctorName { get; init; }
     public required string ClinicName { get; init; }
     public required string ServiceName { get; init; }
@@ -25,6 +28,9 @@ public sealed record AppointmentStaffNotificationContext
 {
     public required Guid AppointmentId { get; init; }
     public required string PatientName { get; init; }
+
+    /// <summary>Anëtari i familjes për të cilin është termini; null kur është për vetë pacientin.</summary>
+    public string? DependentName { get; init; }
     public required string DoctorName { get; init; }
     /// <summary>Null kur vetë doktori e ka kryer veprimin — s'ka nevojë të njoftohet për të.</summary>
     public string? DoctorEmail { get; init; }

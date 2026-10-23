@@ -256,6 +256,195 @@ public class ClinicAdminService : IClinicAdminService
         };
     }
 
+    public async Task<IReadOnlyList<ClinicBranchDto>> GetBranchesAsync(Guid clinicId, CancellationToken cancellationToken = default)
+    {
+        // Edhe për klinikat në pritje — admini duhet t'i shohë degët që regjistroi (WR-27).
+        await _tenantAccess.EnsureCanManageClinicAsync(clinicId, cancellationToken);
+
+        var branches = await _dbContext.ClinicBranches
+            .Where(b => b.ClinicId == clinicId)
+            .OrderBy(b => b.Name)
+            .ToListAsync(cancellationToken);
+        return branches.Select(ToBranchDto).ToList();
+    }
+
+    public async Task<ClinicBranchDto> UpdateBranchAsync(
+        Guid clinicId, Guid branchId, CreateBranchRequest request, CancellationToken cancellationToken = default)
+    {
+        await _tenantAccess.EnsureCanManageApprovedClinicAsync(clinicId, cancellationToken);
+        var branch = await GetOwnedBranchAsync(clinicId, branchId, cancellationToken);
+
+        var before = new { branch.Name, branch.Address, branch.City, branch.PhoneNumber };
+        branch.Name = request.Name.Trim();
+        branch.Address = request.Address.Trim();
+        branch.City = request.City.Trim();
+        branch.Municipality = request.Municipality;
+        branch.Latitude = request.Latitude;
+        branch.Longitude = request.Longitude;
+        branch.PhoneNumber = request.PhoneNumber;
+
+        _auditService.Record("BRANCH_UPDATED", nameof(ClinicBranch), branch.Id.ToString(), before,
+            new { branch.Name, branch.Address, branch.City, branch.PhoneNumber });
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return ToBranchDto(branch);
+    }
+
+    public async Task<ClinicBranchDto> SetBranchActiveAsync(
+        Guid clinicId, Guid branchId, bool isActive, CancellationToken cancellationToken = default)
+    {
+        await _tenantAccess.EnsureCanManageApprovedClinicAsync(clinicId, cancellationToken);
+        var branch = await GetOwnedBranchAsync(clinicId, branchId, cancellationToken);
+        if (branch.IsActive == isActive)
+        {
+            return ToBranchDto(branch);
+        }
+
+        if (!isActive)
+        {
+            var futureCount = await CountFutureActiveAppointmentsAsync(a => a.ClinicBranchId == branchId, cancellationToken);
+            if (futureCount > 0)
+            {
+                throw new ConflictException(
+                    "branch-has-future-appointments",
+                    $"Dega ka {futureCount} termin(e) të ardhshme. Riplanifikoni ose anuloni ato para çaktivizimit.",
+                    new Dictionary<string, object?> { ["futureAppointmentCount"] = futureCount });
+            }
+        }
+
+        branch.IsActive = isActive;
+        _auditService.Record(isActive ? "BRANCH_ACTIVATED" : "BRANCH_DEACTIVATED", nameof(ClinicBranch), branch.Id.ToString(),
+            new { IsActive = !isActive }, new { IsActive = isActive });
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return ToBranchDto(branch);
+    }
+
+    public async Task<IReadOnlyList<MedicalServiceDto>> GetServicesAsync(Guid clinicId, CancellationToken cancellationToken = default)
+    {
+        await _tenantAccess.EnsureCanManageClinicAsync(clinicId, cancellationToken);
+
+        return await _dbContext.MedicalServices
+            .Where(s => s.ClinicId == clinicId)
+            .OrderBy(s => s.Name)
+            .Select(s => new MedicalServiceDto
+            {
+                Id = s.Id,
+                ClinicId = s.ClinicId,
+                SpecialtyId = s.SpecialtyId,
+                SpecialtyName = s.Specialty.Name,
+                Name = s.Name,
+                Description = s.Description,
+                DurationMinutes = s.DurationMinutes,
+                Price = s.Price,
+                Currency = s.Currency,
+                IsActive = s.IsActive
+            })
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<MedicalServiceDto> UpdateServiceAsync(
+        Guid clinicId, Guid serviceId, CreateMedicalServiceRequest request, CancellationToken cancellationToken = default)
+    {
+        await _tenantAccess.EnsureCanManageApprovedClinicAsync(clinicId, cancellationToken);
+        var service = await GetOwnedServiceAsync(clinicId, serviceId, cancellationToken);
+
+        var specialty = await _dbContext.Specialties
+            .FirstOrDefaultAsync(s => s.Id == request.SpecialtyId && s.IsActive, cancellationToken)
+            ?? throw new NotFoundException("Specialty", request.SpecialtyId);
+
+        var before = new { service.Name, service.SpecialtyId, service.Price, service.DurationMinutes };
+        service.Name = request.Name.Trim();
+        service.SpecialtyId = request.SpecialtyId;
+        service.Description = request.Description;
+        service.DurationMinutes = request.DurationMinutes;
+        service.Price = request.Price;
+        service.Currency = request.Currency.ToUpperInvariant();
+
+        // Terminet ekzistuese s'preken: çmimi i tyre është i ngrirë (Appointment.Price) dhe
+        // mbarimi (EndDateTime) është ruajtur në rezervim. Vlen vetëm për rezervimet e reja.
+        _auditService.Record("SERVICE_UPDATED", nameof(MedicalService), service.Id.ToString(), before,
+            new { service.Name, service.SpecialtyId, service.Price, service.DurationMinutes });
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return ToServiceDto(service, specialty.Name);
+    }
+
+    public async Task<MedicalServiceDto> SetServiceActiveAsync(
+        Guid clinicId, Guid serviceId, bool isActive, CancellationToken cancellationToken = default)
+    {
+        await _tenantAccess.EnsureCanManageApprovedClinicAsync(clinicId, cancellationToken);
+        var service = await GetOwnedServiceAsync(clinicId, serviceId, cancellationToken);
+        var specialtyName = await _dbContext.Specialties
+            .Where(s => s.Id == service.SpecialtyId).Select(s => s.Name).FirstAsync(cancellationToken);
+        if (service.IsActive == isActive)
+        {
+            return ToServiceDto(service, specialtyName);
+        }
+
+        if (!isActive)
+        {
+            var futureCount = await CountFutureActiveAppointmentsAsync(a => a.MedicalServiceId == serviceId, cancellationToken);
+            if (futureCount > 0)
+            {
+                throw new ConflictException(
+                    "service-has-future-appointments",
+                    $"Shërbimi ka {futureCount} termin(e) të ardhshme. Riplanifikoni ose anuloni ato para çaktivizimit.",
+                    new Dictionary<string, object?> { ["futureAppointmentCount"] = futureCount });
+            }
+        }
+
+        // Kurrë s'fshihet: terminet e kaluara e referojnë dhe duhet ta shfaqin emrin.
+        service.IsActive = isActive;
+        _auditService.Record(isActive ? "SERVICE_ACTIVATED" : "SERVICE_DEACTIVATED", nameof(MedicalService), service.Id.ToString(),
+            new { IsActive = !isActive }, new { IsActive = isActive });
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return ToServiceDto(service, specialtyName);
+    }
+
+    private Task<int> CountFutureActiveAppointmentsAsync(
+        System.Linq.Expressions.Expression<Func<Appointment, bool>> predicate, CancellationToken cancellationToken)
+    {
+        var now = _dateTimeProvider.UtcNow;
+        return _dbContext.Appointments
+            .Where(predicate)
+            .Where(a => Appointment.BlockingStatuses.Contains(a.Status) && a.StartDateTime > now)
+            .CountAsync(cancellationToken);
+    }
+
+    private async Task<ClinicBranch> GetOwnedBranchAsync(Guid clinicId, Guid branchId, CancellationToken cancellationToken) =>
+        await _dbContext.ClinicBranches.FirstOrDefaultAsync(b => b.Id == branchId && b.ClinicId == clinicId, cancellationToken)
+        ?? throw new NotFoundException("ClinicBranch", branchId);
+
+    private async Task<MedicalService> GetOwnedServiceAsync(Guid clinicId, Guid serviceId, CancellationToken cancellationToken) =>
+        await _dbContext.MedicalServices.FirstOrDefaultAsync(s => s.Id == serviceId && s.ClinicId == clinicId, cancellationToken)
+        ?? throw new NotFoundException("MedicalService", serviceId);
+
+    private static ClinicBranchDto ToBranchDto(ClinicBranch branch) => new()
+    {
+        Id = branch.Id,
+        ClinicId = branch.ClinicId,
+        Name = branch.Name,
+        Address = branch.Address,
+        City = branch.City,
+        Municipality = branch.Municipality,
+        Latitude = branch.Latitude,
+        Longitude = branch.Longitude,
+        PhoneNumber = branch.PhoneNumber,
+        IsActive = branch.IsActive
+    };
+
+    private static MedicalServiceDto ToServiceDto(MedicalService service, string specialtyName) => new()
+    {
+        Id = service.Id,
+        ClinicId = service.ClinicId,
+        SpecialtyId = service.SpecialtyId,
+        SpecialtyName = specialtyName,
+        Name = service.Name,
+        Description = service.Description,
+        DurationMinutes = service.DurationMinutes,
+        Price = service.Price,
+        Currency = service.Currency,
+        IsActive = service.IsActive
+    };
+
     public async Task<AdminDoctorDetailDto> CreateDoctorAsync(
         Guid clinicId, CreateDoctorRequest request, CancellationToken cancellationToken = default)
     {

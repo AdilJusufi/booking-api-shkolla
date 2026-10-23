@@ -277,7 +277,8 @@
     "cancelWindowNote": "Anulimi jo i mundur (< 12 orë)",
     "cancelledToast": "Termini u anulua.",
     "cancelFailedToast": "Anulimi dështoi.",
-    "cancelReasonDefault": "Anuluar nga pacienti"
+    "cancelReasonDefault": "Anuluar nga pacienti",
+    "forName": "për {{name}}"
   },
   "appointmentDetail": {
     "backToAppointments": "Kthehu te terminet",
@@ -363,7 +364,10 @@
     "confirmCta": "Konfirmo rezervimin",
     "submitting": "Duke rezervuar…",
     "changeSelection": "Ndrysho zgjedhjen",
-    "bookedToast": "Termini u rezervua me sukses."
+    "bookedToast": "Termini u rezervua me sukses.",
+    "forWhomLabel": "Për kë është termini?",
+    "forMe": "Unë",
+    "forWhomSummary": "Termini për"
   },
   "profile": {
     "loadFailedTitle": "Profili nuk u ngarkua",

@@ -14,7 +14,8 @@
   "userMenu": {
     "myClinics": "My clinics",
     "clinics": "Clinics",
-    "users": "Users"
+    "users": "Users",
+    "changePassword": "Change password"
   },
   "specialties": {
     "title": "Specialties",
@@ -50,7 +51,6 @@
     "title": "Appointments",
     "subtitle": "All of your clinic's appointments in one place.",
     "bookAppointmentCta": "Book Appointment",
-    "featureInDevelopmentToast": "Feature in development.",
     "statToday": "Today",
     "statConfirmed": "Confirmed",
     "statCompleted": "Completed",
@@ -290,18 +290,13 @@
     "filterAll": "All",
     "filterActive": "Active",
     "filterInactive": "Inactive",
-    "featureInDevelopmentToast": "Feature in development.",
     "card": {
       "statusActive": "ACTIVE",
       "durationSuffix": "min / appointment",
-      "idLabel": "ID: {{id}}",
       "editAria": "Edit service",
-      "deleteAria": "Delete service"
-    },
-    "deleteModal": {
-      "title": "Delete service",
-      "confirmText": "Are you sure you want to delete the service <0>{{name}}</0>?",
-      "deleteCta": "Delete"
+      "statusInactive": "INACTIVE",
+      "deactivateAria": "Deactivate service",
+      "activateCta": "Reactivate"
     },
     "formModal": {
       "addTitle": "Add Service",
@@ -319,10 +314,22 @@
       "specialtyRequired": "Specialty is required.",
       "durationInvalid": "Duration must be greater than 0.",
       "priceRequired": "Price is required.",
-      "addedToast": "Service added."
+      "addedToast": "Service added.",
+      "editTitle": "Edit service",
+      "editNotice": "Price and duration changes apply only to new bookings. Existing appointments keep the terms they were booked with.",
+      "updatedToast": "Service updated."
     },
     "pendingTitle": "The clinic is still awaiting approval",
-    "pendingHint": "Service management opens up as soon as a SuperAdmin approves the clinic."
+    "pendingHint": "Service management opens up as soon as a SuperAdmin approves the clinic.",
+    "deactivateModal": {
+      "title": "Deactivate service",
+      "confirmText": "<0>{{name}}</0> will no longer be offered for new bookings. Past appointments keep it. You can reactivate it at any time.",
+      "cta": "Deactivate",
+      "blocked_one": "This service has {{count}} upcoming appointment. Reschedule or cancel it before deactivating.",
+      "blocked_other": "This service has {{count}} upcoming appointments. Reschedule or cancel them before deactivating."
+    },
+    "deactivatedToast": "Service deactivated.",
+    "activatedToast": "Service reactivated."
   },
   "branches": {
     "pageTitle": "Clinic Branches",
@@ -331,17 +338,14 @@
     "addFirstCta": "Add First Branch",
     "loadingLabel": "Loading branches",
     "emptyTitle": "This clinic has no branches added yet.",
-    "featureInDevelopmentToast": "Feature in development.",
     "card": {
       "statusActive": "ACTIVE",
       "editAria": "Edit branch",
       "gpsPrefix": "GPS:",
-      "statDoctors": "Doctors",
-      "statServices": "Services",
-      "statStatus": "Status",
-      "statStatusValue": "Active",
-      "idLabel": "ID: {{id}}",
-      "manageDoctorsCta": "Manage Doctors"
+      "manageDoctorsCta": "Manage Doctors",
+      "statusInactive": "INACTIVE",
+      "deactivateCta": "Deactivate",
+      "activateCta": "Reactivate"
     },
     "formModal": {
       "addTitle": "Add New Branch",
@@ -358,10 +362,21 @@
       "nameRequired": "Branch name is required.",
       "addressRequired": "Address is required.",
       "cityRequired": "City is required.",
-      "addedToast": "Branch added."
+      "addedToast": "Branch added.",
+      "editTitle": "Edit branch",
+      "updatedToast": "Branch updated."
     },
     "pendingTitle": "The clinic is still awaiting approval",
-    "pendingHint": "Branch management opens up as soon as a SuperAdmin approves the clinic."
+    "pendingHint": "Branch management opens up as soon as a SuperAdmin approves the clinic.",
+    "deactivateModal": {
+      "title": "Deactivate branch",
+      "confirmText": "<0>{{name}}</0> will no longer be shown or accept new bookings. You can reactivate it at any time.",
+      "cta": "Deactivate",
+      "blocked_one": "This branch has {{count}} upcoming appointment. Reschedule or cancel it before deactivating.",
+      "blocked_other": "This branch has {{count}} upcoming appointments. Reschedule or cancel them before deactivating."
+    },
+    "deactivatedToast": "Branch deactivated.",
+    "activatedToast": "Branch reactivated."
   },
   "saClinics": {
     "pageTitle": "Clinic Management",

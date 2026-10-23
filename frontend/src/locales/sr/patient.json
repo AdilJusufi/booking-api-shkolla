@@ -282,7 +282,8 @@
     "cancelWindowNote": "Otkazivanje nije moguće (< 12 sati)",
     "cancelledToast": "Termin je otkazan.",
     "cancelFailedToast": "Otkazivanje nije uspelo.",
-    "cancelReasonDefault": "Otkazao pacijent"
+    "cancelReasonDefault": "Otkazao pacijent",
+    "forName": "za {{name}}"
   },
   "appointmentDetail": {
     "backToAppointments": "Nazad na termine",
@@ -368,7 +369,10 @@
     "confirmCta": "Potvrdi zakazivanje",
     "submitting": "Zakazivanje…",
     "changeSelection": "Promeni izbor",
-    "bookedToast": "Termin je uspešno zakazan."
+    "bookedToast": "Termin je uspešno zakazan.",
+    "forWhomLabel": "Za koga je termin?",
+    "forMe": "Ja",
+    "forWhomSummary": "Termin za"
   },
   "profile": {
     "loadFailedTitle": "Profil nije učitan",

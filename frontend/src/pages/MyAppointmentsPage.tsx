@@ -319,6 +319,7 @@ export default function MyAppointmentsPage() {
                     <Link to={`/terminet/${a.id}`} className="appt-row__doctor card-link__target">Dr. {a.doctorName}</Link>
                     <div className="appt-row__meta">
                       <span className="chip">{a.serviceName}</span>
+                      {a.dependentName && <span className="chip">{t('appointmentsList.forName', { name: a.dependentName })}</span>}
                       <span className="appt-row__clinic">
                         <Building2 size={12} strokeWidth={1.5} /> {a.clinicName}
                       </span>

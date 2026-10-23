@@ -97,6 +97,50 @@ public class AdminClinicsController : ControllerBase
         return StatusCode(StatusCodes.Status201Created, service);
     }
 
+    [HttpGet("{id:guid}/branches")]
+    [ProducesResponseType(typeof(IReadOnlyList<ClinicBranchDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<ClinicBranchDto>>> GetBranches(Guid id, CancellationToken cancellationToken) =>
+        Ok(await _clinicAdminService.GetBranchesAsync(id, cancellationToken));
+
+    [HttpPut("{id:guid}/branches/{branchId:guid}")]
+    [ProducesResponseType(typeof(ClinicBranchDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ClinicBranchDto>> UpdateBranch(
+        Guid id, Guid branchId, CreateBranchRequest request, CancellationToken cancellationToken) =>
+        Ok(await _clinicAdminService.UpdateBranchAsync(id, branchId, request, cancellationToken));
+
+    [HttpPost("{id:guid}/branches/{branchId:guid}/deactivate")]
+    [ProducesResponseType(typeof(ClinicBranchDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<ClinicBranchDto>> DeactivateBranch(Guid id, Guid branchId, CancellationToken cancellationToken) =>
+        Ok(await _clinicAdminService.SetBranchActiveAsync(id, branchId, false, cancellationToken));
+
+    [HttpPost("{id:guid}/branches/{branchId:guid}/activate")]
+    [ProducesResponseType(typeof(ClinicBranchDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ClinicBranchDto>> ActivateBranch(Guid id, Guid branchId, CancellationToken cancellationToken) =>
+        Ok(await _clinicAdminService.SetBranchActiveAsync(id, branchId, true, cancellationToken));
+
+    [HttpGet("{id:guid}/services")]
+    [ProducesResponseType(typeof(IReadOnlyList<MedicalServiceDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<MedicalServiceDto>>> GetServices(Guid id, CancellationToken cancellationToken) =>
+        Ok(await _clinicAdminService.GetServicesAsync(id, cancellationToken));
+
+    [HttpPut("{id:guid}/services/{serviceId:guid}")]
+    [ProducesResponseType(typeof(MedicalServiceDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<MedicalServiceDto>> UpdateService(
+        Guid id, Guid serviceId, CreateMedicalServiceRequest request, CancellationToken cancellationToken) =>
+        Ok(await _clinicAdminService.UpdateServiceAsync(id, serviceId, request, cancellationToken));
+
+    [HttpPost("{id:guid}/services/{serviceId:guid}/deactivate")]
+    [ProducesResponseType(typeof(MedicalServiceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<MedicalServiceDto>> DeactivateService(Guid id, Guid serviceId, CancellationToken cancellationToken) =>
+        Ok(await _clinicAdminService.SetServiceActiveAsync(id, serviceId, false, cancellationToken));
+
+    [HttpPost("{id:guid}/services/{serviceId:guid}/activate")]
+    [ProducesResponseType(typeof(MedicalServiceDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<MedicalServiceDto>> ActivateService(Guid id, Guid serviceId, CancellationToken cancellationToken) =>
+        Ok(await _clinicAdminService.SetServiceActiveAsync(id, serviceId, true, cancellationToken));
+
     [HttpGet("{id:guid}/doctors")]
     [ProducesResponseType(typeof(IReadOnlyList<AdminDoctorDetailDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<AdminDoctorDetailDto>>> GetDoctors(

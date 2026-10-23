@@ -11,7 +11,8 @@
   "userMenu": {
     "mySchedule": "Moj raspored",
     "unavailability": "Odsustva",
-    "myProfile": "Moj profil"
+    "myProfile": "Moj profil",
+    "changePassword": "Promeni lozinku"
   },
   "calendar": {
     "title": "Moj kalendar",
@@ -55,7 +56,8 @@
       "dateLabel": "{{weekday}} {{day}} {{month}}",
       "todayButton": "Danas",
       "noAppointmentsForDay": "0 termina zakazano za ovaj dan."
-    }
+    },
+    "forName": "za {{name}}"
   },
   "appointmentDetail": {
     "notFoundTitle": "Termin nije pronađen",

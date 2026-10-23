@@ -108,7 +108,9 @@ public class ExceptionHandlingMiddleware
 
         context.Response.StatusCode = problemDetails.Status!.Value;
         context.Response.ContentType = "application/problem+json";
-        await context.Response.WriteAsJsonAsync(problemDetails);
+        // Tipi në kohë ekzekutimi, jo ProblemDetails: përndryshe ValidationProblemDetails.Errors
+        // hidhet në heshtje dhe klienti s'e sheh kurrë cila fushë dështoi (p.sh. PasswordMismatch).
+        await context.Response.WriteAsJsonAsync(problemDetails, problemDetails.GetType());
     }
 
     private static ProblemDetails CreateProblem(int status, string errorCode, string title, string detail)
@@ -151,7 +153,8 @@ public class ExceptionHandlingMiddleware
             Type = $"{ErrorTypeBaseUrl}/validation",
             Title = "Validimi dështoi",
             Status = StatusCodes.Status422UnprocessableEntity,
-            Detail = "Një ose më shumë fusha janë të pavlefshme."
+            Detail = "Një ose më shumë fusha janë të pavlefshme.",
+            Extensions = { ["code"] = "validation" }
         };
     }
 }

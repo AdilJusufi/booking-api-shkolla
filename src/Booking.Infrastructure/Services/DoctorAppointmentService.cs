@@ -211,7 +211,8 @@ public class DoctorAppointmentService : IDoctorAppointmentService
                 ClinicName = info.ClinicName,
                 ClinicAdminEmails = clinicAdmins.Select(a => a.Email).ToList(),
                 ServiceName = dto.ServiceName,
-                StartDateTimeLocal = dto.StartDateTime
+                StartDateTimeLocal = dto.StartDateTime,
+                DependentName = dto.DependentName
             }, cancellationToken);
         }
         catch (Exception ex)

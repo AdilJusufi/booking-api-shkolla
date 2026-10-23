@@ -200,6 +200,8 @@ export interface ClinicBranch {
   latitude?: number
   longitude?: number
   phoneNumber?: string
+  /** Public lists only ever contain active branches; the admin list also has deactivated ones. */
+  isActive?: boolean
 }
 
 /** Pasqyron CreateBranchRequest — POST /api/admin/clinics/{id}/branches. */
@@ -223,6 +225,8 @@ export interface MedicalService {
   durationMinutes: number
   price: number
   currency: string
+  /** Public lists only ever contain active services; the admin list also has deactivated ones. */
+  isActive?: boolean
 }
 
 /** Pasqyron CreateMedicalServiceRequest — POST /api/admin/clinics/{id}/services. */

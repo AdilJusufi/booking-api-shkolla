@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Building2, Lock, MapPin, Navigation, Pencil, Phone, Plus } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
-import { api } from '../lib/api'
+import { ArrowRight, Ban, Building2, Lock, MapPin, Navigation, Pencil, Phone, Plus, RotateCcw } from 'lucide-react'
+import { Trans, useTranslation } from 'react-i18next'
+import { api, ApiError } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import type { ClinicBranch, CreateBranchRequest } from '../lib/types'
 import { useToast } from '../context/ToastContext'
 import { useClinicContext } from '../components/ClinicDetailLayout'
-import { EmptyState, ErrorBox, Modal, SkeletonRows } from '../components/ui'
+import { CustomSelect, EmptyState, ErrorBox, Modal, SkeletonRows, type CustomSelectOption } from '../components/ui'
+import { KOSOVO_CITIES } from '../lib/kosovoCities'
 
 const EMPTY_FORM: CreateBranchRequest = {
   name: '',
@@ -21,39 +22,34 @@ const EMPTY_FORM: CreateBranchRequest = {
 
 export default function BranchesPage() {
   const { t } = useTranslation('admin')
+  const { t: tCommon } = useTranslation('common')
   const { clinic } = useClinicContext()
   const { notify } = useToast()
 
   const [branches, setBranches] = useState<ClinicBranch[]>([])
-  const [serviceCount, setServiceCount] = useState(0)
-  const [doctorCount, setDoctorCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   const [modalOpen, setModalOpen] = useState(false)
+  const [editTarget, setEditTarget] = useState<ClinicBranch | null>(null)
+  const [deactivateTarget, setDeactivateTarget] = useState<ClinicBranch | null>(null)
+  const [deactivateBlocked, setDeactivateBlocked] = useState<number | null>(null)
+  const [busy, setBusy] = useState(false)
 
   const load = useCallback(() => {
-    // GET /api/clinics/{id}/* is the public route (there's no admin list
-    // endpoint) — it 404s for a clinic that isn't approved yet, which would
-    // otherwise surface as a confusing "not found" error on a page the
-    // ClinicAdmin is allowed to be on. Skip the fetch entirely and let the
-    // pending branch below explain why there's nothing to manage yet.
+    // Managing branches is locked until the clinic is approved — the pending
+    // branch below explains why.
     if (!clinic.isApproved) {
       setLoading(false)
       return
     }
     setLoading(true)
     setError('')
-    Promise.all([
-      api.getClinicBranches(clinic.id),
-      api.getClinic(clinic.id).catch(() => null),
-      api.getClinicDoctors(clinic.id).catch(() => []),
-    ])
-      .then(([branchList, details, doctors]) => {
-        setBranches(branchList)
-        setServiceCount(details?.services.length ?? 0)
-        setDoctorCount(doctors.length)
-      })
+    // Admin list: includes deactivated branches and bypasses the service-worker
+    // cache, so a new or edited branch shows up immediately (WR-17).
+    api
+      .getAdminClinicBranches(clinic.id)
+      .then(setBranches)
       .catch((e) => setError(getErrorMessage(e)))
       .finally(() => setLoading(false))
   }, [clinic.id, clinic.isApproved])
@@ -61,13 +57,42 @@ export default function BranchesPage() {
   useEffect(load, [load])
 
   function openAddModal() {
+    setEditTarget(null)
     setModalOpen(true)
   }
 
-  // No PUT /branches endpoint exists yet — the icon stays visible so the UI is
-  // ready for it, but for now it only surfaces that editing isn't wired up.
-  function openEditModal() {
-    notify(t('branches.featureInDevelopmentToast'), 'info')
+  function openEditModal(branch: ClinicBranch) {
+    setEditTarget(branch)
+    setModalOpen(true)
+  }
+
+  async function confirmDeactivate() {
+    if (!deactivateTarget) return
+    setBusy(true)
+    try {
+      await api.setClinicBranchActive(clinic.id, deactivateTarget.id, false)
+      notify(t('branches.deactivatedToast'), 'ok')
+      setDeactivateTarget(null)
+      load()
+    } catch (e) {
+      const count = e instanceof ApiError && e.status === 409
+        ? (e.data as { futureAppointmentCount?: number } | null)?.futureAppointmentCount
+        : undefined
+      if (count != null) setDeactivateBlocked(count)
+      else notify(getErrorMessage(e), 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function reactivate(branch: ClinicBranch) {
+    try {
+      await api.setClinicBranchActive(clinic.id, branch.id, true)
+      notify(t('branches.activatedToast'), 'ok')
+      load()
+    } catch (e) {
+      notify(getErrorMessage(e), 'error')
+    }
   }
 
   return (
@@ -107,9 +132,12 @@ export default function BranchesPage() {
               key={b.id}
               branch={b}
               clinicId={clinic.id}
-              doctorCount={doctorCount}
-              serviceCount={serviceCount}
-              onEdit={openEditModal}
+              onEdit={() => openEditModal(b)}
+              onDeactivate={() => {
+                setDeactivateBlocked(null)
+                setDeactivateTarget(b)
+              }}
+              onReactivate={() => reactivate(b)}
             />
           ))}
         </div>
@@ -118,12 +146,40 @@ export default function BranchesPage() {
       {modalOpen && (
         <BranchFormModal
           clinicId={clinic.id}
+          branch={editTarget}
           onClose={() => setModalOpen(false)}
           onSaved={() => {
             setModalOpen(false)
             load()
           }}
         />
+      )}
+
+      {deactivateTarget && (
+        <Modal title={t('branches.deactivateModal.title')} onClose={() => setDeactivateTarget(null)}>
+          {deactivateBlocked != null ? (
+            <ErrorBox message={t('branches.deactivateModal.blocked', { count: deactivateBlocked })} />
+          ) : (
+            <p className="schedule-delete__text">
+              <Trans
+                i18nKey="branches.deactivateModal.confirmText"
+                ns="admin"
+                values={{ name: deactivateTarget.name }}
+                components={[<strong key="0" />]}
+              />
+            </p>
+          )}
+          <div className="schedule-delete__actions">
+            <button type="button" className="btn btn--ghost btn--sm" style={{ flex: 1 }} onClick={() => setDeactivateTarget(null)}>
+              {tCommon('buttons.cancel')}
+            </button>
+            {deactivateBlocked == null && (
+              <button type="button" className="btn btn--danger-outline btn--sm" style={{ flex: 1 }} disabled={busy} onClick={confirmDeactivate}>
+                {t('branches.deactivateModal.cta')}
+              </button>
+            )}
+          </div>
+        </Modal>
       )}
     </div>
   )
@@ -132,25 +188,28 @@ export default function BranchesPage() {
 function BranchCard({
   branch,
   clinicId,
-  doctorCount,
-  serviceCount,
   onEdit,
+  onDeactivate,
+  onReactivate,
 }: {
   branch: ClinicBranch
   clinicId: string
-  doctorCount: number
-  serviceCount: number
   onEdit: () => void
+  onDeactivate: () => void
+  onReactivate: () => void
 }) {
   const { t } = useTranslation('admin')
+  const active = branch.isActive !== false
   return (
-    <div className="admin-card branch-card">
+    <div className={`admin-card branch-card ${active ? '' : 'is-inactive'}`}>
       <div className="branch-card__top">
         <div className="branch-card__name-row">
           <h3 className="branch-card__name">{branch.name}</h3>
-          <span className="admin-card__status admin-card__status--approved">{t('branches.card.statusActive')}</span>
+          <span className={`admin-card__status ${active ? 'admin-card__status--approved' : 'admin-card__status--pending'}`}>
+            {active ? t('branches.card.statusActive') : t('branches.card.statusInactive')}
+          </span>
         </div>
-        <button type="button" className="admin-icon-btn" onClick={onEdit} aria-label={t('branches.card.editAria')}>
+        <button type="button" className="admin-icon-btn" onClick={onEdit} aria-label={t('branches.card.editAria')} title={t('branches.card.editAria')}>
           <Pencil size={15} strokeWidth={1.5} />
         </button>
       </div>
@@ -164,23 +223,16 @@ function BranchCard({
         )}
       </div>
 
-      <div className="branch-card__stats">
-        <div className="admin-card__stat">
-          <span className="admin-card__stat-label">{t('branches.card.statDoctors')}</span>
-          <span className="admin-card__stat-value num">{doctorCount}</span>
-        </div>
-        <div className="admin-card__stat">
-          <span className="admin-card__stat-label">{t('branches.card.statServices')}</span>
-          <span className="admin-card__stat-value num">{serviceCount}</span>
-        </div>
-        <div className="admin-card__stat">
-          <span className="admin-card__stat-label">{t('branches.card.statStatus')}</span>
-          <span className="admin-card__stat-value">{t('branches.card.statStatusValue')}</span>
-        </div>
-      </div>
-
       <div className="branch-card__bottom">
-        <span className="branch-card__id">{t('branches.card.idLabel', { id: branch.id })}</span>
+        {active ? (
+          <button type="button" className="btn btn--ghost btn--sm" onClick={onDeactivate}>
+            <Ban size={14} strokeWidth={1.5} /> {t('branches.card.deactivateCta')}
+          </button>
+        ) : (
+          <button type="button" className="btn btn--ghost btn--sm" onClick={onReactivate}>
+            <RotateCcw size={14} strokeWidth={1.5} /> {t('branches.card.activateCta')}
+          </button>
+        )}
         <Link to={`/admin-panel/klinikat/${clinicId}/mjeket`} className="admin-card__manage">
           {t('branches.card.manageDoctorsCta')} <ArrowRight size={14} strokeWidth={1.5} />
         </Link>
@@ -191,17 +243,41 @@ function BranchCard({
 
 function BranchFormModal({
   clinicId,
+  branch,
   onClose,
   onSaved,
 }: {
   clinicId: string
+  /** Null = add a new branch; otherwise edit this one. */
+  branch: ClinicBranch | null
   onClose: () => void
   onSaved: () => void
 }) {
   const { t } = useTranslation('admin')
   const { t: tCommon } = useTranslation('common')
   const { notify } = useToast()
-  const [form, setForm] = useState<CreateBranchRequest>(EMPTY_FORM)
+  const [form, setForm] = useState<CreateBranchRequest>(() =>
+    branch
+      ? {
+          name: branch.name,
+          address: branch.address,
+          city: branch.city,
+          municipality: branch.municipality ?? '',
+          phoneNumber: branch.phoneNumber ?? '',
+          latitude: branch.latitude,
+          longitude: branch.longitude,
+        }
+      : EMPTY_FORM,
+  )
+  const [citySelectOpen, setCitySelectOpen] = useState(false)
+
+  // WR-28: a fixed list, stored in the same Albanian spelling the search
+  // filters use. An existing branch with an off-list city keeps it as an option.
+  const cityOptions: CustomSelectOption[] = [
+    { value: '', label: t('branches.formModal.cityLabel'), disabled: true },
+    ...KOSOVO_CITIES.map(({ key, value }) => ({ value, label: tCommon(`cities.${key}`) })),
+    ...(branch && !KOSOVO_CITIES.some((c) => c.value === branch.city) ? [{ value: branch.city, label: branch.city }] : []),
+  ]
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
 
@@ -232,7 +308,7 @@ function BranchFormModal({
     setFormError('')
     setSaving(true)
     try {
-      await api.createClinicBranch(clinicId, {
+      const payload: CreateBranchRequest = {
         name: form.name.trim(),
         address: form.address.trim(),
         city: form.city.trim(),
@@ -240,8 +316,14 @@ function BranchFormModal({
         phoneNumber: form.phoneNumber?.trim() || undefined,
         latitude: form.latitude,
         longitude: form.longitude,
-      })
-      notify(t('branches.formModal.addedToast'), 'ok')
+      }
+      if (branch) {
+        await api.updateClinicBranch(clinicId, branch.id, payload)
+        notify(t('branches.formModal.updatedToast'), 'ok')
+      } else {
+        await api.createClinicBranch(clinicId, payload)
+        notify(t('branches.formModal.addedToast'), 'ok')
+      }
       onSaved()
     } catch (e) {
       setFormError(getErrorMessage(e))
@@ -251,7 +333,7 @@ function BranchFormModal({
   }
 
   return (
-    <Modal title={t('branches.formModal.addTitle')} onClose={onClose}>
+    <Modal title={branch ? t('branches.formModal.editTitle') : t('branches.formModal.addTitle')} onClose={onClose}>
       {formError && <ErrorBox message={formError} />}
 
       <div className="field">
@@ -270,8 +352,14 @@ function BranchFormModal({
           <input type="text" value={form.address} onChange={(e) => updateField('address', e.target.value)} />
         </div>
         <div className="field">
-          <label>{t('branches.formModal.cityLabel')}</label>
-          <input type="text" value={form.city} onChange={(e) => updateField('city', e.target.value)} />
+          <CustomSelect
+            label={t('branches.formModal.cityLabel')}
+            options={cityOptions}
+            value={form.city}
+            onChange={(v) => updateField('city', v)}
+            open={citySelectOpen}
+            onOpenChange={setCitySelectOpen}
+          />
         </div>
       </div>
 
