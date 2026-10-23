@@ -32,6 +32,9 @@ public sealed record AppointmentDto
 
     /// <summary>True kur termini u rezervua nga klinika (p.sh. me telefon).</summary>
     public bool BookedByClinic { get; init; }
+
+    /// <summary>Për një termin të riplanifikuar: termini i ri (null për ato para WR-19).</summary>
+    public Guid? RescheduledToAppointmentId { get; init; }
 }
 
 /// <summary>Pamja e doktorit/klinikës — me InternalNote dhe kontaktin e pacientit.</summary>

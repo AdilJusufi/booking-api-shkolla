@@ -267,6 +267,7 @@ public class AppointmentService : IAppointmentService
             PatientNote = existing.PatientNote
         };
         _dbContext.Appointments.Add(replacement);
+        existing.RescheduledToAppointmentId = replacement.Id;
 
         await SaveChangesGuardedAsync(cancellationToken);
 
@@ -406,7 +407,7 @@ public class AppointmentService : IAppointmentService
         Guid? DependentId, string? DependentFirstName, string? DependentLastName,
         DateTime StartUtc, DateTime EndUtc, AppointmentStatus Status,
         string? PatientNote, string? CancellationReason, DateTime? CancelledAt, DateTime CreatedAt,
-        decimal Price, string Currency, bool BookedByClinic);
+        decimal Price, string Currency, bool BookedByClinic, Guid? RescheduledToAppointmentId);
 
     private IQueryable<AppointmentRow> QueryRows(
         System.Linq.Expressions.Expression<Func<Appointment, bool>> predicate)
@@ -430,7 +431,8 @@ public class AppointmentService : IAppointmentService
                     .Select(ds => ds.CustomPrice)
                     .FirstOrDefault() ?? a.MedicalService.Price,
                 a.Currency ?? a.MedicalService.Currency,
-                a.BookedByClinic));
+                a.BookedByClinic,
+                a.RescheduledToAppointmentId));
     }
 
     private AppointmentDto ToDto(AppointmentRow row) => new()
@@ -456,6 +458,7 @@ public class AppointmentService : IAppointmentService
         CreatedAt = _timeZoneService.ToLocal(row.CreatedAt),
         Price = row.Price,
         Currency = row.Currency,
-        BookedByClinic = row.BookedByClinic
+        BookedByClinic = row.BookedByClinic,
+        RescheduledToAppointmentId = row.RescheduledToAppointmentId
     };
 }

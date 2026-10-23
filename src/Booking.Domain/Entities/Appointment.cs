@@ -59,6 +59,12 @@ public class Appointment : AuditableEntity
 
     public string? Currency { get; set; }
 
+    /// <summary>
+    /// Për një termin me status Rescheduled: termini i ri që e zëvendësoi (WR-19).
+    /// Null për terminet e riplanifikuara para kësaj kolone — rreshtat e vjetër s'rishkruhen.
+    /// </summary>
+    public Guid? RescheduledToAppointmentId { get; set; }
+
     public Clinic Clinic { get; set; } = null!;
     public ClinicBranch ClinicBranch { get; set; } = null!;
     public Doctor Doctor { get; set; } = null!;

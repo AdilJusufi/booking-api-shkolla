@@ -86,6 +86,9 @@ namespace Booking.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("ReminderSentAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("RescheduledToAppointmentId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("StartDateTime")
                         .HasColumnType("timestamp with time zone");
 
@@ -112,6 +115,8 @@ namespace Booking.Infrastructure.Persistence.Migrations
                     b.HasIndex("MedicalServiceId");
 
                     b.HasIndex("PatientProfileId");
+
+                    b.HasIndex("RescheduledToAppointmentId");
 
                     b.HasIndex("StartDateTime")
                         .HasDatabaseName("IX_Appointments_PendingReminder")
@@ -1059,6 +1064,11 @@ namespace Booking.Infrastructure.Persistence.Migrations
                         .HasForeignKey("PatientProfileId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("Booking.Domain.Entities.Appointment", null)
+                        .WithMany()
+                        .HasForeignKey("RescheduledToAppointmentId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Clinic");
 

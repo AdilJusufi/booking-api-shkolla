@@ -313,6 +313,10 @@ public class AdminAppointmentService : IAdminAppointmentService
                 "not-cancellable", $"Termini me status {appointment.Status} nuk mund të anulohet.");
         }
 
+        // Klinika s'ka kufizimin 12-orësh të pacientit, por një termin që ka filluar a ka
+        // kaluar s'anulohet më — për të përdoret statusi (NoShow/Completed).
+        EnsureNotStarted(appointment);
+
         // Klinika s'ka kufizim orësh — por çdo anulim administrativ auditohet.
         _auditService.Record("APPOINTMENT_CANCELLED_BY_ADMIN", nameof(Appointment), appointmentId.ToString(),
             new { appointment.Status }, new { Status = AppointmentStatus.CancelledByClinic, request.Reason });
@@ -343,6 +347,8 @@ public class AdminAppointmentService : IAdminAppointmentService
                 "not-reschedulable", $"Termini me status {existing.Status} nuk mund të riplanifikohet.");
         }
 
+        EnsureNotStarted(existing);
+
         var newStartUtc = _timeZoneService.ToUtc(request.NewStartDateTime);
         if (newStartUtc <= _dateTimeProvider.UtcNow)
         {
@@ -352,6 +358,19 @@ public class AdminAppointmentService : IAdminAppointmentService
         var terms = await ServiceTermsLookup.LoadAsync(_dbContext, existing.DoctorId, existing.MedicalServiceId, cancellationToken);
         var durationMinutes = terms.DurationMinutes;
         var newEndUtc = newStartUtc.AddMinutes(durationMinutes);
+
+        // Rregulli 10 vlen edhe për stafin: i njëjti person s'mund të ketë dy termine njëkohësisht.
+        var personOverlap = await _dbContext.Appointments.AnyAsync(a =>
+            a.Id != existing.Id
+            && a.PatientProfileId == existing.PatientProfileId
+            && a.DependentId == existing.DependentId
+            && Appointment.BlockingStatuses.Contains(a.Status)
+            && a.StartDateTime < newEndUtc
+            && a.EndDateTime > newStartUtc, cancellationToken);
+        if (personOverlap)
+        {
+            throw new ConflictException("patient-appointment-overlap", "Pacienti ka tashmë termin në këtë orar.");
+        }
 
         var slotAvailable = await _availabilityService.IsSlotAvailableAsync(
             existing.DoctorId, existing.ClinicBranchId, existing.MedicalServiceId, request.NewStartDateTime,
@@ -382,6 +401,7 @@ public class AdminAppointmentService : IAdminAppointmentService
             InternalNote = existing.InternalNote
         };
         _dbContext.Appointments.Add(replacement);
+        existing.RescheduledToAppointmentId = replacement.Id;
 
         // Rregulli 13: riplanifikimi nga ClinicAdmin ruhet gjithmonë në audit log.
         _auditService.Record("APPOINTMENT_RESCHEDULED_BY_ADMIN", nameof(Appointment), existing.Id.ToString(),
@@ -408,6 +428,15 @@ public class AdminAppointmentService : IAdminAppointmentService
             .Where(p => p.Id == patientProfileId)
             .Select(p => p.UserId)
             .FirstAsync(cancellationToken);
+
+    private void EnsureNotStarted(Appointment appointment)
+    {
+        if (appointment.StartDateTime <= _dateTimeProvider.UtcNow)
+        {
+            throw new BookingRuleException(
+                "appointment-already-started", "Termini ka filluar ose ka kaluar; nuk mund të ndryshohet më.");
+        }
+    }
 
     private Task SaveChangesGuardedAsync(CancellationToken cancellationToken) =>
         _dbContext.SaveAppointmentChangesAsync(cancellationToken);

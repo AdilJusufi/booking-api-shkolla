@@ -46,6 +46,7 @@ public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
         builder.HasOne(a => a.MedicalService).WithMany().HasForeignKey(a => a.MedicalServiceId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(a => a.PatientProfile).WithMany(p => p.Appointments).HasForeignKey(a => a.PatientProfileId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(a => a.Dependent).WithMany().HasForeignKey(a => a.DependentId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<Appointment>().WithMany().HasForeignKey(a => a.RescheduledToAppointmentId).OnDelete(DeleteBehavior.SetNull);
 
         builder.ToTable(t => t.HasCheckConstraint(
             "CK_Appointments_Times",
