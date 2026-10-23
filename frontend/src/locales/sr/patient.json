@@ -5,32 +5,20 @@
     "heroLine2": "lekara.",
     "heroAccent": "Zakažite",
     "heroLine3": "za par sekundi.",
-    "heroLead": "Rezervo Mjekun vas povezuje sa verifikovanim lekarima i klinikama širom Kosova — bez čekanja, bez telefonskih poziva.",
+    "heroLead": "Rezervo Mjekun vas povezuje sa lekarima i klinikama na Kosovu — bez čekanja, bez telefonskih poziva.",
     "cityLabel": "Grad",
     "allCities": "Svi gradovi",
     "specialtyLabel": "Specijalnost",
     "allSpecialties": "Sve specijalnosti",
     "searchCta": "Pretraga",
     "trustFree": "Besplatno za pacijente",
-    "trustVerified": "Verifikovani lekari",
+    "trustVerified": "Odobrene klinike",
     "trustEncrypted": "Šifrovani podaci",
-    "panel": {
-      "ariaLabel": "Primer zakazivanja",
-      "doctorName": "Dr Arben Gashi",
-      "doctorSpecialty": "Stomatologija · Priština",
-      "available": "Slobodan",
-      "freeSlotsLabel": "Slobodni termini",
-      "slotCount_one": "{{count}} termin",
-      "slotCount_few": "{{count}} termina",
-      "slotCount_other": "{{count}} termina",
-      "confirmCta": "Potvrdi termin"
-    },
     "specialtiesSection": {
       "kicker": "Specijalnosti",
       "title": "Najtraženije specijalnosti",
       "subtitle": "Od kardiologije do pedijatrije — pronađite stručnjaka koji vam je potreban.",
-      "seeAll": "Vidi sve",
-      "freeSlotsMeta": "Slobodni termini"
+      "seeAll": "Vidi sve"
     },
     "howItWorks": {
       "kicker": "Proces",
@@ -46,20 +34,18 @@
     },
     "doctorsSection": {
       "kicker": "Lekari",
-      "title": "Verifikovani lekari",
-      "subtitle": "Svaki lekar je licenciran i proveren pre pridruživanja platformi.",
+      "title": "Lekari na platformi",
+      "subtitle": "Lekari iz klinika koje je naš tim odobrio.",
       "seeAll": "Svi lekari",
-      "verified": "Verifikovan",
       "experienceYears_one": "{{count}} godina iskustva",
       "experienceYears_few": "{{count}} godine iskustva",
       "experienceYears_other": "{{count}} godina iskustva",
       "licensedDoctor": "Licenciran lekar",
-      "browseSlots": "Pregled termina",
-      "firstAppointment": "Prvi slobodan termin:"
+      "browseSlots": "Pregled termina"
     },
     "features": {
-      "verifiedBig": "Verifikovano",
-      "verifiedLabel": "Licencirani i provereni lekari",
+      "verifiedBig": "Odobreno",
+      "verifiedLabel": "Svaka klinika se proverava pre objavljivanja",
       "hoursBig": "24/7",
       "hoursLabel": "Zakazivanje onlajn, čak i noću",
       "easyBig": "Lako",
@@ -70,7 +56,7 @@
     "clinicsSection": {
       "kicker": "Klinike",
       "title": "Partnerske klinike širom Kosova",
-      "subtitle": "Od bolničkih centara do porodičnih ambulanti u komšiluku — sve verifikovane.",
+      "subtitle": "Od bolničkih centara do porodičnih ordinacija u komšiluku — sve odobrene od našeg tima.",
       "seeAll": "Vidi sve",
       "viewClinic": "Pogledaj kliniku",
       "doctorCount_one": "{{count}} lekar",
@@ -80,80 +66,24 @@
     "finalCta": {
       "kicker": "Besplatno za pacijente",
       "title": "Spremni da zakažete svoj termin?",
-      "subtitle": "Pridružite se hiljadama pacijenata koji već veruju Rezervo Mjekun za svoje zdravlje.",
+      "subtitle": "Pronađite lekara, izaberite vreme i zakažite — bez čekanja na telefonu.",
       "cta": "Počnite odmah",
-      "fineprint": "Bez kreditne kartice · Besplatno otkazivanje · Podrška na albanskom"
+      "fineprint": "Bez kreditne kartice · Besplatno otkazivanje do 12 sati ranije · Podrška na albanskom"
     },
-    "demo": {
-      "specialties": {
-        "cardiology": "Kardiologija",
-        "pediatrics": "Pedijatrija",
-        "neurology": "Neurologija",
-        "orthopedics": "Ortopedija",
-        "dermatology": "Dermatologija",
-        "gynecology": "Ginekologija",
-        "ophthalmology": "Oftalmologija",
-        "psychiatry": "Psihijatrija"
-      },
-      "doctors": [
-        {
-          "name": "Arben Vitia",
-          "specialty": "Kardiologija",
-          "next": "Danas, 14:30"
-        },
-        {
-          "name": "Linda Gashi",
-          "specialty": "Pedijatrija",
-          "next": "Danas, 16:00"
-        },
-        {
-          "name": "Besnik Ramadani",
-          "specialty": "Neurologija",
-          "next": "Sutra, 09:00"
-        },
-        {
-          "name": "Teuta Krasniqi",
-          "specialty": "Dermatologija",
-          "next": "Sutra, 11:30"
-        },
-        {
-          "name": "Driton Berisha",
-          "specialty": "Ortopedija",
-          "next": "Četvrtak, 08:30"
-        }
-      ],
-      "clinics": [
-        {
-          "name": "Klinika Qendrore",
-          "city": "Priština",
-          "specialties": [
-            "Kardiologija",
-            "Pedijatrija",
-            "Neurologija"
-          ]
-        },
-        {
-          "name": "Poliklinika Rilindja",
-          "city": "Priština",
-          "specialties": [
-            "Ortopedija",
-            "Dermatologija"
-          ]
-        },
-        {
-          "name": "Klinika Vita",
-          "city": "Prizren",
-          "specialties": [
-            "Ginekologija",
-            "Pedijatrija"
-          ]
-        }
-      ]
-    }
+    "stats": {
+      "title": "Na Rezervo Mjekun",
+      "hint": "Pogledajte slobodne termine lekara i zakažite bez poziva.",
+      "doctorsLabel": "Lekari",
+      "clinicsLabel": "Klinike",
+      "specialtiesLabel": "Specijalnosti",
+      "cta": "Pronađi termin"
+    },
+    "loadError": "Nije učitano. Pokušajte ponovo.",
+    "retry": "Pokušaj ponovo"
   },
   "search": {
     "title": "Pronađite pravog lekara ili kliniku",
-    "subtitle": "Pretražite verifikovane lekare i klinike širom Kosova",
+    "subtitle": "Pretražite lekare i klinike na Kosovu",
     "searchPlaceholder": "Pretražite lekara, kliniku ili specijalnost...",
     "allSpecialtiesChip": "Sve",
     "tabClinics": "Klinike",

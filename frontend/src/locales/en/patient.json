@@ -5,31 +5,20 @@
     "heroLine2": "doctor.",
     "heroAccent": "Book",
     "heroLine3": "in seconds.",
-    "heroLead": "Rezervo Mjekun connects you with verified doctors and clinics across Kosovo — no waiting, no phone calls.",
+    "heroLead": "Rezervo Mjekun connects you with doctors and clinics in Kosovo — no waiting, no phone calls.",
     "cityLabel": "City",
     "allCities": "All cities",
     "specialtyLabel": "Specialty",
     "allSpecialties": "All specialties",
     "searchCta": "Search",
     "trustFree": "Free for patients",
-    "trustVerified": "Verified doctors",
+    "trustVerified": "Approved clinics",
     "trustEncrypted": "Encrypted data",
-    "panel": {
-      "ariaLabel": "Booking example",
-      "doctorName": "Dr. Arben Gashi",
-      "doctorSpecialty": "Dentistry · Pristina",
-      "available": "Available",
-      "freeSlotsLabel": "Open slots",
-      "slotCount_one": "{{count}} slot",
-      "slotCount_other": "{{count}} slots",
-      "confirmCta": "Confirm appointment"
-    },
     "specialtiesSection": {
       "kicker": "Specialties",
       "title": "Most requested specialties",
       "subtitle": "From cardiology to pediatrics — find the expert you need.",
-      "seeAll": "See all",
-      "freeSlotsMeta": "Open slots"
+      "seeAll": "See all"
     },
     "howItWorks": {
       "kicker": "Process",
@@ -45,19 +34,17 @@
     },
     "doctorsSection": {
       "kicker": "Doctors",
-      "title": "Verified Doctors",
-      "subtitle": "Every doctor is licensed and verified before joining the platform.",
+      "title": "Doctors on the platform",
+      "subtitle": "Doctors from clinics our team has approved.",
       "seeAll": "All doctors",
-      "verified": "Verified",
       "experienceYears_one": "{{count}} year of experience",
       "experienceYears_other": "{{count}} years of experience",
       "licensedDoctor": "Licensed doctor",
-      "browseSlots": "Browse slots",
-      "firstAppointment": "First available:"
+      "browseSlots": "Browse slots"
     },
     "features": {
-      "verifiedBig": "Verified",
-      "verifiedLabel": "Licensed and vetted doctors",
+      "verifiedBig": "Approved",
+      "verifiedLabel": "Every clinic is reviewed before it goes live",
       "hoursBig": "24/7",
       "hoursLabel": "Book online, even at night",
       "easyBig": "Easy",
@@ -68,7 +55,7 @@
     "clinicsSection": {
       "kicker": "Clinics",
       "title": "Partner clinics across Kosovo",
-      "subtitle": "From hospital centers to neighborhood family practices — all verified.",
+      "subtitle": "From hospital centres to neighbourhood family practices — all approved by our team.",
       "seeAll": "See all",
       "viewClinic": "View clinic",
       "doctorCount_one": "{{count}} doctor",
@@ -77,80 +64,24 @@
     "finalCta": {
       "kicker": "Free for patients",
       "title": "Ready to book your appointment?",
-      "subtitle": "Join thousands of patients who already trust Rezervo Mjekun with their health.",
+      "subtitle": "Find the doctor, pick a time and book — no waiting on the phone.",
       "cta": "Get Started",
-      "fineprint": "No credit card · Free cancellation · Support in Albanian"
+      "fineprint": "No credit card · Free cancellation up to 12 hours before · Support in Albanian"
     },
-    "demo": {
-      "specialties": {
-        "cardiology": "Cardiology",
-        "pediatrics": "Pediatrics",
-        "neurology": "Neurology",
-        "orthopedics": "Orthopedics",
-        "dermatology": "Dermatology",
-        "gynecology": "Gynecology",
-        "ophthalmology": "Ophthalmology",
-        "psychiatry": "Psychiatry"
-      },
-      "doctors": [
-        {
-          "name": "Arben Vitia",
-          "specialty": "Cardiology",
-          "next": "Today, 14:30"
-        },
-        {
-          "name": "Linda Gashi",
-          "specialty": "Pediatrics",
-          "next": "Today, 16:00"
-        },
-        {
-          "name": "Besnik Ramadani",
-          "specialty": "Neurology",
-          "next": "Tomorrow, 09:00"
-        },
-        {
-          "name": "Teuta Krasniqi",
-          "specialty": "Dermatology",
-          "next": "Tomorrow, 11:30"
-        },
-        {
-          "name": "Driton Berisha",
-          "specialty": "Orthopedics",
-          "next": "Thursday, 08:30"
-        }
-      ],
-      "clinics": [
-        {
-          "name": "Klinika Qendrore",
-          "city": "Pristina",
-          "specialties": [
-            "Cardiology",
-            "Pediatrics",
-            "Neurology"
-          ]
-        },
-        {
-          "name": "Poliklinika Rilindja",
-          "city": "Pristina",
-          "specialties": [
-            "Orthopedics",
-            "Dermatology"
-          ]
-        },
-        {
-          "name": "Klinika Vita",
-          "city": "Prizren",
-          "specialties": [
-            "Gynecology",
-            "Pediatrics"
-          ]
-        }
-      ]
-    }
+    "stats": {
+      "title": "On Rezervo Mjekun",
+      "hint": "See doctors' free times and book without calling.",
+      "doctorsLabel": "Doctors",
+      "clinicsLabel": "Clinics",
+      "specialtiesLabel": "Specialties",
+      "cta": "Find an appointment"
+    },
+    "loadError": "Couldn't load. Please try again.",
+    "retry": "Try again"
   },
   "search": {
     "title": "Find the right doctor or clinic",
-    "subtitle": "Search verified doctors and clinics across Kosovo",
+    "subtitle": "Search doctors and clinics in Kosovo",
     "searchPlaceholder": "Search doctor, clinic, or specialty...",
     "allSpecialtiesChip": "All",
     "tabClinics": "Clinics",

@@ -1,29 +1,19 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   ArrowRight,
   ArrowUpRight,
-  Baby,
   BadgeCheck,
-  Bone,
-  Brain,
   CalendarDays,
+  Clock,
   Check,
   ChevronRight,
-  Clock,
-  Eye,
   HandHeart,
-  Heart,
   Lock,
   MapPin,
-  MessageCircleHeart,
-  Scan,
   Search,
   Stethoscope,
-  Venus,
-  type LucideProps,
 } from 'lucide-react'
-import type { ComponentType } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import type { Clinic, Doctor, Specialty } from '../lib/types'
@@ -32,39 +22,13 @@ import DoctorAvatar from '../components/DoctorAvatar'
 import { useSpecialtyLabel } from '../context/SpecialtyNamesContext'
 import type { CustomSelectOption } from '../components/ui'
 import { KOSOVO_CITIES } from '../lib/kosovoCities'
-import { weekdayName } from '../lib/format'
 import {
   useReveal,
-  useRotatingIndex,
   useSpotlight,
   useScrollProgress,
 } from '../lib/motion'
 
-/* ---------- Hardcoded demo fallbacks (marketing page must never look empty) ----------
- * Content (names, quotes, specialty labels) lives in patient.json's home.demo tree,
- * keyed positionally — these arrays just carry the icon and structural shape that
- * JSON can't. */
-
-const DEMO_SPEC_ICONS: ComponentType<LucideProps>[] = [Heart, Baby, Brain, Bone, Scan, Venus, Eye, MessageCircleHeart]
-const DEMO_SPEC_KEYS = ['cardiology', 'pediatrics', 'neurology', 'orthopedics', 'dermatology', 'gynecology', 'ophthalmology', 'psychiatry'] as const
-
-const DEMO_DOCTOR_EXPERIENCE = [12, 8, 15, 9, 17]
-const DEMO_CLINIC_DOCTOR_COUNTS = [42, 18, 11]
-
 const STEP_ICONS = [Search, CalendarDays, BadgeCheck]
-
-const PANEL_SLOTS = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30']
-// Decorative demo dates for the booking panel — Monday(1) through Friday(5)
-// in JS Date.getDay() terms, with the weekday label resolved via
-// weekdayName() at render time so it follows the active language.
-const PANEL_DAY_NUMBERS = ['12', '13', '14', '15', '16']
-
-function initialsFromName(name: string): string {
-  const parts = name.trim().split(/\s+/)
-  const first = parts[0]?.charAt(0) ?? ''
-  const last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : ''
-  return `${first}${last}`.toUpperCase()
-}
 
 /** Splits a headline into per-word spans so the hero can cascade them in. */
 function SplitWords({ text, from = 0 }: { text: string; from?: number }) {
@@ -79,62 +43,53 @@ function SplitWords({ text, from = 0 }: { text: string; from?: number }) {
   )
 }
 
-/** The hero's proof object: one surface, no stacking, showing a real booking flow. */
-function BookingPanel() {
+/**
+ * The hero's side card. It used to be an animated "booking" with a named
+ * doctor and invented free slots — fabricated content (WR-04). Now it shows
+ * only real platform numbers from the API, a skeleton while they load, and
+ * nothing at all if they can't be loaded.
+ */
+function HeroStats({ doctors, clinics, specialties }: { doctors: number | null; clinics: number | null; specialties: number | null }) {
   const { t } = useTranslation('patient')
-  const activeSlot = useRotatingIndex(PANEL_SLOTS.length, 2600)
-  const activeDay = useRotatingIndex(PANEL_DAY_NUMBERS.length, 7800)
-
+  const loading = doctors === null || clinics === null || specialties === null
+  const rows = [
+    { label: t('home.stats.doctorsLabel'), value: doctors },
+    { label: t('home.stats.clinicsLabel'), value: clinics },
+    { label: t('home.stats.specialtiesLabel'), value: specialties },
+  ]
   return (
-    <aside className="lp-panel" data-reveal aria-label={t('home.panel.ariaLabel')}>
+    <aside className="lp-panel lp-stats" data-reveal aria-busy={loading || undefined}>
       <header className="lp-panel__head">
-        <span className="lp-panel__avatar">AG</span>
         <span className="lp-panel__who">
-          <strong>{t('home.panel.doctorName')}</strong>
-          <span>{t('home.panel.doctorSpecialty')}</span>
-        </span>
-        <span className="lp-panel__live">
-          <i className="lp-dot" aria-hidden /> {t('home.panel.available')}
+          <strong>{t('home.stats.title')}</strong>
+          <span>{t('home.stats.hint')}</span>
         </span>
       </header>
-
-      <div className="lp-panel__days" role="presentation">
-        {PANEL_DAY_NUMBERS.map((n, i) => (
-          <span key={n} className={`lp-day ${i === activeDay ? 'is-on' : ''}`}>
-            <em>{weekdayName(i + 1, 'short')}</em>
-            <b>{n}</b>
-          </span>
+      <dl className="lp-stats__grid">
+        {rows.map((r) => (
+          <div key={r.label} className="lp-stats__item">
+            <dt>{r.label}</dt>
+            <dd className="lp-num">{r.value === null ? <span className="lp-stats__skeleton skeleton-shimmer" /> : r.value}</dd>
+          </div>
         ))}
-      </div>
-
-      <div className="lp-panel__slots">
-        <div className="lp-panel__row">
-          <span className="lp-panel__label">{t('home.panel.freeSlotsLabel')}</span>
-          <span className="lp-panel__count">
-            {t('home.panel.slotCount', { count: PANEL_SLOTS.length })}
-          </span>
-        </div>
-        <div className="lp-slots">
-          {PANEL_SLOTS.map((slot, i) => (
-            <span key={slot} className={`lp-slot ${i === activeSlot ? 'is-on' : ''}`}>
-              {slot}
-            </span>
-          ))}
-        </div>
-      </div>
-
+      </dl>
       <Link to="/kerko" className="lp-btn lp-btn--accent lp-btn--block">
-        {t('home.panel.confirmCta')}
+        {t('home.stats.cta')}
       </Link>
     </aside>
   )
 }
 
-function VerifiedBadge({ title }: { title: string }) {
+/** Calm, retryable notice for a section whose data couldn't be loaded. */
+function SectionError({ onRetry }: { onRetry: () => void }) {
+  const { t } = useTranslation('patient')
   return (
-    <span className="lp-verified" title={title}>
-      <BadgeCheck size={15} strokeWidth={2} />
-    </span>
+    <div className="lp-load-error" role="status">
+      <p>{t('home.loadError')}</p>
+      <button type="button" className="lp-btn lp-btn--ghost" onClick={onRetry}>
+        {t('home.retry')}
+      </button>
+    </div>
   )
 }
 
@@ -143,9 +98,13 @@ export default function HomePage() {
   const specialtyLabel = useSpecialtyLabel()
   const { t: tCommon } = useTranslation('common')
   const navigate = useNavigate()
-  const [specialties, setSpecialties] = useState<Specialty[]>([])
-  const [doctors, setDoctors] = useState<Doctor[]>([])
-  const [clinics, setClinics] = useState<Clinic[]>([])
+  // null = still loading. Never filled with placeholder people or clinics.
+  const [specialties, setSpecialties] = useState<Specialty[] | null>(null)
+  const [doctors, setDoctors] = useState<Doctor[] | null>(null)
+  const [clinics, setClinics] = useState<Clinic[] | null>(null)
+  const [doctorTotal, setDoctorTotal] = useState<number | null>(null)
+  const [clinicTotal, setClinicTotal] = useState<number | null>(null)
+  const [loadError, setLoadError] = useState(false)
   const [city, setCity] = useState('')
   const [specialtyId, setSpecialtyId] = useState('')
   const [specialtiesLoading, setSpecialtiesLoading] = useState(true)
@@ -156,11 +115,28 @@ export default function HomePage() {
   const doctorRailRef = useSpotlight<HTMLDivElement>()
   const progress = useScrollProgress()
 
-  useEffect(() => {
-    api.getSpecialties().then((s) => setSpecialties(s ?? [])).catch(() => setSpecialties([])).finally(() => setSpecialtiesLoading(false))
-    api.searchDoctors({ page: 1 }).then((r) => setDoctors(r.items ?? [])).catch(() => setDoctors([]))
-    api.searchClinics({ page: 1 }).then((r) => setClinics(r.items ?? [])).catch(() => setClinics([]))
+  const load = useCallback(() => {
+    setLoadError(false)
+    setSpecialtiesLoading(true)
+    const fail = () => setLoadError(true)
+    api.getSpecialties().then((s) => setSpecialties(s ?? [])).catch(fail).finally(() => setSpecialtiesLoading(false))
+    api
+      .searchDoctors({ page: 1 })
+      .then((r) => {
+        setDoctors(r.items ?? [])
+        setDoctorTotal(r.totalItems ?? r.items?.length ?? 0)
+      })
+      .catch(fail)
+    api
+      .searchClinics({ page: 1 })
+      .then((r) => {
+        setClinics(r.items ?? [])
+        setClinicTotal(r.totalItems ?? r.items?.length ?? 0)
+      })
+      .catch(fail)
   }, [])
+
+  useEffect(load, [load])
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
@@ -170,9 +146,6 @@ export default function HomePage() {
     navigate(`/kerko?${params.toString()}`)
   }
 
-  const hasDoctors = doctors.length > 0
-  const hasClinics = clinics.length > 0
-  const hasSpecs = specialties.length > 0
 
   const CITY_OPTIONS: CustomSelectOption[] = [
     { value: '', label: t('home.allCities') },
@@ -182,7 +155,7 @@ export default function HomePage() {
   const specialtyOptions = useMemo<CustomSelectOption[]>(
     () => [
       { value: '', label: t('home.allSpecialties') },
-      ...specialties.map((s) => ({ value: s.id, label: specialtyLabel(s.name) })),
+      ...(specialties ?? []).map((s) => ({ value: s.id, label: specialtyLabel(s.name) })),
     ],
     // `specialtyLabel` ndryshon identitet kur ngarkohet harta e përkthimeve ose
     // kur ndërrohet gjuha — pa të te varësitë, lista do të mbetej me etiketat e
@@ -190,9 +163,9 @@ export default function HomePage() {
     [specialties, t, specialtyLabel],
   )
 
-  const shownDoctors = hasDoctors ? doctors.slice(0, 6) : []
-  const shownClinics = hasClinics ? clinics.slice(0, 3) : []
-  const shownSpecs = hasSpecs ? specialties.slice(0, 8) : []
+  const shownDoctors = doctors?.slice(0, 6) ?? []
+  const shownClinics = clinics?.slice(0, 3) ?? []
+  const shownSpecs = specialties?.slice(0, 8) ?? []
 
   const STEPS = [
     { icon: STEP_ICONS[0], title: t('home.howItWorks.step1Title'), text: t('home.howItWorks.step1Text') },
@@ -206,18 +179,6 @@ export default function HomePage() {
     { icon: HandHeart, big: t('home.features.easyBig'), label: t('home.features.easyLabel') },
     { icon: MapPin, big: t('home.features.coverageBig'), label: t('home.features.coverageLabel') },
   ]
-
-  const DEMO_SPECS = DEMO_SPEC_KEYS.map((key, i) => ({
-    key,
-    icon: DEMO_SPEC_ICONS[i],
-    label: t(`home.demo.specialties.${key}`),
-  }))
-
-  const demoDoctorNames = t('home.demo.doctors', { returnObjects: true }) as { name: string; specialty: string; next: string }[]
-  const DEMO_DOCTORS = demoDoctorNames.map((d, i) => ({ ...d, experience: DEMO_DOCTOR_EXPERIENCE[i] }))
-
-  const demoClinicsRaw = t('home.demo.clinics', { returnObjects: true }) as { name: string; city: string; specialties: string[] }[]
-  const DEMO_CLINICS = demoClinicsRaw.map((c, i) => ({ ...c, doctors: DEMO_CLINIC_DOCTOR_COUNTS[i] }))
 
   return (
     <div className="lp" ref={pageRef}>
@@ -283,7 +244,9 @@ export default function HomePage() {
             </ul>
           </div>
 
-          <BookingPanel />
+          {!loadError && (
+            <HeroStats doctors={doctorTotal} clinics={clinicTotal} specialties={specialties?.length ?? null} />
+          )}
         </div>
       </section>
 
@@ -300,35 +263,32 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div className="lp-bento" ref={specGridRef}>
-          {(hasSpecs
-            ? shownSpecs.map((s) => ({
-                key: s.id,
-                Icon: specialtyIcon(s.name),
-                label: specialtyLabel(s.name),
-                to: `/kerko?specialty=${s.id}`,
-              }))
-            : DEMO_SPECS.map((s) => ({
-                key: s.key,
-                Icon: s.icon,
-                label: s.label,
-                to: `/kerko?specialty=${encodeURIComponent(s.key)}`,
-              }))
-          ).map(({ key, Icon, label, to }) => (
-            <button
-              key={key}
-              className="lp-bento__cell"
-              data-reveal
-              data-spotlight
-              onClick={() => navigate(to)}
-            >
-              <span className="lp-bento__icon"><Icon size={22} strokeWidth={1.6} /></span>
-              <span className="lp-bento__name">{label}</span>
-              <span className="lp-bento__meta">{t('home.specialtiesSection.freeSlotsMeta')}</span>
-              <ArrowUpRight className="lp-bento__arrow" size={16} strokeWidth={2.25} />
-            </button>
-          ))}
-        </div>
+        {specialties === null && loadError ? (
+          <SectionError onRetry={load} />
+        ) : (
+          <div className="lp-bento" ref={specGridRef}>
+            {specialties === null
+              ? Array.from({ length: 8 }).map((_, i) => (
+                  <span key={i} className="lp-bento__cell lp-skeleton-cell skeleton-shimmer" aria-hidden />
+                ))
+              : shownSpecs.map((s) => {
+                  const Icon = specialtyIcon(s.name)
+                  return (
+                    <button
+                      key={s.id}
+                      className="lp-bento__cell"
+                      data-reveal
+                      data-spotlight
+                      onClick={() => navigate(`/kerko?specialty=${s.id}`)}
+                    >
+                      <span className="lp-bento__icon"><Icon size={22} strokeWidth={1.6} /></span>
+                      <span className="lp-bento__name">{specialtyLabel(s.name)}</span>
+                      <ArrowUpRight className="lp-bento__arrow" size={16} strokeWidth={2.25} />
+                    </button>
+                  )
+                })}
+          </div>
+        )}
       </section>
 
       {/* ============ 3 — How it works (asymmetric, sticky left) ============ */}
@@ -375,58 +335,47 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div className="lp-rail" ref={doctorRailRef}>
-          <div className="lp-rail__track">
-            {hasDoctors
-              ? shownDoctors.map((d) => (
-                  <article className="lp-doc" key={d.id} data-reveal data-spotlight>
-                    <DoctorAvatar
-                      as="span"
-                      className="lp-doc__avatar"
-                      firstName={d.firstName}
-                      lastName={d.lastName}
-                      photoUrl={d.photoUrl}
-                      displayPx={64}
-                    />
-                    <h3 className="lp-doc__name">
-                      Dr. {d.firstName} {d.lastName} <VerifiedBadge title={t('home.doctorsSection.verified')} />
-                    </h3>
-                    <div className="lp-tags">
-                      {d.specialties.slice(0, 1).map((s) => (
-                        <span key={s} className="lp-tag">{specialtyLabel(s)}</span>
-                      ))}
-                    </div>
-                    <p className="lp-doc__exp">
-                      {d.yearsOfExperience > 0
-                        ? t('home.doctorsSection.experienceYears', { count: d.yearsOfExperience })
-                        : t('home.doctorsSection.licensedDoctor')}
-                    </p>
-                    <Link to="/kerko?tab=mjeket" className="lp-btn lp-btn--ghost lp-btn--block">
-                      {t('home.doctorsSection.browseSlots')}
-                    </Link>
-                  </article>
-                ))
-              : DEMO_DOCTORS.map((d) => (
-                  <article className="lp-doc" key={d.name} data-reveal data-spotlight>
-                    <span className="lp-doc__avatar">{initialsFromName(d.name)}</span>
-                    <h3 className="lp-doc__name">
-                      Dr. {d.name} <VerifiedBadge title={t('home.doctorsSection.verified')} />
-                    </h3>
-                    <div className="lp-tags">
-                      <span className="lp-tag">{d.specialty}</span>
-                    </div>
-                    <p className="lp-doc__exp">{t('home.doctorsSection.experienceYears', { count: d.experience })}</p>
-                    <p className="lp-doc__next">
-                      <Clock size={13} strokeWidth={2} />
-                      {t('home.doctorsSection.firstAppointment')} <b className="lp-num">{d.next}</b>
-                    </p>
-                    <Link to="/kerko?tab=mjeket" className="lp-btn lp-btn--ghost lp-btn--block">
-                      {t('home.doctorsSection.browseSlots')}
-                    </Link>
-                  </article>
-                ))}
+        {doctors === null && loadError ? (
+          <div className="container"><SectionError onRetry={load} /></div>
+        ) : (
+          <div className="lp-rail" ref={doctorRailRef}>
+            <div className="lp-rail__track">
+              {doctors === null
+                ? Array.from({ length: 4 }).map((_, i) => (
+                    <span key={i} className="lp-doc lp-skeleton-card skeleton-shimmer" aria-hidden />
+                  ))
+                : shownDoctors.map((d) => (
+                    <article className="lp-doc" key={d.id} data-reveal data-spotlight>
+                      <DoctorAvatar
+                        as="span"
+                        className="lp-doc__avatar"
+                        firstName={d.firstName}
+                        lastName={d.lastName}
+                        photoUrl={d.photoUrl}
+                        displayPx={64}
+                      />
+                      <h3 className="lp-doc__name">
+                        Dr. {d.firstName} {d.lastName}
+                      </h3>
+                      <div className="lp-tags">
+                        {d.specialties.slice(0, 1).map((s) => (
+                          <span key={s} className="lp-tag">{specialtyLabel(s)}</span>
+                        ))}
+                      </div>
+                      <p className="lp-doc__exp">
+                        {d.yearsOfExperience > 0
+                          ? t('home.doctorsSection.experienceYears', { count: d.yearsOfExperience })
+                          : t('home.doctorsSection.licensedDoctor')}
+                      </p>
+                      {/* WR-26: straight to this doctor's slots, not a generic search. */}
+                      <Link to={`/mjeku/${d.id}`} className="lp-btn lp-btn--ghost lp-btn--block">
+                        {t('home.doctorsSection.browseSlots')}
+                      </Link>
+                    </article>
+                  ))}
+            </div>
           </div>
-        </div>
+        )}
       </section>
 
       {/* ============ 5 — Feature band ============ */}
@@ -457,61 +406,39 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div className="lp-clinics">
-          {hasClinics
-            ? shownClinics.map((c, i) => (
-                <Link
-                  to={`/klinika/${c.id}`}
-                  className={`lp-clinic ${i === 0 ? 'lp-clinic--feature' : ''}`}
-                  key={c.id}
-                  data-reveal
-                >
-                  <span className="lp-clinic__art" aria-hidden>
-                    <Stethoscope size={i === 0 ? 34 : 24} strokeWidth={1.25} />
-                  </span>
-                  <span className="lp-clinic__body">
-                    <h3>{c.name}</h3>
-                    {c.cities.length > 0 && (
-                      <span className="lp-clinic__where">
-                        <MapPin size={13} strokeWidth={2} /> {c.cities.join(', ')}
+        {clinics === null && loadError ? (
+          <SectionError onRetry={load} />
+        ) : (
+          <div className="lp-clinics">
+            {clinics === null
+              ? Array.from({ length: 3 }).map((_, i) => (
+                  <span key={i} className={`lp-clinic lp-skeleton-card skeleton-shimmer ${i === 0 ? 'lp-clinic--feature' : ''}`} aria-hidden />
+                ))
+              : shownClinics.map((c, i) => (
+                  <Link
+                    to={`/klinika/${c.id}`}
+                    className={`lp-clinic ${i === 0 ? 'lp-clinic--feature' : ''}`}
+                    key={c.id}
+                    data-reveal
+                  >
+                    <span className="lp-clinic__art" aria-hidden>
+                      <Stethoscope size={i === 0 ? 34 : 24} strokeWidth={1.25} />
+                    </span>
+                    <span className="lp-clinic__body">
+                      <h3>{c.name}</h3>
+                      {c.cities.length > 0 && (
+                        <span className="lp-clinic__where">
+                          <MapPin size={13} strokeWidth={2} /> {c.cities.join(', ')}
+                        </span>
+                      )}
+                      <span className="lp-clinic__cta">
+                        {t('home.clinicsSection.viewClinic')} <ArrowUpRight size={16} strokeWidth={2.25} />
                       </span>
-                    )}
-                    <span className="lp-clinic__cta">
-                      {t('home.clinicsSection.viewClinic')} <ArrowUpRight size={16} strokeWidth={2.25} />
                     </span>
-                  </span>
-                </Link>
-              ))
-            : DEMO_CLINICS.map((c, i) => (
-                <Link
-                  to="/kerko?tab=klinika"
-                  className={`lp-clinic ${i === 0 ? 'lp-clinic--feature' : ''}`}
-                  key={c.name}
-                  data-reveal
-                >
-                  <span className="lp-clinic__art" aria-hidden>
-                    <Stethoscope size={i === 0 ? 34 : 24} strokeWidth={1.25} />
-                  </span>
-                  <span className="lp-clinic__body">
-                    <h3>{c.name} <VerifiedBadge title={t('home.doctorsSection.verified')} /></h3>
-                    <span className="lp-clinic__where">
-                      <MapPin size={13} strokeWidth={2} /> {c.city}
-                      <em className="lp-num">{t('home.clinicsSection.doctorCount', { count: c.doctors })}</em>
-                    </span>
-                    {i === 0 && (
-                      <div className="lp-tags">
-                        {c.specialties.map((s) => (
-                          <span key={s} className="lp-tag">{s}</span>
-                        ))}
-                      </div>
-                    )}
-                    <span className="lp-clinic__cta">
-                      {t('home.clinicsSection.viewClinic')} <ArrowUpRight size={16} strokeWidth={2.25} />
-                    </span>
-                  </span>
-                </Link>
-              ))}
-        </div>
+                  </Link>
+                ))}
+          </div>
+        )}
       </section>
 
       {/* ============ 7 — Final CTA ============ */}

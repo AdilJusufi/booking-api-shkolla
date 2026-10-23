@@ -9342,3 +9342,59 @@ button.schedule-card__branch {
 .branch-card.is-inactive {
   opacity: 0.72;
 }
+
+/* ---------- Landing: real numbers, skeletons, load error (WR-04) ---------- */
+.lp-stats__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 18px 0;
+}
+.lp-stats__item {
+  padding: 14px 12px;
+  border: 1px solid var(--lp-line);
+  border-radius: var(--lp-r, 12px);
+  text-align: center;
+}
+.lp-stats__item dt {
+  font-size: 0.75rem;
+  color: var(--lp-muted, var(--muted));
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.lp-stats__item dd {
+  margin: 6px 0 0;
+  font-family: var(--lp-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--lp-text);
+}
+.lp-stats__skeleton {
+  display: inline-block;
+  width: 2.2em;
+  height: 1em;
+  border-radius: 6px;
+  vertical-align: middle;
+}
+.lp-skeleton-cell {
+  min-height: 116px;
+  pointer-events: none;
+}
+.lp-skeleton-card {
+  min-height: 240px;
+  pointer-events: none;
+}
+.lp-load-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  border: 1px dashed var(--lp-line);
+  border-radius: var(--lp-r-lg);
+  color: var(--lp-text);
+}
+.lp-load-error p {
+  margin: 0;
+}

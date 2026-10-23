@@ -5,31 +5,20 @@
     "heroLine2": "e duhur.",
     "heroAccent": "Rezervoni",
     "heroLine3": "në sekonda.",
-    "heroLead": "Rezervo Mjekun ju lidh me mjekë dhe klinika të verifikuara në Kosovë — pa pritje, pa telefonata.",
+    "heroLead": "Rezervo Mjekun ju lidh me mjekë dhe klinika në Kosovë — pa pritje, pa telefonata.",
     "cityLabel": "Qyteti",
     "allCities": "Të gjitha qytetet",
     "specialtyLabel": "Specialiteti",
     "allSpecialties": "Të gjitha specialitetet",
     "searchCta": "Kërko",
     "trustFree": "Pa pagesë për pacientët",
-    "trustVerified": "Mjekë të verifikuar",
+    "trustVerified": "Klinika të aprovuara",
     "trustEncrypted": "Të dhëna të enkriptuara",
-    "panel": {
-      "ariaLabel": "Shembull i rezervimit",
-      "doctorName": "Dr. Arben Gashi",
-      "doctorSpecialty": "Stomatologji · Prishtinë",
-      "available": "I lirë",
-      "freeSlotsLabel": "Oraret e lira",
-      "slotCount_one": "{{count}} termin",
-      "slotCount_other": "{{count}} terme",
-      "confirmCta": "Konfirmo terminin"
-    },
     "specialtiesSection": {
       "kicker": "Specialitetet",
       "title": "Specializimet më të kërkuara",
       "subtitle": "Nga kardiologjia te pediatria — gjeni ekspertin që ju nevojitet.",
-      "seeAll": "Shih të gjitha",
-      "freeSlotsMeta": "Orare të lira"
+      "seeAll": "Shih të gjitha"
     },
     "howItWorks": {
       "kicker": "Procesi",
@@ -45,19 +34,17 @@
     },
     "doctorsSection": {
       "kicker": "Mjekët",
-      "title": "Mjekë të Verifikuar",
-      "subtitle": "Të gjithë mjekët janë të licensuar dhe të verifikuar para se të shtohen në platformë.",
+      "title": "Mjekët në platformë",
+      "subtitle": "Mjekë nga klinikat që i ka aprovuar ekipi ynë.",
       "seeAll": "Të gjithë mjekët",
-      "verified": "I verifikuar",
       "experienceYears_one": "{{count}} vit përvojë",
       "experienceYears_other": "{{count}} vjet përvojë",
       "licensedDoctor": "Mjek i licencuar",
-      "browseSlots": "Shfleto oraret",
-      "firstAppointment": "Termini i parë:"
+      "browseSlots": "Shfleto oraret"
     },
     "features": {
-      "verifiedBig": "Verifikuar",
-      "verifiedLabel": "Mjekë të licencuar e kontrolluar",
+      "verifiedBig": "Aprovuar",
+      "verifiedLabel": "Çdo klinikë kontrollohet para se të shfaqet",
       "hoursBig": "24/7",
       "hoursLabel": "Rezervim online, edhe natën",
       "easyBig": "Lehtë",
@@ -68,7 +55,7 @@
     "clinicsSection": {
       "kicker": "Klinikat",
       "title": "Klinika partnere në gjithë Kosovën",
-      "subtitle": "Nga qendrat spitalore te praktikat familjare të lagjes — të gjitha të verifikuara.",
+      "subtitle": "Nga qendrat spitalore te praktikat familjare të lagjes — të gjitha të aprovuara nga ekipi ynë.",
       "seeAll": "Shih të gjitha",
       "viewClinic": "Shiko klinikën",
       "doctorCount_one": "{{count}} mjek",
@@ -77,80 +64,24 @@
     "finalCta": {
       "kicker": "Falas për pacientët",
       "title": "Gati të rezervoni terminin tuaj?",
-      "subtitle": "Bashkohuni me mijëra pacientë që tashmë i besojnë Rezervo Mjekun për shëndetin e tyre.",
+      "subtitle": "Gjeni mjekun, zgjidhni orën dhe rezervoni — pa pritje në telefon.",
       "cta": "Filloni Tani",
-      "fineprint": "Pa kartë krediti · Anulim i lirë · Mbështetje në shqip"
+      "fineprint": "Pa kartë krediti · Anulim falas deri 12 orë para · Mbështetje në shqip"
     },
-    "demo": {
-      "specialties": {
-        "cardiology": "Kardiologji",
-        "pediatrics": "Pediatri",
-        "neurology": "Neurologji",
-        "orthopedics": "Ortopedi",
-        "dermatology": "Dermatologji",
-        "gynecology": "Gjinekologji",
-        "ophthalmology": "Oftalmologji",
-        "psychiatry": "Psikiatri"
-      },
-      "doctors": [
-        {
-          "name": "Arben Vitia",
-          "specialty": "Kardiologji",
-          "next": "Sot, 14:30"
-        },
-        {
-          "name": "Linda Gashi",
-          "specialty": "Pediatri",
-          "next": "Sot, 16:00"
-        },
-        {
-          "name": "Besnik Ramadani",
-          "specialty": "Neurologji",
-          "next": "Nesër, 09:00"
-        },
-        {
-          "name": "Teuta Krasniqi",
-          "specialty": "Dermatologji",
-          "next": "Nesër, 11:30"
-        },
-        {
-          "name": "Driton Berisha",
-          "specialty": "Ortopedi",
-          "next": "E enjte, 08:30"
-        }
-      ],
-      "clinics": [
-        {
-          "name": "Klinika Qendrore",
-          "city": "Prishtinë",
-          "specialties": [
-            "Kardiologji",
-            "Pediatri",
-            "Neurologji"
-          ]
-        },
-        {
-          "name": "Poliklinika Rilindja",
-          "city": "Prishtinë",
-          "specialties": [
-            "Ortopedi",
-            "Dermatologji"
-          ]
-        },
-        {
-          "name": "Klinika Vita",
-          "city": "Prizren",
-          "specialties": [
-            "Gjinekologji",
-            "Pediatri"
-          ]
-        }
-      ]
-    }
+    "stats": {
+      "title": "Në Rezervo Mjekun",
+      "hint": "Shihni oraret e lira të mjekëve dhe rezervoni pa telefonata.",
+      "doctorsLabel": "Mjekë",
+      "clinicsLabel": "Klinika",
+      "specialtiesLabel": "Specializime",
+      "cta": "Gjej një termin"
+    },
+    "loadError": "Nuk u ngarkua. Provoni përsëri.",
+    "retry": "Provo përsëri"
   },
   "search": {
     "title": "Gjeni mjekun ose klinikën e duhur",
-    "subtitle": "Kërkoni mjekë dhe klinika të verifikuara në Kosovë",
+    "subtitle": "Kërkoni mjekë dhe klinika në Kosovë",
     "searchPlaceholder": "Kërkoni mjek, klinikë, ose specialitet...",
     "allSpecialtiesChip": "Të gjitha",
     "tabClinics": "Klinika",
